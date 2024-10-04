@@ -43,8 +43,9 @@ starting_line = input()
 start_points = list(zip(starting_line.split(), [i*3 for i in range(w//2)]))
 start_points = [list(i) for i in start_points]
 
-# BAS: It might be better to either bold the comment, or add a space between it and the code above.
-# Not the code it's commenting above, it can still stick to that one
+# BAS: It might be better to either bold the comment, or add a space between it
+# and the code above. Not the code it's commenting above, it can still stick to
+# that one
 
 
 # #### **Parsing game board**
@@ -97,8 +98,9 @@ for i in range(h-2):
 
 ending_line = input()
 
-# BAS: The above code has a lot of unnessasary spacing and is hard to read. Keeping comments
-# on seperate lines and condencing the code will make it much more readable
+# BAS: The above code has a lot of unnessasary spacing and is hard to read.
+# Keeping comments on seperate lines and condencing the code will make it much
+# more readable
 
 # #### Determining the output
 #
@@ -121,6 +123,7 @@ while i < len(start_points):
     
     i = i+1
 
-# BAS: Overall the explanations of picture are good, but the spacing needs work. While it could also help to use
-# moer vareation of 'boldness' in titles and comments, that's more of a style thing and isn't nessasary, enen though
-# I think it would help.
+# BAS: Overall the explanations of picture are good, but the spacing needs work.
+# While it could also help to use moer vareation of 'boldness' in titles and
+# comments, that's more of a style thing and isn't nessasary, enen though I
+# think it would help.
