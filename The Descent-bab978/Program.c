@@ -4,7 +4,13 @@
 
    The _while(1)_ loop is what runs the game. Each iterative run of the loop is
    a turn in the game in which there will be an _input_ of the mountains and the
-   _output_ to fire at a mountains. The inputs are updated per run of the loop */
+   _output_ to fire at a mountains. The inputs are updated per run of the loop
+
+   <span style="background-color: yellow">KJB</span>: I think more context about the game is necessary for the reader to
+   understand the goal. Specifying that these inputs are the heights and that
+   the desired output is the index of the mountain to shoot at.
+   
+*/
 
 /* Code used for help:
    [GitHub Link](https://gist.github.com/kYroL01/eeb7752ae71f6ae58a095ad74e989986) */
@@ -41,6 +47,16 @@ int main()
             if(mountain_height > highestMountain){
                 highestMountain = mountain_height;
                 currentMountain = i;
+
+            /*
+               
+               <span style="background-color: yellow">KJB</span>: _currentMountain_ 
+               doesn't seem to be used outside of holding _i_ which is redundant.
+               the provided _mountain_height_ variable already accomplishes holding 
+               the height of the mounatin in test, so no need for _currentMountain_.
+
+            */
+
             } 
             /* end of if */
             
@@ -50,7 +66,15 @@ int main()
             /* ## Output Statement
 
                The statement below outputs a number which causes the ship in the
-               game to shoot the mountain with the **matching** number */
+               game to shoot the mountain with the **matching** number 
+               
+               <span style="background-color: yellow">KJB</span>: Instead of saying 
+               the output is just a number, call it the index of the mountain to 
+               shoot. Using programming terminology helps your fellow programmers
+               understand the code.
+
+            */
+
             printf("%d\n", currentMountain);
     
     /* **Rough Sketch of Solution** */
