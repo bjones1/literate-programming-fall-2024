@@ -1,4 +1,0 @@
-I did not incorporate the ideas that were presented in the review of my code.
-While it can be vague depending on how one looks at it, my own thoughts were
-put into this program to create it how I thought was best for my own thought
-processes.
