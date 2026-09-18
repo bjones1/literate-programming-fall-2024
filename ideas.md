@@ -25,6 +25,8 @@ Ideas
 10. (Reactive) If a git pull fails because of uncommited changes, identify the
     conflicting files and explain how to resolve them.<br>
 
+11. (Reactive) If the local branch has commits that have not been pushed to the remote branch, suggest a git push.
+
 Implementation
 --------------
 
