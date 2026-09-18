@@ -14,6 +14,17 @@ Ideas
 
 6. (Reactive) How to react to making a mistake?
 
+7. (Proactive) Always list current the current branch
+
+8. (Proactive) Check if the remote branch is ahead of the local branch and if
+   so, suggest a git pull
+
+9. (Reactive) If a git pull fails because of merge conflicts, identify the
+   conflicting files and explain how to resolve them.
+
+10. (Reactive) If a git pull fails because of uncommited changes, identify the
+    conflicting files and explain how to resolve them.<br>
+
 Implementation
 --------------
 
