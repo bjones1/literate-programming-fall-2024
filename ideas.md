@@ -27,6 +27,8 @@ Ideas
 
 11. (Reactive) If the local branch has commits that have not been pushed to the remote branch, suggest a git push.
 
+12. (Proactive) If the current branch does not have an upstream remote branch configured, explain this and suggest setting one before attempting to push.
+
 Implementation
 --------------
 
