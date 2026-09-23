@@ -32,6 +32,9 @@ Requirements
       4. Configure upstream branch? Conditions: if the current branch does not
          have an upstream remote branch configured, explain this and suggest
          setting one before attempting to push.
+      5. Explain definition of modified mode and editor mode Conditions: When you click on a .md file and you are unable to edit it. (ewj55)
+      6. Display a tag at the bottom of the screen. Red when the changes is only local, green when its public 
+      Conditions: when you open a md file and begin making tweaks to the file letting the user know when the changes are affecting the public repo. (ewj55)
    3. Definitions
    4. How to
    5. For every command, implement a terminal command alongside the GUI (for example show how to clone on the GUI as well as on the terminal) (ewj55)
@@ -54,6 +57,7 @@ Implementation
    3. The local branch has commits that have not been pushed to the remote
       branch.
    4. No repo exists in the current directory: git status (sbe80)
+   5. See if the file changes are only local or public: git status (ewj55)
 2. Estimate user intent: how?
 3. Language and libraries:
    1. Language: Python
@@ -73,3 +77,5 @@ struggle/didn't do what I expected:
 (jhg246) When starting out with git it can be very easy to make a mess of a repository if you dont understand how to navigate branches and merges. This happened to me and it was very confusing and frustrating. The solution was to use ' git reset ' to return to a version of the repository that was functional. Maybe we could warn the user if they are in a branch that has no remote source and they are making changes/staging changes?
 
 (sbe80) I had a lot of confusion regarding conflicts. Theres many ways to fix them and all are potential confusion points.
+
+(ewj55) I tend to be uncerain about whether or not the changes I made are public o private. If someone were to make some fragile code or openly modifying someone else's code, they should be fully aware about whether or not the changes are affecting the offical repo.
