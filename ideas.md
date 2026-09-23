@@ -42,9 +42,9 @@ This file records the initial design of the git-hints tool.
       4. Configure upstream branch? Conditions: if the current branch does not
          have an upstream remote branch configured, explain this and suggest
          setting one before attempting to push.
-      5. Explain definition of modified mode and editor mode Conditions: When you click on a .md file and you are unable to edit it. (ewj55)
-      6. The CLI tool will print a color-coded status bar in the terminal (e.g. [LOCAL ONLY -2 unpushed commits]) in red, [FULLY SYNCED WITH REMOTE] in green. If the current branch has any unpushed local commits (ahead of origin/(branch)). Red indicates local-only changes exist; green indicates the local branch is fully synchronized with the remote server. 
-      Conditions: when you open a md file and begin making tweaks to the file letting the user know when the changes are affecting the public repo. (ewj55)
+      5. Explain [file states](https://git-scm.com/book/en/v2/Getting-Started-What-is-Git%3F "Files in Git move between modified, staged, and committed states.") and editor read-only modes? Conditions: When attempting to edit a file opened in a commit or diff view. (ewj55)
+      
+      6. Display [sync status](https://git-scm.com/docs/git-status "Shows whether your local branch is up to date or ahead of the remote repository.") indicator in terminal? Conditions: When local commits exist that have not been pushed to origin. (ewj55)
    3. Definitions
    4. How to
 3. <a id="cc-SbouyCXTsP"></a>For every command, implement a terminal command
