@@ -78,4 +78,4 @@ struggle/didn't do what I expected:
 
 (sbe80) I had a lot of confusion regarding conflicts. Theres many ways to fix them and all are potential confusion points.
 
-(ewj55) I tend to be uncerain about whether or not the changes I made are public o private. If someone were to make some fragile code or openly modifying someone else's code, they should be fully aware about whether or not the changes are affecting the offical repo.
+(ewj55) I tend to be uncertain about whether or not the changes I made are public or private. If someone were to make some fragile code or openly modifying someone else's code, they should be fully aware about whether or not the changes are affecting the offical repo.
