@@ -43,15 +43,14 @@ This file records the initial design of the git-hints tool.
          have an upstream remote branch configured, explain this and suggest
          setting one before attempting to push.
       5. Explain definition of modified mode and editor mode Conditions: When you click on a .md file and you are unable to edit it. (ewj55)
-      6. Display a tag at the bottom of the screen. Red when the changes is only local, green when its public 
+      6. The CLI tool will print a color-coded status bar in the terminal (e.g. [LOCAL ONLY -2 unpushed commits]) in red, [FULLY SYNCED WITH REMOTE] in green. If the current branch has any unpushed local commits (ahead of origin/(branch)). Red indicates local-only changes exist; green indicates the local branch is fully synchronized with the remote server. 
       Conditions: when you open a md file and begin making tweaks to the file letting the user know when the changes are affecting the public repo. (ewj55)
    3. Definitions
    4. How to
 3. <a id="cc-SbouyCXTsP"></a>For every command, implement a terminal command
    alongside the GUI (for example show how to clone on the GUI as well as on the
    terminal) (ewj55)
-4. Implement how the underlying logic work so the user knows what exactly they
-   are doing or what they are about to do. (ewj55)
+4. Each hint should include a 1-sentence breakdown of what Git stage the user is currently in (Working in the directory, staging area, local repo, or remote), so the user learns the Git mental model while working (ewj55)
 5. every hint about a specific task and command links to the official docs for
    more information (ewj55)
 6. maybe highlight sections from the docs to show where that specific hint came
@@ -79,7 +78,7 @@ Implementation
    3. The local branch has commits that have not been pushed to the remote
       branch.
    4. No repo exists in the current directory: git status (sbe80)
-   5. See if the file changes are only local or public: git status (ewj55)
+   5. See if the file changes are only local or public: git status -sb (ewj55)
 2. Estimate user intent: how?
 3. Language and libraries:
    1. Language: Python
@@ -104,3 +103,5 @@ section.\]</mark>
   remote source and they are making changes/staging changes?
 
 (sbe80) I had a lot of confusion regarding conflicts. Theres many ways to fix them and all are potential confusion points.
+
+* (ewj55) I tend to be uncertain about whether the changes I made are local or pushed to the remote repository. If someone is editing shared code, they should be clearly aware of whether their changes are local-only or affecting the upstream repo.
