@@ -35,22 +35,38 @@ This file records the initial design of the git-hints tool.
    2. Proactive
       1. How to clone a repo. Conditions: repo doesn't exist in the current
          directory.
+
       2. Pull remote changes? Conditions: remote branch is ahead of the local
          branch.
+
       3. The current branch is xxx. Conditions: always as long as three hints
          are not already being displayed (sbe80).
+
       4. Configure upstream branch? Conditions: if the current branch does not
          have an upstream remote branch configured, explain this and suggest
          setting one before attempting to push.
-      5. Explain [file states](https://git-scm.com/book/en/v2/Getting-Started-What-is-Git%3F "Files in Git move between modified, staged, and committed states.") and editor read-only modes? Conditions: When attempting to edit a file opened in a commit or diff view. (ewj55)
-      
-      6. Display [sync status](https://git-scm.com/docs/git-status "Shows whether your local branch is up to date or ahead of the remote repository.") indicator in terminal? Conditions: When local commits exist that have not been pushed to origin. (ewj55)
-   3. Definitions
+
+      5. Explain
+         [file states](https://git-scm.com/book/en/v2/Getting-Started-What-is-Git%3F "Files in Git move between modified, staged, and committed states.")
+         and editor read-only modes? Conditions: When attempting to edit a file
+         opened in a commit or diff view. (ewj55)
+
+      6. Display
+         [sync status](https://git-scm.com/docs/git-status "Shows whether your local branch is up to date or ahead of the remote repository.")
+         indicator in terminal? Conditions: When local commits exist that have
+         not been pushed to origin. (ewj55)
+   3. Definitions<br>
+      1. Give defenitions to users with a commad like 'git pull def'
    4. How to
+      1. Maybe add a howto command if you want instructions on how to do
+         something like 'howto commit' and it would tell the user what potential
+         other conditions or inputs are possible after 'commit'
 3. <a id="cc-SbouyCXTsP"></a>For every command, implement a terminal command
    alongside the GUI (for example show how to clone on the GUI as well as on the
    terminal) (ewj55)
-4. Each hint should include a 1-sentence breakdown of what Git stage the user is currently in (Working in the directory, staging area, local repo, or remote), so the user learns the Git mental model while working (ewj55)
+4. Each hint should include a 1-sentence breakdown of what Git stage the user is
+   currently in (Working in the directory, staging area, local repo, or remote),
+   so the user learns the Git mental model while working (ewj55)
 5. every hint about a specific task and command links to the official docs for
    more information (ewj55)
 6. maybe highlight sections from the docs to show where that specific hint came
@@ -63,8 +79,12 @@ This file records the initial design of the git-hints tool.
    (ewj55)
 9. Hints should consists of Markdown text. Links must include a title which
    gives a summary of the term. For example: "Do you want to clone a
-   [repo](https://git-scm.com/book/en/v2/Git-Basics-Getting-a-Git-Repository "A Git repository tracks changes to files over time in discrete units called commits.")?"
-10. The tool should display at most 3 hints.
+   [repo](https://git-scm.com/book/en/v2/Git-Basics-Getting-a-Git-Repository "A Git repository tracks changes to files over time in discrete units called commits.")?".
+   Defenitions should be limited to a certain number of characters since the
+   hint space will be limited.
+10. The tool should display at most 3 hints, potentially inform the user if more
+    hints' conditions have been met and implement a command that will display
+    ALL hints with their conditions met.
 
 Implementation
 --------------
@@ -77,8 +97,12 @@ Implementation
    2. Error from last git execution? Difficult to get this.
    3. The local branch has commits that have not been pushed to the remote
       branch.
-   4. No repo exists in the current directory: git status (sbe80)
+   4. No repo exists in the current directory: git status (sbe80), could also be
+      detected by the standard non-zero exit exception from `GitPython` when
+      running commands outside a Git directory
    5. See if the file changes are only local or public: git status -sb (ewj55)
+   6. Use `git diff` to view differences in a file, used to help the user fix
+      merge conflicts (jhg246)
 2. Estimate user intent: how?
 3. Language and libraries:
    1. Language: Python
@@ -95,13 +119,17 @@ Here are examples of Git situations that confused me/caused me to
 struggle/didn't do what I expected: <mark>\[Homework: add to this
 section.\]</mark>
 
-* TODO. (jhg246) When starting out with git it can be very easy to make a mess
-  of a repository if you dont understand how to navigate branches and merges.
-  This happened to me and it was very confusing and frustrating. The solution
-  was to use ' git reset ' to return to a version of the repository that was
+* (jhg246) When starting out with git it can be very easy to make a mess of a
+  repository if you dont understand how to navigate branches and merges. This
+  happened to me and it was very confusing and frustrating. The solution was to
+  use ' git reset ' to return to a version of the repository that was
   functional. Maybe we could warn the user if they are in a branch that has no
   remote source and they are making changes/staging changes?
 
-(sbe80) I had a lot of confusion regarding conflicts. Theres many ways to fix them and all are potential confusion points.
+(sbe80) I had a lot of confusion regarding conflicts. Theres many ways to fix
+them and all are potential confusion points.
 
-* (ewj55) I tend to be uncertain about whether the changes I made are local or pushed to the remote repository. If someone is editing shared code, they should be clearly aware of whether their changes are local-only or affecting the upstream repo.
+* (ewj55) I tend to be uncertain about whether the changes I made are local or
+  pushed to the remote repository. If someone is editing shared code, they
+  should be clearly aware of whether their changes are local-only or affecting
+  the upstream repo.
