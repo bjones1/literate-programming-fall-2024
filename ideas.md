@@ -96,6 +96,19 @@ This file records the initial design of the git-hints tool.
       12. A timer to check how much progress the user has made. If the repo has
           little to no changes over a set amount of time, that means the user is
           most likely stuck.
+
+      13. You are in a detached HEAD state. Conditions: the repository exists, but HEAD is
+      not attached to a local branch. Explain that the user is working in the local repository
+      at a specific commit instead of on a named branch. Suggest
+      [git switch -c <branch-name>](https://git-scm.com/docs/git-switch "Creates a new branch and switches to it.")
+      to create and switch to a new branch if the user wants to preserve future commits. (jit45)
+
+      14. This repository does not have any commits yet. Conditions: the current directory
+      is a Git repository, but HEAD does not yet resolve to a commit. Explain that the local
+      repository has no saved commit yet. If files are staged, suggest
+      [git commit -m "Initial commit"](https://git-scm.com/docs/git-commit "Creates a new commit from the staged changes.")
+      to create the first commit. (jit45)
+
    3. Definitions<br>
 
       1. Allow users to request a definition of a Git command using `git pull
@@ -189,6 +202,14 @@ Implementation
        requested setting is missing. Also check for an empty returned value.
        Report other command failures separately. These checks use the effective
        configuration, including repository and global settings. (drj228)
+
+   11. HEAD is detached rather than attached to a local branch: run
+    `git symbolic-ref --quiet --short HEAD`. A zero exit code means HEAD
+    is attached to a branch and the command prints the branch name. A
+    non-zero exit code in an otherwise valid Git repository indicates
+    that HEAD is detached. This detects the condition for the detached
+    HEAD hint. (jit45)
+
 2. Language and libraries:
 
    1. Language: Python
@@ -259,3 +280,9 @@ section.\]</mark>
   when you have dozens of people working and making changes. It's hard for me to
   remember what I'm working on and altering when I also have to take into
   account the additions of other people.
+
+* (jit45) I have been unsure whether the branch I was working on had the newest 
+changes from the remote repository before I started editing. In a shared repository, 
+this made me worry that I might be changing an outdated version and create avoidable 
+conflicts. A hint showing whether my branch is behind the remote would make that state 
+clearer before I begin working.
