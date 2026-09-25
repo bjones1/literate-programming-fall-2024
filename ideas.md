@@ -111,15 +111,18 @@ This file records the initial design of the git-hints tool.
 
    3. Definitions<br>
 
-      1. Allow users to request a definition of a Git command using `git pull
-         def`. The tool should display a short definition of the command,
-         explain what it does, and provide a link to the official Git
-         documentation.
+      1. Allow users to request a definition using `git-hints def <command>`. 
+      The tool should display a short definition of the requested Git command, 
+      explain what it does, and provide a link to the official Git documentation. 
+      If the command is unknown, report that it is unsupported. (jit45)
+
    4. How to
 
-      1. Maybe add a howto command if you want instructions on how to do
-         something like 'howto commit' and it would tell the user what potential
-         other conditions or inputs are possible after 'commit'
+      1. Provide a `git-hints howto <task>` command that gives step-by-step 
+      instructions for supported tasks such as committing, pulling, and pushing. 
+      If the requested task is unknown, tell the user it is unsupported instead 
+      of generating unverified instructions. (jit45)
+
 3. <a id="cc-SbouyCXTsP"></a>Hint structure:
    1. Each actionable hint must show the terminal command and explain its
       expected result. The initial implementation will support the CLI. If a GUI
@@ -139,16 +142,20 @@ This file records the initial design of the git-hints tool.
       [repo](https://git-scm.com/book/en/v2/Git-Basics-Getting-a-Git-Repository "A Git repository stores project history as commits.")
       (drj228)
 4. Hint algorithms:
-   1. The tool should display at most 3 hints, potentially inform the user if
-      more hints' conditions have been met and implement a command that will
-      display ALL hints with their conditions met.
+   1.  Display at most three hints at once. If additional hints have their conditions 
+   met, inform the user that more are available. Provide a `git-hints all` command that 
+   displays every currently triggered hint. (jit45)
+
    2. Prioritize hints that explain a failed command or an unresolved merge
       conflict before routine workflow suggestions. Display no more than three
-      hints at once, as specified in requirement 10, and do not repeat a
-      dismissed hint until its triggering condition changes. (ewj55; clarified
-      by drj228)
+      hints at once, as specified by the hint-display limit above, and do not repeat a
+      dismissed hint until its triggering condition changes. (ewj55; clarified by drj228 and jit45)
+      
 5. Estimate user intent:
-   1. TODO.
+   1. Infer likely user intent from observable repository state and commands 
+   executed through the tool. If the available Git state does not provide enough 
+   evidence, do not guess the user's intent. (jit45)
+
 6. Automatically when you type a command like "repo" into codechat editor is
    displays the hyperlink and summarized definition to remind user what it does
    (ewj55)
