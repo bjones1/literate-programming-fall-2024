@@ -75,6 +75,10 @@ This file records the initial design of the git-hints tool.
          the author of local commits; they do not sign the user into GitHub.
          (drj228)
 
+      9. Commit staged changes? Conditions: files are staged, but no commit has been created yet. Explain how the files are currently in staging area and ready to be saved to local repository. Suggest `git commit -m "message"` to create a new commit containing the staged changes. (ams2083)
+
+      10. Add untracked files to Git? Conditions: one or more untracked files exist in working directory. Explain Git can see the files but isn't tracking their changes. Suggest `git add filename` to move the file into staging area or explain the file can be added to `.gitignore` if it shouldn't be tracked.
+
    3. Definitions<br>
       1. Give defenitions to users with a commad like 'git pull def'
    4. How to
@@ -145,6 +149,8 @@ Implementation
       value. Report other command failures separately. These checks use
       the effective configuration, including repository and global
       settings. (drj228)
+   
+   9. Untracked files exist: run `git status --porcelain`. Lines beginning with `??` indicate files that Git sees in the working direcroty but isn't currently tracking. (ams2083)
 
 2. Estimate user intent: how?
 3. Language and libraries:
@@ -182,3 +188,5 @@ them and all are potential confusion points.
   that creating a local branch does not automatically publish it to
   GitHub. A hint explaining where the branch exists and whether it has
   an upstream branch would help me understand the next step.
+
+* (ams2083) I didn't realize how difficult it would be to navigate a repository when you have dozens of people working and making changes. It's hard for me to remember what I'm working on and altering when I also have to take into account the additions of other people.
