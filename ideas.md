@@ -77,13 +77,12 @@ This file records the initial design of the git-hints tool.
          the author of local commits; they do not sign the user into GitHub.
          (drj228)
 
-      9. Commit staged changes? Conditions: files are staged, but no commit has been created yet. Explain how the files are currently in staging area and ready to be saved to local repository. Suggest `git commit -m "message"` to create a new commit containing the staged changes. (ams2083)
+      9. Commit staged changes? Conditions: files are staged, but no commit has been created yet. Explain how the files are currently in staging area and ready to be saved to local repository. Suggest [git commit](https://git-scm.com/docs/git-commit "Creates a new commit from staged changes.") with `git commit -m "message"` to create a new commit containing the staged changes. (ams2083)
 
-      10. Add untracked files to Git? Conditions: one or more untracked files exist in working directory. Explain Git can see the files but isn't tracking their changes. Suggest `git add filename` to move the file into staging area or explain the file can be added to `.gitignore` if it shouldn't be tracked.
+      10. Add untracked files to Git? Conditions: one or more untracked files exist in working directory. Explain Git can see the files but isn't tracking their changes. Suggest [git add](https://git-scm.com/docs/git-add "Adds file contents to the staging area.") with `git add filename` to move the file into the staging area or explain the file can be added to `.gitignore` if it shouldn't be tracked. (ams2083)
 
    3. Definitions<br>
-
-      1. Give defenitions to users with a commad like 'git pull def'
+      1. Allow users to request a definition of a Git command using `git pull def`. The tool should display a short definition of the command, explain what it does, and provide a link to the official Git documentation.
    4. How to
 
       1. Maybe add a howto command if you want instructions on how to do
@@ -125,15 +124,12 @@ Implementation
    item 1 below.\]</mark>
 
    1. Changed files: `git status`.
-
-   2. A Git command executed through the tool failed: capture its exit code,
-      standard output, and standard error when the tool runs it. Use this
-      information to select an appropriate hint. The tool cannot reliably
-      recover the result of an earlier command run outside the tool. (drj228)
-
-   3. The local branch has commits that have not been pushed to the remote
-      branch.
-
+   2. A Git command executed through the tool failed: capture its exit
+      code, standard output, and standard error when the tool runs it.
+      Use this information to select an appropriate hint. The tool
+      cannot reliably recover the result of an earlier command run
+      outside the tool. (drj228)
+   3. The local branch has commits that have not been pushed to the remote branch: run git status -sb. If the branch status shows that the local branch is ahead of its upstream branch by one or more commits, then local commits exist that have not yet been pushed to the remote repository.
    4. No repo exists in the current directory: git status (sbe80), could also be
       detected by the standard non-zero exit exception from `GitPython` when
       running commands outside a Git directory
@@ -156,7 +152,7 @@ Implementation
       the effective configuration, including repository and global
       settings. (drj228)
 
-   9. Untracked files exist: run `git status --porcelain`. Lines beginning with `??` indicate files that Git sees in the working direcroty but isn't currently tracking. (ams2083)
+   9. Untracked files exist: run `git status --porcelain`. Lines beginning with `??` indicate files that Git sees in the working directory but isn't currently tracking. (ams2083)
 
    8. Commit identity is not configured: run `git config --get user.name` and
       `git config --get user.email`. An exit code of 1 indicates that the
