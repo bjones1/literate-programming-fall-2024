@@ -72,9 +72,15 @@ This file records the initial design of the git-hints tool.
          is missing or empty in the effective Git configuration. Explain how to
          set the missing value using
          [git config](https://git-scm.com/docs/git-config "Reads and updates Git settings, including the name and email recorded in commits.")
-         with `git config user.name "Your Name"` or `git config user.email
-         "you@example.com"`. These settings identify the author of local
-         commits; they do not sign the user into GitHub. (drj228)
+         with `git config user.name "Your Name"` or
+         `git config user.email "you@example.com"`. These settings identify
+         the author of local commits; they do not sign the user into GitHub.
+         (drj228)
+
+      9. Commit staged changes? Conditions: files are staged, but no commit has been created yet. Explain how the files are currently in staging area and ready to be saved to local repository. Suggest `git commit -m "message"` to create a new commit containing the staged changes. (ams2083)
+
+      10. Add untracked files to Git? Conditions: one or more untracked files exist in working directory. Explain Git can see the files but isn't tracking their changes. Suggest `git add filename` to move the file into staging area or explain the file can be added to `.gitignore` if it shouldn't be tracked.
+
    3. Definitions<br>
 
       1. Give defenitions to users with a commad like 'git pull def'
@@ -137,10 +143,20 @@ Implementation
    6. Use `git diff` to view differences in a file, used to help the user fix
       merge conflicts (jhg246)
 
-   7. Staged changes are ready to commit: run `git diff --cached --quiet`. Exit
-      code 1 means staged differences exist; exit code 0 means there are none.
-      Treat other exit codes as errors instead of triggering the hint. This
-      detects the condition for the staged-review hint. (drj228)
+   7. Staged changes are ready to commit: run `git diff --cached --quiet`.
+      Exit code 1 means staged differences exist; exit code 0 means there
+      are none. Treat other exit codes as errors instead of triggering the
+      hint. This detects the condition for the staged-review hint.
+      (drj228)
+
+   8. Commit identity is not configured: run `git config --get user.name`
+      and `git config --get user.email`. An exit code of 1 indicates that
+      the requested setting is missing. Also check for an empty returned
+      value. Report other command failures separately. These checks use
+      the effective configuration, including repository and global
+      settings. (drj228)
+
+   9. Untracked files exist: run `git status --porcelain`. Lines beginning with `??` indicate files that Git sees in the working direcroty but isn't currently tracking. (ams2083)
 
    8. Commit identity is not configured: run `git config --get user.name` and
       `git config --get user.email`. An exit code of 1 indicates that the
@@ -198,8 +214,10 @@ them and all are potential confusion points.
   should be clearly aware of whether their changes are local-only or affecting
   the upstream repo.
 
-* (drj228) When creating a branch in VS Code, I was unsure whether I had created
-  a local branch or a remote branch. I also did not understand that creating a
-  local branch does not automatically publish it to GitHub. A hint explaining
-  where the branch exists and whether it has an upstream branch would help me
-  understand the next step.
+* (drj228) When creating a branch in VS Code, I was unsure whether I had
+  created a local branch or a remote branch. I also did not understand
+  that creating a local branch does not automatically publish it to
+  GitHub. A hint explaining where the branch exists and whether it has
+  an upstream branch would help me understand the next step.
+
+* (ams2083) I didn't realize how difficult it would be to navigate a repository when you have dozens of people working and making changes. It's hard for me to remember what I'm working on and altering when I also have to take into account the additions of other people.
