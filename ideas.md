@@ -7,9 +7,11 @@ This file records the initial design of the git-hints tool.
 
 1. The tool will be initially implemented using a CLI for command-line use of
    Git.
+
 2. The tool should offer hints in the following categories: <mark>\[Homework:
    add to this list. Include your netid to identify portions you
    contributed.\]</mark>
+
    1. Reactive
 
       1. [Stage](https://www.w3schools.com/git/git_staging_environment.asp "Also called the index; select which files changes to store in a commit")
@@ -35,8 +37,10 @@ This file records the initial design of the git-hints tool.
       7. Push failed because of conflicting file changes. Try running git diff
          *'filename'* ! Conditions: If the user attempted a push and it failed
          due to conflicting file changes. (jhg246)
-      8. Explain stashes including: what they are, how to make one, and how to
-         see old ones Condition: conflict when pulling (sbe80)
+      8. Explain
+         [stashes](https://www.geeksforgeeks.org/git/git-stash/ "Stores the present state of the local repo")
+         including: what they are, how to make one, and how to see old ones
+         Condition: conflict when pulling (sbe80)
    2. Proactive
 
       1. How to clone a repo. Conditions: repo doesn't exist in the current
@@ -97,33 +101,48 @@ This file records the initial design of the git-hints tool.
           little to no changes over a set amount of time, that means the user is
           most likely stuck.
 
-      13. You are in a detached HEAD state. Conditions: the repository exists, but HEAD is
-      not attached to a local branch. Explain that the user is working in the local repository
-      at a specific commit instead of on a named branch. Suggest
-      [git switch -c <branch-name>](https://git-scm.com/docs/git-switch "Creates a new branch and switches to it.")
-      to create and switch to a new branch if the user wants to preserve future commits. (jit45)
+      13. You are in a detached HEAD state. Conditions: the repository exists,
+          but HEAD is not attached to a local branch. Explain that the user is
+          working in the local repository at a specific commit instead of on a
+          named branch. Suggest
+          [git switch -c](https://git-scm.com/docs/git-switch "Creates a new branch and switches to it.")
+          to create and switch to a new branch if the user wants to preserve
+          future commits. (jit45)
 
-      14. This repository does not have any commits yet. Conditions: the current directory
-      is a Git repository, but HEAD does not yet resolve to a commit. Explain that the local
-      repository has no saved commit yet. If files are staged, suggest
-      [git commit -m "Initial commit"](https://git-scm.com/docs/git-commit "Creates a new commit from the staged changes.")
-      to create the first commit. (jit45)
+      14. This repository does not have any commits yet. Conditions: the current
+          directory is a Git repository, but HEAD does not yet resolve to a
+          commit. Explain that the local repository has no saved commit yet. If
+          files are staged, suggest
+          [git commit -m "Initial commit"](https://git-scm.com/docs/git-commit "Creates a new commit from the staged changes.")
+          to create the first commit. (jit45)
 
+      15. Suggest and explaing
+          [git reset](https://www.w3schools.com/git/git_reset.asp "Moves HEAD to a different commit")
+          if the user repeatedly fails to push or pull, despite other
+          suggestions. However, it needs to be clear that this can overwrite
+          local changes. Condition: five failed pushes or pulls in a row (sbe80)
+
+      16. Warn the user that the current branch has diverged from upstream
+          (sbe80).
    3. Definitions<br>
 
-      1. Allow users to request a definition using `git-hints def <command>`. 
-      The tool should display a short definition of the requested Git command, 
-      explain what it does, and provide a link to the official Git documentation. 
-      If the command is unknown, report that it is unsupported. (jit45)
-
+      1. Allow users to request a definition using `git-hints def <command>`.
+         The tool should display a short definition of the requested Git
+         command, explain what it does, and provide a link to the official Git
+         documentation. If the command is unknown, report that it is
+         unsupported. (jit45)
+      2. Add a `--help` comand which details use of the `hints def` command
+         (sbe80).
    4. How to
 
-      1. Provide a `git-hints howto <task>` command that gives step-by-step 
-      instructions for supported tasks such as committing, pulling, and pushing. 
-      If the requested task is unknown, tell the user it is unsupported instead 
-      of generating unverified instructions. (jit45)
-
+      1. Provide a `git-hints howto <task>` command that gives step-by-step
+         instructions for supported tasks such as committing, pulling, and
+         pushing. If the requested task is unknown, tell the user it is
+         unsupported instead of generating unverified instructions. (jit45)
+      2. Add a `--help` comand which details use of the `hints howto` command
+         (sbe80)
 3. <a id="cc-SbouyCXTsP"></a>Hint structure:
+
    1. Each actionable hint must show the terminal command and explain its
       expected result. The initial implementation will support the CLI. If a GUI
       is added later, show the equivalent GUI action alongside the terminal
@@ -142,20 +161,31 @@ This file records the initial design of the git-hints tool.
       [repo](https://git-scm.com/book/en/v2/Git-Basics-Getting-a-Git-Repository "A Git repository stores project history as commits.")
       (drj228)
 4. Hint algorithms:
-   1.  Display at most three hints at once. If additional hints have their conditions 
-   met, inform the user that more are available. Provide a `git-hints all` command that 
-   displays every currently triggered hint. (jit45)
+
+   1. Display at most three hints at once. If additional hints have their
+      conditions met, inform the user that more are available. Provide a
+      `git-hints all` command that displays every currently triggered hint.
+      (jit45)
 
    2. Prioritize hints that explain a failed command or an unresolved merge
       conflict before routine workflow suggestions. Display no more than three
-      hints at once, as specified by the hint-display limit above, and do not repeat a
-      dismissed hint until its triggering condition changes. (ewj55; clarified by drj228 and jit45)
-      
-5. Estimate user intent:
-   1. Infer likely user intent from observable repository state and commands 
-   executed through the tool. If the available Git state does not provide enough 
-   evidence, do not guess the user's intent. (jit45)
+      hints at once, as specified by the hint-display limit above, and do not
+      repeat a dismissed hint until its triggering condition changes. (ewj55;
+      clarified by drj228 and jit45)
 
+   3. All hints should be given a priority, with higher priority hints being
+      displayed first (sbe80)
+
+   4. All hints should be given a classification of whether they are safe,
+      potentially destructive, or highly destructive (sbe80).
+
+   5. Every hint should be given an ID. This will make testing much easier
+      (sbe80).
+5. Estimate user intent:
+
+   1. Infer likely user intent from observable repository state and commands
+      executed through the tool. If the available Git state does not provide
+      enough evidence, do not guess the user's intent. (jit45)
 6. Automatically when you type a command like "repo" into codechat editor is
    displays the hyperlink and summarized definition to remind user what it does
    (ewj55)
@@ -180,9 +210,10 @@ Implementation
       branch is ahead of its upstream branch by one or more commits, then local
       commits exist that have not yet been pushed to the remote repository.
 
-   4. No repo exists in the current directory: git status (sbe80), could also be
-      detected by the standard non-zero exit exception from `GitPython` when
-      running commands outside a Git directory
+   4. No repo exists in the current directory:
+      [Git status](https://www.geeksforgeeks.org/git/git-status "Shows current state of working directory")
+      (sbe80), could also be detected by the standard non-zero exit exception
+      from `GitPython` when running commands outside a Git directory
 
    5. See if the file changes are only local or public: git status -sb (ewj55)
 
@@ -210,13 +241,15 @@ Implementation
        Report other command failures separately. These checks use the effective
        configuration, including repository and global settings. (drj228)
 
-   11. HEAD is detached rather than attached to a local branch: run
-    `git symbolic-ref --quiet --short HEAD`. A zero exit code means HEAD
-    is attached to a branch and the command prints the branch name. A
-    non-zero exit code in an otherwise valid Git repository indicates
-    that HEAD is detached. This detects the condition for the detached
-    HEAD hint. (jit45)
+   11. HEAD is detached rather than attached to a local branch: run `git
+       symbolic-ref --quiet --short HEAD`. A zero exit code means HEAD is
+       attached to a branch and the command prints the branch name. A non-zero
+       exit code in an otherwise valid Git repository indicates that HEAD is
+       detached. This detects the condition for the detached HEAD hint. (jit45)
 
+   12. Run `git status -sb`. If the status reports that the local branch is
+       ahead *and* behind its upstream branch, the branches have diverged. 
+       (sbe80)
 2. Language and libraries:
 
    1. Language: Python
@@ -270,7 +303,9 @@ section.\]</mark>
   remote source and they are making changes/staging changes?
 
 * (sbe80) I had a lot of confusion regarding conflicts. Theres many ways to fix
-  them and all are potential confusion points.
+  them and all are potential confusion points. Another thing I found confusing
+  initially was when to keep files local and when to add them to the remote repo
+  and how to properly navigate that.
 
 * (ewj55) I tend to be uncertain about whether the changes I made are local or
   pushed to the remote repository. If someone is editing shared code, they
@@ -288,8 +323,8 @@ section.\]</mark>
   remember what I'm working on and altering when I also have to take into
   account the additions of other people.
 
-* (jit45) I have been unsure whether the branch I was working on had the newest 
-changes from the remote repository before I started editing. In a shared repository, 
-this made me worry that I might be changing an outdated version and create avoidable 
-conflicts. A hint showing whether my branch is behind the remote would make that state 
-clearer before I begin working.
+* (jit45) I have been unsure whether the branch I was working on had the newest
+  changes from the remote repository before I started editing. In a shared
+  repository, this made me worry that I might be changing an outdated version
+  and create avoidable conflicts. A hint showing whether my branch is behind the
+  remote would make that state clearer before I begin working.
