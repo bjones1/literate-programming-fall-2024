@@ -129,6 +129,12 @@ This file records the initial design of the git-hints tool.
 
       16. Warn the user that the current branch has diverged from upstream
           (sbe80).
+
+      17. Committing to protected/main branch. Conditions: the current branch is
+          master/main and the user attempts to commit. If other branches exist,
+          suggest other branches. If no other branches exist, suggest creating a
+          new branch with `git switch -c <name> ` (raf322)   
+           
    3. Definitions<br>
 
       1. Allow users to request a definition using `git-hints def <command>`.
