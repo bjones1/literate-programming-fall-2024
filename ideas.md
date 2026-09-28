@@ -17,7 +17,7 @@ This file records the initial design of the git-hints tool.
       1. [Stage](https://www.w3schools.com/git/git_staging_environment.asp "Also called the index; select which files changes to store in a commit")
          files? Conditions: changed files in repo. <mark>\[Homework: for each
          hint, follow the format discussed in [item 3](#cc-SbouyCXTsP) under
-         requirements and exemplified here.\]</mark>
+         requirements and exemplified here.\]</mark> **bj147 will test.**
       2. Keep unstaged changes out of this commit? Conditions: both staged and
          unstaged changes exist. Explain that a plain `git commit` records
          staged changes, so unrelated edits can remain unstaged without being
@@ -133,8 +133,8 @@ This file records the initial design of the git-hints tool.
       17. Committing to protected/main branch. Conditions: the current branch is
           master/main and the user attempts to commit. If other branches exist,
           suggest other branches. If no other branches exist, suggest creating a
-          new branch with `git switch -c <name> ` (raf322)   
-           
+          new branch with `git switch -c <name> ` (raf322)
+
    3. Definitions<br>
 
       1. Allow users to request a definition using `git-hints def <command>`.
@@ -284,13 +284,16 @@ TODO: need to isolate git behavior from global config. Fix this with
 `GIT_CONFIG_GLOBAL` pointing to a temp file, `GIT_CONFIG_NOSYSTEM=1`, the
 identity env vars, and `git init -b main`.
 
-### Test case 1: files are changed.
+### Test case 1: files are changed. *(Written by bj147)*
 
-Expected prompt: do you want to stage changed files?
-
-To set this up:
-
-1. Create a text file and add content to it.
+1. Create one temp directory.
+2. Execute the following in this temp directory:
+   1. Create an empty git repo with `git init -b main`.
+   2. Create a file called `foo.txt` with the content `xxx`.
+   3. Add it: `git add foo.txt`.
+   4. Commit it: `git commit -m "Add foo."`.
+   5. Modify `foo.txt`.
+3. Run `git-hint` in the temp dir. Expected hint: [Stage](https://www.w3schools.com/git/git_staging_environment.asp "Also called the index; select which files changes to store in a commit") files?
 
 Personal experience
 -------------------
