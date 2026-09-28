@@ -1,5 +1,5 @@
-Ideas
-=====
+issuIdeas
+=========
 
 This file records the initial design of the git-hints tool.
 
@@ -97,7 +97,8 @@ This file records the initial design of the git-hints tool.
           explain the file can be added to `.gitignore` if it shouldn't be
           tracked. (ams2083)
 
-      11. Your repo was changed by more than 50% (untracked files, lines of code, deleted files, etc.), would you like to commit it?
+      11. Your repo was changed by more than 50% (untracked files, lines of
+          code, deleted files, etc.), would you like to commit it?
 
       12. A timer to check how much progress the user has made. If the repo has
           little to no changes over a set amount of time, that means the user is
@@ -122,19 +123,21 @@ This file records the initial design of the git-hints tool.
           master/main and the user attempts to commit. If other branches exist,
           suggest other branches. If no other branches exist, suggest creating a
           new branch with `git switch -c <name> ` (raf322)
-   3. Definitions<br>
+   3. Definitions: allow users to request a definition using `git-hints def
+      <command>`. The tool should display a short definition of the requested
+      Git command, explain what it does, and provide a link to the official Git
+      documentation. If the command is unknown, report that it is unsupported.
+      (jit45)
 
-      1. Allow users to request a definition using `git-hints def <command>`.
-         The tool should display a short definition of the requested Git
-         command, explain what it does, and provide a link to the official Git
-         documentation. If the command is unknown, report that it is
-         unsupported. (jit45)
-   4. How to
+   4. How to:  provide a `git-hints howto <task>` command that gives
+      step-by-step instructions for supported tasks such as committing, pulling,
+      and pushing. If the requested task is unknown, tell the user it is
+      unsupported instead of generating unverified instructions. (jit45)
 
-      1. Provide a `git-hints howto <task>` command that gives step-by-step
-         instructions for supported tasks such as committing, pulling, and
-         pushing. If the requested task is unknown, tell the user it is
-         unsupported instead of generating unverified instructions. (jit45)
+   5. Explain error: `git-hints explain <git command>`: executes the Git
+      command, capturing its exit code, standard output, and standard error. Use
+      this information to select an appropriate hint. The tool cannot reliably
+      recover the result of an earlier command run outside the tool. (drj228)
 3. <a id="cc-SbouyCXTsP"></a>Hint structure:
 
    1. Each actionable hint must show the terminal command and explain its
@@ -171,9 +174,6 @@ This file records the initial design of the git-hints tool.
    1. Infer likely user intent from observable repository state and commands
       executed through the tool. If the available Git state does not provide
       enough evidence, do not guess the user's intent. (jit45)
-6. Automatically when you type a command like "repo" into codechat editor is
-   displays the hyperlink and summarized definition to remind user what it does
-   (ewj55)
 
 Implementation
 --------------
@@ -185,47 +185,42 @@ Implementation
 
    1. Changed files: `git status`.
 
-   2. A Git command executed through the tool failed: capture its exit code,
-      standard output, and standard error when the tool runs it. Use this
-      information to select an appropriate hint. The tool cannot reliably
-      recover the result of an earlier command run outside the tool. (drj228)
-
-   3. The local branch has commits that have not been pushed to the remote
+   2. The local branch has commits that have not been pushed to the remote
       branch: run `git status -sb`. If the branch status shows that the local
       branch is ahead of its upstream branch by one or more commits, then local
       commits exist that have not yet been pushed to the remote repository.
 
-   4. No repo exists in the current directory: `git status` (sbe80), could also
+   3. No repo exists in the current directory: `git status` (sbe80), could also
       be detected by the standard non-zero exit exception from `GitPython` when
       running commands outside a Git directory
 
-   5. See if the file changes are only local or public: `git status -sb` (ewj55)
+   4. See if the file changes are only local or public: `git status -sb` (ewj55)
 
-   6. Use `git fetch` followed by `git diff HEAD...@{upstream}` to view differences in a
-      file, used to help the user fix merge conflicts (jhg246)
+   5. Use `git fetch` followed by `git diff HEAD...@{upstream}` to view
+      differences in a file, used to help the user fix merge conflicts (jhg246)
 
-   7. Staged changes are ready to commit: run `git diff --cached --quiet`. Exit
+   6. Staged changes are ready to commit: run `git diff --cached --quiet`. Exit
       code 1 means staged differences exist; exit code 0 means there are none.
       Treat other exit codes as errors instead of triggering the hint. This
       detects the condition for the staged-review hint. (drj228)
 
-   8. Commit identity is not configured: run `git config --get user.name` and
+   7. Commit identity is not configured: run `git config --get user.name` and
       `git config --get user.email`. An exit code of 1 indicates that the
       requested setting is missing. Also check for an empty returned value.
       Report other command failures separately. These checks use the effective
       configuration, including repository and global settings. (drj228)
 
-   9. Untracked files exist: run `git status --porcelain`. Lines beginning with
+   8. Untracked files exist: run `git status --porcelain`. Lines beginning with
       `??` indicate files that Git sees in the working directory but isn't
       currently tracking. (ams2083)<br>
 
-   10. HEAD is detached rather than attached to a local branch: run `git
-       symbolic-ref --quiet --short HEAD`. A zero exit code means HEAD is
-       attached to a branch and the command prints the branch name. A non-zero
-       exit code in an otherwise valid Git repository indicates that HEAD is
-       detached. This detects the condition for the detached HEAD hint. (jit45)
+   9. HEAD is detached rather than attached to a local branch: run `git
+      symbolic-ref --quiet --short HEAD`. A zero exit code means HEAD is
+      attached to a branch and the command prints the branch name. A non-zero
+      exit code in an otherwise valid Git repository indicates that HEAD is
+      detached. This detects the condition for the detached HEAD hint. (jit45)
 
-   11. Committing to main/master: Run  `git branch --show-current` to identify
+   10. Committing to main/master: Run  `git branch --show-current` to identify
        current branch. If the branch is main, check for other remote/active
        branches with `git branch -a`. If the list contains no other branches
        besides the protected branch(es), suggest the creation of a new branch.
@@ -243,23 +238,24 @@ Implementation
 Testing
 -------
 
-Ingredients:
+The test tool contains:
 
-* Multiple remote repos with branches/commits on each, made (possibly) by
-  different users. Each repo can be read only or read/write for the current
-  user.
+* `make_temps(num)`: creates and returns `num` temporary directories. These are
+  removed when the test completes.
+* `make_repo(temp_dir, commands)`: runs the list of `commands` in `temp_dir`,
+  which creates and populate the repo. Each command is either a string, which is
+  executed as a shell command (typically a git command), or a lambda function
+  with no parameters, typically used to create/modify/delete files.
+* `set_remotes(local, repo 1, repo 2, ...)`: sets remotes for the local repo.
+  Each parameter is the path to the repo.
 
-* A way to purposely cause conflicts (how?)
+A typical test would make temporary directories, then use these to make repos,
+then set remotes. After changing to the local repo temp dir, it runs git-hints
+and checks that the output is correct.
 
-* Local repo, possibly with stashes.
-
-* Local files with changes/stages.
-
-One option: use [git bundle](https://git-scm.com/docs/git-bundle) to
-save/restore repo state. They can all be stored on the same machine, but two can
-be "remote" (not the local repo). For the local repo,
-[git stash push/git stash pop](https://git-scm.com/docs/git-stash) to save and
-restore the file state.
+TODO: need to isolate git behavior from global config. Fix this with
+`GIT_CONFIG_GLOBAL` pointing to a temp file, `GIT_CONFIG_NOSYSTEM=1`, the
+identity env vars, and `git init -b main`.
 
 ### Test case 1: files are changed.
 
