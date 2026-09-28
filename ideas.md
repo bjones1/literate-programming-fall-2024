@@ -7,9 +7,11 @@ This file records the initial design of the git-hints tool.
 
 1. The tool will be initially implemented using a CLI for command-line use of
    Git.
+
 2. The tool should offer hints in the following categories: <mark>\[Homework:
    add to this list. Include your netid to identify portions you
    contributed.\]</mark>
+
    1. Reactive
 
       1. [Stage](https://www.w3schools.com/git/git_staging_environment.asp "Also called the index; select which files changes to store in a commit")
@@ -36,7 +38,11 @@ This file records the initial design of the git-hints tool.
          *'filename'* ! Conditions: If the user attempted a push and it failed
          due to conflicting file changes. (jhg246)
       8. Explain stashes including: what they are, how to make one, and how to
-         see old ones Condition: conflict when pulling (sbe80)
+         see old ones Condition: conflict when pulling (sbe80)<br>
+      9. Place these files in gitignore? Conditions: Files such as .env,
+         \_\_pycache\_\_.py, output build directories, etc. should be flagged.
+         Suggest that the user create a .gitignore file and slate those files
+         for entry. (raf322)<br>
    2. Proactive
 
       1. How to clone a repo. Conditions: repo doesn't exist in the current
@@ -97,33 +103,40 @@ This file records the initial design of the git-hints tool.
           little to no changes over a set amount of time, that means the user is
           most likely stuck.
 
-      13. You are in a detached HEAD state. Conditions: the repository exists, but HEAD is
-      not attached to a local branch. Explain that the user is working in the local repository
-      at a specific commit instead of on a named branch. Suggest
-      [git switch -c <branch-name>](https://git-scm.com/docs/git-switch "Creates a new branch and switches to it.")
-      to create and switch to a new branch if the user wants to preserve future commits. (jit45)
+      13. You are in a detached HEAD state. Conditions: the repository exists,
+          but HEAD is not attached to a local branch. Explain that the user is
+          working in the local repository at a specific commit instead of on a
+          named branch. Suggest
+          [git switch -c](https://git-scm.com/docs/git-switch "Creates a new branch and switches to it.")
+          to create and switch to a new branch if the user wants to preserve
+          future commits. (jit45)
 
-      14. This repository does not have any commits yet. Conditions: the current directory
-      is a Git repository, but HEAD does not yet resolve to a commit. Explain that the local
-      repository has no saved commit yet. If files are staged, suggest
-      [git commit -m "Initial commit"](https://git-scm.com/docs/git-commit "Creates a new commit from the staged changes.")
-      to create the first commit. (jit45)
+      14. This repository does not have any commits yet. Conditions: the current
+          directory is a Git repository, but HEAD does not yet resolve to a
+          commit. Explain that the local repository has no saved commit yet. If
+          files are staged, suggest
+          [git commit -m "Initial commit"](https://git-scm.com/docs/git-commit "Creates a new commit from the staged changes.")
+          to create the first commit. (jit45)<br>
 
+      15. Committing to protected/main branch. Conditions: the current branch is
+          master/main and the user attempts to commit. If other branches exist,
+          suggest other branches. If no other branches exist, suggest creating a
+          new branch with `git switch -c <name> ` (raf322)
    3. Definitions<br>
 
-      1. Allow users to request a definition using `git-hints def <command>`. 
-      The tool should display a short definition of the requested Git command, 
-      explain what it does, and provide a link to the official Git documentation. 
-      If the command is unknown, report that it is unsupported. (jit45)
-
+      1. Allow users to request a definition using `git-hints def <command>`.
+         The tool should display a short definition of the requested Git
+         command, explain what it does, and provide a link to the official Git
+         documentation. If the command is unknown, report that it is
+         unsupported. (jit45)
    4. How to
 
-      1. Provide a `git-hints howto <task>` command that gives step-by-step 
-      instructions for supported tasks such as committing, pulling, and pushing. 
-      If the requested task is unknown, tell the user it is unsupported instead 
-      of generating unverified instructions. (jit45)
-
+      1. Provide a `git-hints howto <task>` command that gives step-by-step
+         instructions for supported tasks such as committing, pulling, and
+         pushing. If the requested task is unknown, tell the user it is
+         unsupported instead of generating unverified instructions. (jit45)
 3. <a id="cc-SbouyCXTsP"></a>Hint structure:
+
    1. Each actionable hint must show the terminal command and explain its
       expected result. The initial implementation will support the CLI. If a GUI
       is added later, show the equivalent GUI action alongside the terminal
@@ -142,20 +155,22 @@ This file records the initial design of the git-hints tool.
       [repo](https://git-scm.com/book/en/v2/Git-Basics-Getting-a-Git-Repository "A Git repository stores project history as commits.")
       (drj228)
 4. Hint algorithms:
-   1.  Display at most three hints at once. If additional hints have their conditions 
-   met, inform the user that more are available. Provide a `git-hints all` command that 
-   displays every currently triggered hint. (jit45)
+
+   1. Display at most three hints at once. If additional hints have their
+      conditions met, inform the user that more are available. Provide a
+      `git-hints all` command that displays every currently triggered hint.
+      (jit45)
 
    2. Prioritize hints that explain a failed command or an unresolved merge
       conflict before routine workflow suggestions. Display no more than three
-      hints at once, as specified by the hint-display limit above, and do not repeat a
-      dismissed hint until its triggering condition changes. (ewj55; clarified by drj228 and jit45)
-      
+      hints at once, as specified by the hint-display limit above, and do not
+      repeat a dismissed hint until its triggering condition changes. (ewj55;
+      clarified by drj228 and jit45)
 5. Estimate user intent:
-   1. Infer likely user intent from observable repository state and commands 
-   executed through the tool. If the available Git state does not provide enough 
-   evidence, do not guess the user's intent. (jit45)
 
+   1. Infer likely user intent from observable repository state and commands
+      executed through the tool. If the available Git state does not provide
+      enough evidence, do not guess the user's intent. (jit45)
 6. Automatically when you type a command like "repo" into codechat editor is
    displays the hyperlink and summarized definition to remind user what it does
    (ewj55)
@@ -210,13 +225,16 @@ Implementation
        Report other command failures separately. These checks use the effective
        configuration, including repository and global settings. (drj228)
 
-   11. HEAD is detached rather than attached to a local branch: run
-    `git symbolic-ref --quiet --short HEAD`. A zero exit code means HEAD
-    is attached to a branch and the command prints the branch name. A
-    non-zero exit code in an otherwise valid Git repository indicates
-    that HEAD is detached. This detects the condition for the detached
-    HEAD hint. (jit45)
+   11. HEAD is detached rather than attached to a local branch: run `git
+       symbolic-ref --quiet --short HEAD`. A zero exit code means HEAD is
+       attached to a branch and the command prints the branch name. A non-zero
+       exit code in an otherwise valid Git repository indicates that HEAD is
+       detached. This detects the condition for the detached HEAD hint. (jit45)
 
+   12. Committing to main/master: Run  `git branch --show current` to identify
+       current branch. If the branch is main, check for other remote/active
+       branches with `git branch -a`. If the list is empty, suggest the creation
+       of a new branch. (raf322)
 2. Language and libraries:
 
    1. Language: Python
@@ -288,8 +306,8 @@ section.\]</mark>
   remember what I'm working on and altering when I also have to take into
   account the additions of other people.
 
-* (jit45) I have been unsure whether the branch I was working on had the newest 
-changes from the remote repository before I started editing. In a shared repository, 
-this made me worry that I might be changing an outdated version and create avoidable 
-conflicts. A hint showing whether my branch is behind the remote would make that state 
-clearer before I begin working.
+* (jit45) I have been unsure whether the branch I was working on had the newest
+  changes from the remote repository before I started editing. In a shared
+  repository, this made me worry that I might be changing an outdated version
+  and create avoidable conflicts. A hint showing whether my branch is behind the
+  remote would make that state clearer before I begin working.
