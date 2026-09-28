@@ -275,6 +275,7 @@ The test tool contains:
   with no parameters, typically used to create/modify/delete files.
 * `set_remotes(local, repo 1, repo 2, ...)`: sets remotes for the local repo.
   Each parameter is the path to the repo.
+* `config_user(username, email)`: Set Git's `user.name` and `user.email`.
 
 A typical test would make temporary directories, then use these to make repos,
 then set remotes. After changing to the local repo temp dir, it runs git-hints
@@ -288,12 +289,13 @@ identity env vars, and `git init -b main`.
 
 1. Create one temp directory.
 2. Execute the following in this temp directory:
-   1. Create an empty git repo with `git init -b main`.
-   2. Create a file called `foo.txt` with the content `xxx`.
-   3. Add it: `git add foo.txt`.
-   4. Commit it: `git commit -m "Add foo."`.
-   5. Modify `foo.txt`.
-3. Run `git-hint` in the temp dir. Expected hint: [Stage](https://www.w3schools.com/git/git_staging_environment.asp "Also called the index; select which files changes to store in a commit") files?
+   1. Call `config_user("user1", "user1@foo.com")`.
+   2. Create an empty git repo with `git init -b main`.
+   3. Create a file called `foo.txt` with the content `xxx`.
+   4. Add it: `git add foo.txt`.
+   5. Commit it: `git commit -m "Add foo."`.
+   6. Modify `foo.txt`: append `y` to it.
+3. Run `git-hints` in the temp dir. Expected hint: [Stage](https://www.w3schools.com/git/git_staging_environment.asp "Also called the index; select which files changes to store in a commit") files?
 
 Personal experience
 -------------------
