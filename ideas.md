@@ -97,7 +97,7 @@ This file records the initial design of the git-hints tool.
           explain the file can be added to `.gitignore` if it shouldn't be
           tracked. (ams2083)
 
-      11. Your repo was changed by more than 50%, would you like to commit it?
+      11. Your repo was changed by more than 50% (untracked files, lines of code, deleted files, etc.), would you like to commit it?
 
       12. A timer to check how much progress the user has made. If the repo has
           little to no changes over a set amount of time, that means the user is
@@ -191,18 +191,18 @@ Implementation
       recover the result of an earlier command run outside the tool. (drj228)
 
    3. The local branch has commits that have not been pushed to the remote
-      branch: run git status -sb. If the branch status shows that the local
+      branch: run `git status -sb`. If the branch status shows that the local
       branch is ahead of its upstream branch by one or more commits, then local
       commits exist that have not yet been pushed to the remote repository.
 
-   4. No repo exists in the current directory: git status (sbe80), could also be
-      detected by the standard non-zero exit exception from `GitPython` when
+   4. No repo exists in the current directory: `git status` (sbe80), could also
+      be detected by the standard non-zero exit exception from `GitPython` when
       running commands outside a Git directory
 
-   5. See if the file changes are only local or public: git status -sb (ewj55)
+   5. See if the file changes are only local or public: `git status -sb` (ewj55)
 
-   6. Use `git diff` to view differences in a file, used to help the user fix
-      merge conflicts (jhg246)
+   6. Use `git fetch` followed by `git diff HEAD...@{upstream}` to view differences in a
+      file, used to help the user fix merge conflicts (jhg246)
 
    7. Staged changes are ready to commit: run `git diff --cached --quiet`. Exit
       code 1 means staged differences exist; exit code 0 means there are none.
@@ -217,24 +217,19 @@ Implementation
 
    9. Untracked files exist: run `git status --porcelain`. Lines beginning with
       `??` indicate files that Git sees in the working directory but isn't
-      currently tracking. (ams2083)
+      currently tracking. (ams2083)<br>
 
-   10. Commit identity is not configured: run `git config --get user.name` and
-       `git config --get user.email`. An exit code of 1 indicates that the
-       requested setting is missing. Also check for an empty returned value.
-       Report other command failures separately. These checks use the effective
-       configuration, including repository and global settings. (drj228)
-
-   11. HEAD is detached rather than attached to a local branch: run `git
+   10. HEAD is detached rather than attached to a local branch: run `git
        symbolic-ref --quiet --short HEAD`. A zero exit code means HEAD is
        attached to a branch and the command prints the branch name. A non-zero
        exit code in an otherwise valid Git repository indicates that HEAD is
        detached. This detects the condition for the detached HEAD hint. (jit45)
 
-   12. Committing to main/master: Run  `git branch --show current` to identify
+   11. Committing to main/master: Run  `git branch --show-current` to identify
        current branch. If the branch is main, check for other remote/active
-       branches with `git branch -a`. If the list is empty, suggest the creation
-       of a new branch. (raf322)
+       branches with `git branch -a`. If the list contains no other branches
+       besides the protected branch(es), suggest the creation of a new branch.
+       Otherwise, suggest other branches on the list.(raf322)
 2. Language and libraries:
 
    1. Language: Python
@@ -243,6 +238,7 @@ Implementation
    4. Type checker: ty
    5. CLI: Typer
    6. Git interface: GitPython
+   7. Testing: Pytest
 
 Testing
 -------
@@ -311,3 +307,10 @@ section.\]</mark>
   repository, this made me worry that I might be changing an outdated version
   and create avoidable conflicts. A hint showing whether my branch is behind the
   remote would make that state clearer before I begin working.
+
+* (raf322) For me, one of the things I have stuggled with getting used to doing
+  is stashing changes and keeping track of them. There have been times where I
+  have been working on a project, trying to keep track of which stash has the
+  changes I want to implement, and then giving up and not using stashes at all
+  when it becomes clear that the stash I'm looking for isn't the one I've
+  selected.
