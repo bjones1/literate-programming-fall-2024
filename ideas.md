@@ -27,7 +27,7 @@ This file records the initial design of the git-hints tool.
          (drj228)  **sbe80 will test**
       3. Resolve merge conflicts? Conditions: a git pull fails because of merge
          conflicts, identify the conflicting files and explain how to resolve
-         them.
+         them. **sbe80 will test**
       4. Resolve pull conflicts? Conditions: if a git pull fails because of
          uncommitted changes, identify the conflicting files and explain how to
          resolve them.
@@ -323,7 +323,6 @@ identity env vars, and `git init -b main`.
 
 1. Create one temporary directory.
 2. Execute the following in this temporary directory:
-
    1. Call `config_user("user1", "user1@foo.com")`.
    2. Create an empty git repo with `git init -b main`.
    3. Create a file called `foo.txt` with the content `xxx`.
@@ -335,6 +334,22 @@ identity env vars, and `git init -b main`.
 3. Run `git-hints` in the temporary directory.
 4. Expected hint: **Keep unstaged changes out of this commit?**
 5. Verify that the output explains that a plain `git commit` records only the staged changes and suggests [`git diff --cached`](https://git-scm.com/docs/git-diff "Show changes staged for the next commit").
+
+### Test case 3: Resolving merge conflicts. (Written by sbe80) -- Requirement Reactive 3
+
+1. Create two temporary directories.
+2. Execute the following in the first temporary directory:
+   1. Call `config_user("user1", "user1@foo.com")`.
+   2. Create an empty git repo with `git init -b main`.
+   3. Create a file called `foo.txt` with the content `xxx`.
+   4. Add it: `git add foo.txt`.
+   5. Commit it: `git commit -m "Add foo."`.
+3. Use `set_remotes(directory1, directory2)` to set the second temporary directory as the remote of the first
+4. Clone the first repo into the second
+5. In repo 1, add `y` to `foo.txt` and commit
+6. In repo 2, add `z` to `foo.txt` and commit
+7. Run `git pull` in the first repo
+8. Run git-hints in the first repository. Expected hint: Resolve merge conflicts? The output should identify foo.txt as a conflicting file and explain how to resolve the conflict.
 
 
 Personal experience
