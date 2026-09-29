@@ -12,18 +12,19 @@ sbe80's commit 6daa871 was based on 1f3f6b1, before f5d4e14 added the items
 below. When merge c787e3c resolved the conflict in favor of 6daa871, these items
 disappeared. Restore them from `git show f5d4e14:ideas.md`.
 
-1. *Assigned: sbe80.* **raf322's "Committing to protected/main branch" hint (was
-   Proactive 15).** Its implementation at [L241](ideas.md#L241) is still there
-   but now implements a requirement that no longer exists, and "15" now belongs
-   to the `git reset` hint. When restoring it:
+1. *(RESOLVED) Assigned: sbe80.* **raf322's "Committing to protected/main
+   branch" hint (was Proactive 15).** Its implementation at
+   [L241](ideas.md#L241) is still there but now implements a requirement that no
+   longer exists, and "15" now belongs to the `git reset` hint. When restoring
+   it:
 
    * Remove the trailing space inside the `git switch -c <name>` code span.
    * Its condition, "the user attempts to commit," can't be observed (see design
      problem 1). "The current branch is main/master and there are changes" can.
-2. *Assigned: sbe80.* **drj228's `git-hints explain <git command>` (was
-   requirement 2.5).** This is the only way the tool can see a failed command.
-   Without it, reactive hints 3, 4 and 7 and the `git reset` hint have no way to
-   detect their triggers. When restoring it:
+2. *(RESOLVED) Assigned: sbe80.* **drj228's `git-hints explain <git command>`
+   (was requirement 2.5).** This is the only way the tool can see a failed
+   command. Without it, reactive hints 3, 4 and 7 and the `git reset` hint have
+   no way to detect their triggers. When restoring it:
 
    * Typer will try to parse the git command's flags (`explain pull --rebase`)
      unless you set `allow_extra_args`/`ignore_unknown_options`.

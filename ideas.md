@@ -131,9 +131,9 @@ This file records the initial design of the git-hints tool.
           (sbe80).
 
       17. Committing to protected/main branch. Conditions: the current branch is
-          master/main and the user attempts to commit. If other branches exist,
+          master/main and there are changes. If other branches exist,
           suggest other branches. If no other branches exist, suggest creating a
-          new branch with `git switch -c <name> ` (raf322)
+          new branch with `git switch -c <name>` (raf322)
 
    3. Definitions<br>
 
@@ -152,6 +152,7 @@ This file records the initial design of the git-hints tool.
          unsupported instead of generating unverified instructions. (jit45)
       2. Add a `--help` comand which details use of the `hints howto` command
          (sbe80)
+   5. Explain error: git-hints explain <git command> executes the specified Git command and captures its exit code and standard error. The tool uses this information to select an appropriate hint. Standard output is not captured so that commands that open an interactive editor (such as git commit without -m or git rebase -i) continue to function normally. The tool cannot reliably recover the result of a Git command that was run outside the tool. (drj228)
 3. <a id="cc-SbouyCXTsP"></a>Hint structure:
 
    1. Each actionable hint must show the terminal command and explain its
@@ -243,7 +244,6 @@ Implementation
       attached to a branch and the command prints the branch name. A non-zero
       exit code in an otherwise valid Git repository indicates that HEAD is
       detached. This detects the condition for the detached HEAD hint. (jit45)
-
    10. Committing to main/master: Run  `git branch --show-current` to identify
        current branch. If the branch is main, check for other remote/active
        branches with `git branch -a`. If the list contains no other branches
@@ -252,6 +252,8 @@ Implementation
    12. Run `git status -sb`. If the status reports that the local branch is
        ahead *and* behind its upstream branch, the branches have diverged. 
        (sbe80)
+   13. The explain command (Requirement 5) must pass Git arguments through without Typer attempting to parse them as options. Configure the command to allow extra arguments and ignore unknown options (for example, using allow_extra_args=True and ignore_unknown_options=True) so commands such as git-hints explain pull --rebase and git-hints explain reset --hard HEAD~1 are passed to Git correctly (sbe80).
+   14. The explain command (Requirement 5) should not require the word `git` after the word `explain`. (sbe80)
 2. Language and libraries:
 
    1. Language: Python
