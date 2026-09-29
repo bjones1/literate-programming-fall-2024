@@ -1,5 +1,5 @@
 Ideas
-=========
+=====
 
 This file records the initial design of the git-hints tool.
 
@@ -23,7 +23,8 @@ This file records the initial design of the git-hints tool.
          staged changes, so unrelated edits can remain unstaged without being
          discarded. Suggest
          [git diff --cached](https://git-scm.com/docs/git-diff "Shows the staged changes selected for the next commit.")
-         to review the staging area before committing. (drj228)
+         to review the staging area before committing.
+         (drj228)  **sbe80 will test**
       3. Resolve merge conflicts? Conditions: a git pull fails because of merge
          conflicts, identify the conflicting files and explain how to resolve
          them.
@@ -45,6 +46,13 @@ This file records the initial design of the git-hints tool.
          \_\_pycache\_\_.py, output build directories, etc. should be flagged.
          Suggest that the user create a .gitignore file and slate those files
          for entry. (raf322)<br>
+      10. Suggest and explain
+          [git pull --rebase](https://git-scm.com/book/en/v2/Git-Branching-Rebasing)
+          if the user has five failed git pull or git push commands in a row.
+          Explain that rebasing may cause merge conflicts and that the user
+          should ensure their local work is committed or otherwise backed up
+          before proceeding. Condition: five failed git pull or git push
+          commands in a row (sbe80).
    2. Proactive
 
       1. How to clone a repo. Conditions: repo doesn't exist in the current
@@ -121,20 +129,14 @@ This file records the initial design of the git-hints tool.
           [git commit -m "Initial commit"](https://git-scm.com/docs/git-commit "Creates a new commit from the staged changes.")
           to create the first commit. (jit45)
 
-      15. Suggest and explaing
-          [git reset](https://www.w3schools.com/git/git_reset.asp "Moves HEAD to a different commit")
-          if the user repeatedly fails to push or pull, despite other
-          suggestions. However, it needs to be clear that this can overwrite
-          local changes. Condition: five failed pushes or pulls in a row (sbe80)
-
+      15. <br>
       16. Warn the user that the current branch has diverged from upstream
           (sbe80).
 
       17. Committing to protected/main branch. Conditions: the current branch is
-          master/main and there are changes. If other branches exist,
-          suggest other branches. If no other branches exist, suggest creating a
-          new branch with `git switch -c <name>` (raf322)
-
+          master/main and there are changes. If other branches exist, suggest
+          other branches. If no other branches exist, suggest creating a new
+          branch with `git switch -c <name>` (raf322)
    3. Definitions<br>
 
       1. Allow users to request a definition using `git-hints def <command>`.
@@ -152,7 +154,13 @@ This file records the initial design of the git-hints tool.
          unsupported instead of generating unverified instructions. (jit45)
       2. Add a `--help` comand which details use of the `hints howto` command
          (sbe80)
-   5. Explain error: git-hints explain <git command> executes the specified Git command and captures its exit code and standard error. The tool uses this information to select an appropriate hint. Standard output is not captured so that commands that open an interactive editor (such as git commit without -m or git rebase -i) continue to function normally. The tool cannot reliably recover the result of a Git command that was run outside the tool. (drj228)
+   5. Explain error: git-hints explain executes the specified Git command and
+      captures its exit code and standard error. The tool uses this information
+      to select an appropriate hint. Standard output is not captured so that
+      commands that open an interactive editor (such as git commit without -m or
+      git rebase -i) continue to function normally. The tool cannot reliably
+      recover the result of a Git command that was run outside the tool.
+      (drj228)
 3. <a id="cc-SbouyCXTsP"></a>Hint structure:
 
    1. Each actionable hint must show the terminal command and explain its
@@ -214,7 +222,7 @@ Implementation
       branch is ahead of its upstream branch by one or more commits, then local
       commits exist that have not yet been pushed to the remote repository.
 
-   4. No repo exists in the current directory:
+   3. No repo exists in the current directory:
       [Git status](https://www.geeksforgeeks.org/git/git-status "Shows current state of working directory")
       (sbe80), could also be detected by the standard non-zero exit exception
       from `GitPython` when running commands outside a Git directory
@@ -244,16 +252,26 @@ Implementation
       attached to a branch and the command prints the branch name. A non-zero
       exit code in an otherwise valid Git repository indicates that HEAD is
       detached. This detects the condition for the detached HEAD hint. (jit45)
+
    10. Committing to main/master: Run  `git branch --show-current` to identify
        current branch. If the branch is main, check for other remote/active
        branches with `git branch -a`. If the list contains no other branches
        besides the protected branch(es), suggest the creation of a new branch.
        Otherwise, suggest other branches on the list.(raf322)
-   12. Run `git status -sb`. If the status reports that the local branch is
+
+   11. Run `git status -sb`. If the status reports that the local branch is
        ahead *and* behind its upstream branch, the branches have diverged. 
        (sbe80)
-   13. The explain command (Requirement 5) must pass Git arguments through without Typer attempting to parse them as options. Configure the command to allow extra arguments and ignore unknown options (for example, using allow_extra_args=True and ignore_unknown_options=True) so commands such as git-hints explain pull --rebase and git-hints explain reset --hard HEAD~1 are passed to Git correctly (sbe80).
-   14. The explain command (Requirement 5) should not require the word `git` after the word `explain`. (sbe80)
+
+   12. The explain command (Requirement 5) must pass Git arguments through
+       without Typer attempting to parse them as options. Configure the command
+       to allow extra arguments and ignore unknown options (for example, using
+       allow\_extra\_args=True and ignore\_unknown\_options=True) so commands
+       such as `git-hints explain pull --rebase` and `git-hints explain reset
+       --hard HEAD~1` are passed to Git correctly (sbe80).
+
+   13. The explain command (Requirement 5) should not require the word `git`
+       after the word `explain`. (sbe80)
 2. Language and libraries:
 
    1. Language: Python
@@ -297,7 +315,27 @@ identity env vars, and `git init -b main`.
    4. Add it: `git add foo.txt`.
    5. Commit it: `git commit -m "Add foo."`.
    6. Modify `foo.txt`: append `y` to it.
-3. Run `git-hints` in the temp dir. Expected hint: [Stage](https://www.w3schools.com/git/git_staging_environment.asp "Also called the index; select which files changes to store in a commit") files?
+3. Run `git-hints` in the temp dir. Expected hint:
+   [Stage](https://www.w3schools.com/git/git_staging_environment.asp "Also called the index; select which files changes to store in a commit")
+   files?
+
+### Test case 2: files are changed. (Written by sbe80) -- Requirement Reactive 2
+
+1. Create one temporary directory.
+2. Execute the following in this temporary directory:
+
+   1. Call `config_user("user1", "user1@foo.com")`.
+   2. Create an empty git repo with `git init -b main`.
+   3. Create a file called `foo.txt` with the content `xxx`.
+   4. Add it: `git add foo.txt`.
+   5. Commit it: `git commit -m "Add foo."`.
+   6. Modify `foo.txt`: append `y` to it.
+   7. Stage the modification: `git add foo.txt`.
+   8. Modify `foo.txt` again: append `z` to it, leaving this second modification unstaged.
+3. Run `git-hints` in the temporary directory.
+4. Expected hint: **Keep unstaged changes out of this commit?**
+5. Verify that the output explains that a plain `git commit` records only the staged changes and suggests [`git diff --cached`](https://git-scm.com/docs/git-diff "Show changes staged for the next commit").
+
 
 Personal experience
 -------------------

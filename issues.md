@@ -108,7 +108,7 @@ Main design problems
 Recent additions (6daa871)
 --------------------------
 
-* *Assigned: sbe80.* **`git reset` hint ([L124-128](ideas.md#L124)):**
+* *(Updated) Assigned: sbe80.* **`git reset` hint ([L124-128](ideas.md#L124)):**
   * **It's risky advice.** It targets the most confused users at the moment
     they're most likely to have work that isn't pushed yet. Under the safety
     scale in 4.4, `reset --hard` is "highly destructive." Better options are
