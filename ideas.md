@@ -23,8 +23,8 @@ This file records the initial design of the git-hints tool.
          staged changes, so unrelated edits can remain unstaged without being
          discarded. Suggest
          [git diff --cached](https://git-scm.com/docs/git-diff "Shows the staged changes selected for the next commit.")
-         to review the staging area before committing.
-         (drj228)  **sbe80 will test**
+         to review the staging area before committing. (drj228) **sbe80 will
+         test**
       3. Resolve merge conflicts? Conditions: a git pull fails because of merge
          conflicts, identify the conflicting files and explain how to resolve
          them. **sbe80 will test**
@@ -32,7 +32,7 @@ This file records the initial design of the git-hints tool.
          uncommitted changes, identify the conflicting files and explain how to
          resolve them.
       5. Push? Conditions: the local branch has commits that have not been
-         pushed to the remote branch.
+         pushed to the remote branch. **test ewj55** 
       6. Pull needed, your branch is behind! Conditions: If the user is a 1 or
          more commits behind on the current branch. (jhg246)
       7. Push failed because of conflicting file changes. Try running git diff
@@ -56,7 +56,7 @@ This file records the initial design of the git-hints tool.
    2. Proactive
 
       1. How to clone a repo. Conditions: repo doesn't exist in the current
-         directory.
+         directory. **test ewj55**
 
       2. Pull remote changes? Conditions: remote branch is ahead of the local
          branch.
@@ -216,61 +216,66 @@ Implementation
    item 1 below.\]</mark>
 
    1. Changed files: `git status`.
-   2. A Git command executed through the tool failed: capture its exit code, standard output, and standard error when the tool runs it. Use this information to select an appropriate hint. The tool cannot reliably recover the result of an earlier command run outside the tool. (drj228)
-   2. The local branch has commits that have not been pushed to the remote
+
+   2. A Git command executed through the tool failed: capture its exit code,
+      standard output, and standard error when the tool runs it. Use this
+      information to select an appropriate hint. The tool cannot reliably
+      recover the result of an earlier command run outside the tool. (drj228)
+
+   3. The local branch has commits that have not been pushed to the remote
       branch: run `git status -sb`. If the branch status shows that the local
       branch is ahead of its upstream branch by one or more commits, then local
       commits exist that have not yet been pushed to the remote repository.
 
-   3. No repo exists in the current directory:
+   4. No repo exists in the current directory:
       [Git status](https://www.geeksforgeeks.org/git/git-status "Shows current state of working directory")
       (sbe80), could also be detected by the standard non-zero exit exception
       from `GitPython` when running commands outside a Git directory
 
-   4. See if the file changes are only local or public: `git status -sb` (ewj55)
+   5. See if the file changes are only local or public: `git status -sb` (ewj55)
 
-   5. Use `git fetch` followed by `git diff HEAD...@{upstream}` to view
+   6. Use `git fetch` followed by `git diff HEAD...@{upstream}` to view
       differences in a file, used to help the user fix merge conflicts (jhg246)
 
-   6. Staged changes are ready to commit: run `git diff --cached --quiet`. Exit
+   7. Staged changes are ready to commit: run `git diff --cached --quiet`. Exit
       code 1 means staged differences exist; exit code 0 means there are none.
       Treat other exit codes as errors instead of triggering the hint. This
       detects the condition for the staged-review hint. (drj228)
 
-   7. Commit identity is not configured: run `git config --get user.name` and
+   8. Commit identity is not configured: run `git config --get user.name` and
       `git config --get user.email`. An exit code of 1 indicates that the
       requested setting is missing. Also check for an empty returned value.
       Report other command failures separately. These checks use the effective
       configuration, including repository and global settings. (drj228)
 
-   8. Untracked files exist: run `git status --porcelain`. Lines beginning with
+   9. Untracked files exist: run `git status --porcelain`. Lines beginning with
       `??` indicate files that Git sees in the working directory but isn't
       currently tracking. (ams2083)<br>
 
-   9. HEAD is detached rather than attached to a local branch: run `git
-      symbolic-ref --quiet --short HEAD`. A zero exit code means HEAD is
-      attached to a branch and the command prints the branch name. A non-zero
-      exit code in an otherwise valid Git repository indicates that HEAD is
-      detached. This detects the condition for the detached HEAD hint. (jit45)
+   10. HEAD is detached rather than attached to a local branch: run `git
+       symbolic-ref --quiet --short HEAD`. A zero exit code means HEAD is
+       attached to a branch and the command prints the branch name. A non-zero
+       exit code in an otherwise valid Git repository indicates that HEAD is
+       detached. This detects the condition for the detached HEAD hint. (jit45)
 
-   10. Committing to main/master: Run  `git branch --show-current` to identify
+   11. Committing to main/master: Run  `git branch --show-current` to identify
        current branch. If the branch is main, check for other remote/active
        branches with `git branch -a`. If the list contains no other branches
        besides the protected branch(es), suggest the creation of a new branch.
        Otherwise, suggest other branches on the list.(raf322)
 
-   11. Run `git status -sb`. If the status reports that the local branch is
+   12. Run `git status -sb`. If the status reports that the local branch is
        ahead *and* behind its upstream branch, the branches have diverged. 
        (sbe80)
 
-   12. The explain command (Requirement 5) must pass Git arguments through
+   13. The explain command (Requirement 5) must pass Git arguments through
        without Typer attempting to parse them as options. Configure the command
        to allow extra arguments and ignore unknown options (for example, using
        allow\_extra\_args=True and ignore\_unknown\_options=True) so commands
        such as `git-hints explain pull --rebase` and `git-hints explain reset
        --hard HEAD~1` are passed to Git correctly (sbe80).
 
-   13. The explain command (Requirement 5) should not require the word `git`
+   14. The explain command (Requirement 5) should not require the word `git`
        after the word `explain`. (sbe80)
 2. Language and libraries:
 
@@ -290,12 +295,15 @@ The test tool contains:
 * `make_temps(num)`: creates and returns `num` temporary directories. These are
   removed when the test completes.
 * `make_repo(temp_dir, commands)`: runs the list of `commands` in `temp_dir`,
-  which creates and populate the repo. Each command is either a list of arguments, which is
-  executed as a shell command (typically a git command), or a lambda function
-  with no parameters, typically used to create/modify/delete files.
-* TODO: delete me. `git clone` is probably a better approach. `set_remotes(local, repo 1, repo 2, ...)`: sets remotes for the local repo.
+  which creates and populate the repo. Each command is either a list of
+  arguments, which is executed as a shell command (typically a git command), or
+  a lambda function with no parameters, typically used to create/modify/delete
+  files.
+* TODO: delete me. `git clone` is probably a better approach.
+  `set_remotes(local, repo 1, repo 2, ...)`: sets remotes for the local repo.
   Each parameter is the path to the repo.
-* `config_user(username, email)`: Set Git's `user.name` and `user.email`. TODO: add a `git_setup()` function that performs the TODO below.
+* `config_user(username, email)`: Set Git's `user.name` and `user.email`. TODO:
+  add a `git_setup()` function that performs the TODO below.
 
 A typical test would make temporary directories, then use these to make repos,
 then set remotes. After changing to the local repo temp dir, it runs git-hints
@@ -330,10 +338,13 @@ identity env vars, and `git init -b main`.
    5. Commit it: `git commit -m "Add foo."`.
    6. Modify `foo.txt`: append `y` to it.
    7. Stage the modification: `git add foo.txt`.
-   8. Modify `foo.txt` again: append `z` to it, leaving this second modification unstaged.
+   8. Modify `foo.txt` again: append `z` to it, leaving this second modification
+      unstaged.
 3. Run `git-hints` in the temporary directory.
 4. Expected hint: **Keep unstaged changes out of this commit?**
-5. Verify that the output explains that a plain `git commit` records only the staged changes and suggests [`git diff --cached`](https://git-scm.com/docs/git-diff "Show changes staged for the next commit").
+5. Verify that the output explains that a plain `git commit` records only the
+   staged changes and suggests
+   [`git diff --cached`](https://git-scm.com/docs/git-diff "Show changes staged for the next commit").
 
 ### Test case 3: Resolving merge conflicts. (Written by sbe80) -- Requirement Reactive 3
 
@@ -344,13 +355,40 @@ identity env vars, and `git init -b main`.
    3. Create a file called `foo.txt` with the content `xxx`.
    4. Add it: `git add foo.txt`.
    5. Commit it: `git commit -m "Add foo."`.
-3. Use `set_remotes(directory1, directory2)` to set the second temporary directory as the remote of the first. <mark>BAJ: probably not necessary.</mark>
-4. Clone the first repo into the second. <mark>BAJ: give the Git command. This helps demonstrate the need for access to repo dirs when issuing commands.</mark>
+3. Use `set_remotes(directory1, directory2)` to set the second temporary
+   directory as the remote of the first. <mark>BAJ: probably not
+   necessary.</mark>
+4. Clone the first repo into the second. <mark>BAJ: give the Git command. This
+   helps demonstrate the need for access to repo dirs when issuing
+   commands.</mark>
 5. In repo 1, add `y` to `foo.txt` and commit
 6. In repo 2, add `z` to `foo.txt` and commit
 7. Run `git pull` in the first repo
-8. Run git-hints in the first repository. Expected hint: Resolve merge conflicts? The output should identify foo.txt as a conflicting file and explain how to resolve the conflict.
+8. Run git-hints in the first repository. Expected hint: Resolve merge
+   conflicts? The output should identify foo.txt as a conflicting file and
+   explain how to resolve the conflict.
 
+
+### Refined Test Case 4: Push (ewj55)
+0. Initialize `Test4_condition == 0` by default
+1. use the termnial to navigate to the local repo directory tracking a remote branch ('origin/main')<br>
+2. Execute command (`git fetch origin`) and ensure local track references are up to date <br>
+3. Make a minor edit to the file, stage the change (`git add .`), then commit locally ('git commit -m "Test commit"')
+**Condition Checks:**
+   4. run `git log origin/main..HEAD` into terminal
+   5. If command returns one or more comit SHAs, set `Test4_condition == 1`.
+**Output/Expected Execution**
+   6. If `Test4_condition == 1`, execute `git-hints` CLI tool on terminal
+   7. Confirm reactive hint 'Push?' is displayed in terminal output.
+   8. If `git-hints` output contains `"Push?"` string AND `'git push'` command, then Test 4 has passed.
+
+// create a setup where the LLM makes code that will popup quick sentences for
+every git command. Create a way how to display a setup. Do a step by step in how
+this setup should work for the model.
+
+// chess board setup: Here is a place where the repo is in, and when the repo is
+in X state, display X hint. After that verify that X hint was displayed. Check
+the reactive or proactive sections plan through how to accomplish X tasks.
 
 Personal experience
 -------------------
