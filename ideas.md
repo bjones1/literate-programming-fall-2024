@@ -369,7 +369,7 @@ identity env vars, and `git init -b main`.
    explain how to resolve the conflict.
 
 
-### Refined Test Case 4: Push (ewj55)
+### Test Case 4: Push (ewj55)
 0. Initialize `Test4_condition == 0` by default
 1. use the termnial to navigate to the local repo directory tracking a remote branch ('origin/main')<br>
 2. Execute command (`git fetch origin`) and ensure local track references are up to date <br>
@@ -381,6 +381,19 @@ identity env vars, and `git init -b main`.
    6. If `Test4_condition == 1`, execute `git-hints` CLI tool on terminal
    7. Confirm reactive hint 'Push?' is displayed in terminal output.
    8. If `git-hints` output contains `"Push?"` string AND `'git push'` command, then Test 4 has passed.
+
+### Test Case 5: Repo Test (ewj55)
+0. Initialize `Test5_condition = 0`
+1. execute `mkdir test_folder && cd test_folder`
+
+**Condition Checks**
+2. Run `git status`
+3. If terminal output contains `fatal: not a git repository (or any of the parent directories): .git` OR `fatal: not a git repository`, set `Test5_condition = 1` display git-hint associated with repo cloning.
+
+**Output / Expected Execution:**
+4. If `Test5_condition == 1`, run `git-hints` CLI tool
+5. Verify git-hint `How to clone a repo` is displayed as terminal output
+6.  If `git-hints` output string contains `"clone"` AND command `'git clone'`, Test 5 passed.
 
 // create a setup where the LLM makes code that will popup quick sentences for
 every git command. Create a way how to display a setup. Do a step by step in how
