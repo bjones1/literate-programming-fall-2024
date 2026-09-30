@@ -299,19 +299,18 @@ The test tool contains:
   arguments, which is executed as a shell command (typically a git command), or
   a lambda function with no parameters, typically used to create/modify/delete
   files.
-* TODO: delete me. `git clone` is probably a better approach.
-  `set_remotes(local, repo 1, repo 2, ...)`: sets remotes for the local repo.
-  Each parameter is the path to the repo.
-* `config_user(username, email)`: Set Git's `user.name` and `user.email`. TODO:
-  add a `git_setup()` function that performs the TODO below.
+* `config_user(username, email)`: Set Git's `user.name` and `user.email`. 
+* `git_setup()`: creates an isolated Git configuration for the test environment. The test environment shall:
+   * use an empty temporary file for GIT_CONFIG_GLOBAL so that the user's global Git configuration does not affect test results
+   * set GIT_CONFIG_NOSYSTEM=1 so that the system Git configuration does not affect test results
+   * provide Git author and committer identity through environment variables so that tests do not depend on the machine's configured identity
+   * initialize test repositories with git init -b main so that tests do not depend on the machine's init.defaultBranch setting.
 
 A typical test would make temporary directories, then use these to make repos,
 then set remotes. After changing to the local repo temp dir, it runs git-hints
 and checks that the output is correct.
 
-TODO: need to isolate git behavior from global config. Fix this with
-`GIT_CONFIG_GLOBAL` pointing to a temp file, `GIT_CONFIG_NOSYSTEM=1`, the
-identity env vars, and `git init -b main`.
+All Git commands executed as part of a test shall use the isolated test environment established by git_setup(). This prevents test results from varying based on the Git configuration of the machine running the tests.
 
 ### Test case 1: files are changed. *(Written by bj147)*
 
@@ -355,16 +354,11 @@ identity env vars, and `git init -b main`.
    3. Create a file called `foo.txt` with the content `xxx`.
    4. Add it: `git add foo.txt`.
    5. Commit it: `git commit -m "Add foo."`.
-3. Use `set_remotes(directory1, directory2)` to set the second temporary
-   directory as the remote of the first. <mark>BAJ: probably not
-   necessary.</mark>
-4. Clone the first repo into the second. <mark>BAJ: give the Git command. This
-   helps demonstrate the need for access to repo dirs when issuing
-   commands.</mark>
-5. In repo 1, add `y` to `foo.txt` and commit
-6. In repo 2, add `z` to `foo.txt` and commit
-7. Run `git pull` in the first repo
-8. Run git-hints in the first repository. Expected hint: Resolve merge
+3. Clone the first repo into the second using `git clone <temp_dir1> <temp_dir2>`
+4. In repo 1, add `y` to `foo.txt` and commit
+5. In repo 2, add `z` to `foo.txt` and commit
+6. Run `git pull` in the first repo
+7. Run git-hints in the first repository. Expected hint: Resolve merge
    conflicts? The output should identify foo.txt as a conflicting file and
    explain how to resolve the conflict.
 

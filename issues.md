@@ -218,7 +218,7 @@ Technical corrections
 Testing section
 ---------------
 
-* *Assigned: sbe80.* **Isolate tests from the machine's git config.** The TODO
+* (RESOLVED) *Assigned: sbe80.* **Isolate tests from the machine's git config.** The TODO
   at [L277](ideas.md#L277) lists the fix, but it isn't done yet. Until it is,
   results vary by machine:
 
