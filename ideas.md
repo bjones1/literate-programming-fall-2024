@@ -395,13 +395,6 @@ identity env vars, and `git init -b main`.
 5. Verify git-hint `How to clone a repo` is displayed as terminal output
 6.  If `git-hints` output string contains `"clone"` AND command `'git clone'`, Test 5 passed.
 
-// create a setup where the LLM makes code that will popup quick sentences for
-every git command. Create a way how to display a setup. Do a step by step in how
-this setup should work for the model.
-
-// chess board setup: Here is a place where the repo is in, and when the repo is
-in X state, display X hint. After that verify that X hint was displayed. Check
-the reactive or proactive sections plan through how to accomplish X tasks.
 
 Personal experience
 -------------------
