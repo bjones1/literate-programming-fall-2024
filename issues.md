@@ -218,9 +218,9 @@ Technical corrections
 Testing section
 ---------------
 
-* (RESOLVED) *Assigned: sbe80.* **Isolate tests from the machine's git config.** The TODO
-  at [L277](ideas.md#L277) lists the fix, but it isn't done yet. Until it is,
-  results vary by machine:
+* (RESOLVED) *Assigned: sbe80.* **Isolate tests from the machine's git config.**
+  The TODO at [L277](ideas.md#L277) lists the fix, but it isn't done yet. Until
+  it is, results vary by machine:
 
   * The identity hint fires or not depending on the global config.
   * The main/master hint depends on `init.defaultBranch`; on some machines `git
@@ -263,8 +263,8 @@ Nits
   4, 4, 5, …, 10, 12 ([L203-246](ideas.md#L203)). Markdown renumbers lists when
   rendering, so the page shows 1–11 and references like "item 1.12" don't match
   what readers see. Renumber the source, and refer to hints by ID.
-* *Assigned: sbe80.* **`set_remotes(local, repo 1, repo 2)`:** use `repo1,
-  repo2`, and say which remote name each one gets.
+* *(RESOLVED) Assigned: sbe80.* **`set_remotes(local, repo 1, repo 2)`:** use
+  `repo1, repo2`, and say which remote name each one gets.
 * *Assigned: ams2083.* **Hint template:** many hints skip the "Question?
   Conditions:" format or leave out the command and doc link that 3.1/3.3
   require; the diverged hint is the latest. Proactive 11 and 12
