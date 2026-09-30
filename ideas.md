@@ -216,7 +216,7 @@ Implementation
    item 1 below.\]</mark>
 
    1. Changed files: `git status`.
-
+   2. A Git command executed through the tool failed: capture its exit code, standard output, and standard error when the tool runs it. Use this information to select an appropriate hint. The tool cannot reliably recover the result of an earlier command run outside the tool. (drj228)
    2. The local branch has commits that have not been pushed to the remote
       branch: run `git status -sb`. If the branch status shows that the local
       branch is ahead of its upstream branch by one or more commits, then local
@@ -290,12 +290,12 @@ The test tool contains:
 * `make_temps(num)`: creates and returns `num` temporary directories. These are
   removed when the test completes.
 * `make_repo(temp_dir, commands)`: runs the list of `commands` in `temp_dir`,
-  which creates and populate the repo. Each command is either a string, which is
+  which creates and populate the repo. Each command is either a list of arguments, which is
   executed as a shell command (typically a git command), or a lambda function
   with no parameters, typically used to create/modify/delete files.
-* `set_remotes(local, repo 1, repo 2, ...)`: sets remotes for the local repo.
+* TODO: delete me. `git clone` is probably a better approach. `set_remotes(local, repo 1, repo 2, ...)`: sets remotes for the local repo.
   Each parameter is the path to the repo.
-* `config_user(username, email)`: Set Git's `user.name` and `user.email`.
+* `config_user(username, email)`: Set Git's `user.name` and `user.email`. TODO: add a `git_setup()` function that performs the TODO below.
 
 A typical test would make temporary directories, then use these to make repos,
 then set remotes. After changing to the local repo temp dir, it runs git-hints
@@ -344,8 +344,8 @@ identity env vars, and `git init -b main`.
    3. Create a file called `foo.txt` with the content `xxx`.
    4. Add it: `git add foo.txt`.
    5. Commit it: `git commit -m "Add foo."`.
-3. Use `set_remotes(directory1, directory2)` to set the second temporary directory as the remote of the first
-4. Clone the first repo into the second
+3. Use `set_remotes(directory1, directory2)` to set the second temporary directory as the remote of the first. <mark>BAJ: probably not necessary.</mark>
+4. Clone the first repo into the second. <mark>BAJ: give the Git command. This helps demonstrate the need for access to repo dirs when issuing commands.</mark>
 5. In repo 1, add `y` to `foo.txt` and commit
 6. In repo 2, add `z` to `foo.txt` and commit
 7. Run `git pull` in the first repo
@@ -399,3 +399,14 @@ section.\]</mark>
   changes I want to implement, and then giving up and not using stashes at all
   when it becomes clear that the stash I'm looking for isn't the one I've
   selected.
+
+To do
+-----
+
+1. Provide a link and tooltip text for the many hints missing these.
+2. For each hint:
+   1. Add the Git command used to detect when to issue this hint after the
+      conditions text. See the first hint for an example.
+   2. Remove the corresponding text from the implementation.
+3. Verify that the testing framework is effective.
+4. Convert one of your items from the Personal experience section to a hint.
