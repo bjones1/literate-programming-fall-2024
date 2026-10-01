@@ -34,10 +34,13 @@ This file records the initial design of the git-hints tool.
       5. Push? Conditions: the local branch has commits that have not been
          pushed to the remote branch. **test ewj55** 
       6. Pull needed, your branch is behind! Conditions: If the user is a 1 or
-         more commits behind on the current branch. (jhg246)
-      7. Push failed because of conflicting file changes. Try running git diff
-         *'filename'* ! Conditions: If the user attempted a push and it failed
-         due to conflicting file changes. (jhg246)
+         more commits behind on the current branch (as of last fetch). (jhg246)
+         **jhg246 will test**
+      7. Push rejected because the remote has commits you don't. Conditions:
+         `git-hints explain push` fails and stderr shows `[rejected]` (`fetch
+         first` or `non-fast-forward`). Run
+         [git pull](https://git-scm.com/docs/git-pull "Fetches and integrates commits from the remote.")
+         first, then `git push` again. (jhg246)
       8. Explain
          [stashes](https://www.geeksforgeeks.org/git/git-stash/ "Stores the present state of the local repo")
          including: what they are, how to make one, and how to see old ones
@@ -130,8 +133,11 @@ This file records the initial design of the git-hints tool.
           to create the first commit. (jit45)
 
       15. <br>
-      16. Warn the user that the current branch has diverged from upstream
-          (sbe80).
+      16. Your branch has diverged from upstream. Conditions: The current branch
+          is both ahead of and behind its upstream, as of last fetch. Run
+          [git pull](https://git-scm.com/docs/git-pull "Fetches and integrates remote commits; --rebase replays yours on top of them.")
+          or `git pull --rebase`, then `git push`. (sbe80; edited by jhg246)
+          **jhg246 will test.**
 
       17. Committing to protected/main branch. Conditions: the current branch is
           master/main and there are changes. If other branches exist, suggest
@@ -196,8 +202,13 @@ This file records the initial design of the git-hints tool.
    3. All hints should be given a priority, with higher priority hints being
       displayed first (sbe80)
 
-   4. All hints should be given a classification of whether they are safe,
-      potentially destructive, or highly destructive (sbe80).
+   4. Give every hint one sefety level, shown in its output. *Safe*: read-only
+      or only adds (no label). *Potentially destructive*: recoverable through
+      the reflog (prefix "Caution:"). *Highly Destructive*: can lose work the
+      reflog cannot restore (uncommitted changes, untracked files, others'
+      remote commits), ex. `reset --hard`, `clean -fd`, `push --force` (prefix
+      "Warning:", say what will be lost, and tell the user to back up first).
+      (sbe80; edited by jhg246)
 
    5. Every hint should be given an ID. This will make testing much easier
       (sbe80).
@@ -234,8 +245,12 @@ Implementation
 
    5. See if the file changes are only local or public: `git status -sb` (ewj55)
 
-   6. Use `git fetch` followed by `git diff HEAD...@{upstream}` to view
-      differences in a file, used to help the user fix merge conflicts (jhg246)
+   6. Incoming changes: `git diff --name-only HEAD...@{upstream}` lists the
+      files a pull would bring in (needs an upstream). Conflicting files, once a
+      merge has stopped: `git diff --name-only --diff-filter=U`. Fetch policy
+      (ahead/behind checks, items 3 and 12): never fetch by default; label
+      results "as of last fetch". `git-hints --fetch` runs `git fetch` first,
+      with `GIT_TERMINAL_PROMPT=0` and a timeout. (jhg246)
 
    7. Staged changes are ready to commit: run `git diff --cached --quiet`. Exit
       code 1 means staged differences exist; exit code 0 means there are none.
@@ -396,6 +411,37 @@ this setup should work for the model.
 // chess board setup: Here is a place where the repo is in, and when the repo is
 in X state, display X hint. After that verify that X hint was displayed. Check
 the reactive or proactive sections plan through how to accomplish X tasks.
+
+### Test Case 6: Pull needed, Branch is behind (jhg246) For Requirement Reactive 6
+
+1. Call `git_setup()`. Create three temp directories: `remote`, `local`, `other`. Call
+   `config_user("user1", "user1@foo.com")`.
+2. In `remote`: `git init --bare -b main` (the remote must be bare).
+3. In `other`: `git clone <remote> <other>`, create `foo.txt` containing `xxx`,
+   `git add foo.txt`, `git commit -m "Add foo."`, `git push -u origin main`.
+4. Run `git clone <remote> <local>`.
+5. In `other`: append `y` to `foo.txt`, `git commit -am "Change foo."`, `git
+   push`.
+6. Run `git-hints` in `local`. Expected: no `behind` hint, because `local`
+   hasn't fetched (`git status --porcelain=v2 --branch` shows `# branch.ab +0
+   -0`).
+7. In `local`, run `git fetch` (status now shows `+0 -1`), then `git-hints`.
+   Expected: **Pull needed, your branch is behind!** (ID `behind`), labeled "as
+   of last fetch". The `diverged` and **Push?** hints are not shown. Run Git
+   commands as argv lists, and assert on hint IDs rather than exact text.
+
+### Test case 7: Branch has diverged. (jhg246) -- For Requirement Proactive 16
+
+1. Do steps 1-5 of Test case 6 ^
+2. In `local`: create `bar.txt` containing `zzz`, `git add bar.txt`, `git commit
+   -m "Add bar."`, then `git fetch` (status shows `+1 -1`).
+3. Run `git-hints` in `local`. Expected: **Your branch has diverged from
+   upstream.** (ID `diverged`), suggesting `git pull` or `git pull --rebase`,
+   then `git push`, with a link to the
+   [git pull](https://git-scm.com/docs/git-pull)
+   docs. The `behind` and **Push?** hints are not shown.
+4. Variant: skip the fetch in step 2 (status shows `+1 -0`). Expected: **Push?**
+   is shown and `diverged` is not.
 
 Personal experience
 -------------------

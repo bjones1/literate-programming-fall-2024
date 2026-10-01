@@ -73,7 +73,7 @@ Main design problems
    * When the branch has diverged ([L130](ideas.md#L130)), Push and both Pull
      hints fire too, filling all three slots. The diverged hint should replace
      them.
-3. *Assigned: jhg246.* **"Behind" and "diverged" are stale without a fetch.**
+3. *RESOLVED Assigned: jhg246.* **"Behind" and "diverged" are stale without a fetch.**
    Ahead/behind is measured against the last-fetched remote-tracking branch. The
    doc needs a fetch policy. Fetching on every run is slow, needs network, and
    can hang on a credential prompt (use `GIT_TERMINAL_PROMPT=0` plus a timeout).
@@ -118,12 +118,12 @@ Recent additions (6daa871)
   * **The tool can't see the trigger** (see design problem 1).
   * **It's in the wrong list.** It's triggered by failures, so it belongs in
     Reactive.
-* *Assigned: jhg246.* **Diverged hint ([L130](ideas.md#L130)):**
+* *RESOLVED Assigned: jhg246.* **Diverged hint ([L130](ideas.md#L130)):**
   * It doesn't follow the required hint format: no "Conditions:", no command, no
     doc link (3.1/3.3).
   * It should tell the user what to do: `git pull` or `git pull --rebase`, then
     `git push`.
-* *Assigned: jhg246.* **Safety levels (4.4, [L184](ideas.md#L184)):** define the
+* *RESOLVED Assigned: jhg246.* **Safety levels (4.4, [L184](ideas.md#L184)):** define the
   three levels and say what each one changes in the output. One way to draw the
   lines:
   * *safe*: read-only or only adds.
@@ -145,7 +145,7 @@ Recent additions (6daa871)
 Technical corrections
 ---------------------
 
-* *Assigned: jhg246.* **[L37](ideas.md#L37):** a push isn't rejected for
+* *RESOLVED Assigned: jhg246.* **[L37](ideas.md#L37):** a push isn't rejected for
   "conflicting file changes". It's rejected as non-fast-forward because the
   remote has commits you don't. The fix is pull, then push; `git diff filename`
   doesn't help.
@@ -168,7 +168,7 @@ Technical corrections
   raises `InvalidGitRepositoryError` when it's constructed, not a command exit
   code.
 
-* *Assigned: jhg246.* **[L217](ideas.md#L217):** `git diff HEAD...@{upstream}`
+* *RESOLVED Assigned: jhg246.* **[L217](ideas.md#L217):** `git diff HEAD...@{upstream}`
   shows what a pull would bring in, not help with conflicts, and it names no
   file.
 
