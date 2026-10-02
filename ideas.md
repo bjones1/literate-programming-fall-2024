@@ -18,6 +18,7 @@ This file records the initial design of the git-hints tool.
          files? Conditions: changed files in repo. <mark>\[Homework: for each
          hint, follow the format discussed in [item 3](#cc-SbouyCXTsP) under
          requirements and exemplified here.\]</mark> **bj147 will test.**
+
       2. Keep unstaged changes out of this commit? Conditions: both staged and
          unstaged changes exist. Explain that a plain `git commit` records
          staged changes, so unrelated edits can remain unstaged without being
@@ -25,27 +26,37 @@ This file records the initial design of the git-hints tool.
          [git diff --cached](https://git-scm.com/docs/git-diff "Shows the staged changes selected for the next commit.")
          to review the staging area before committing. (drj228) **sbe80 will
          test**
+
       3. Resolve merge conflicts? Conditions: a git pull fails because of merge
          conflicts, identify the conflicting files and explain how to resolve
          them. **sbe80 will test**
+
       4. Resolve pull conflicts? Conditions: if a git pull fails because of
          uncommitted changes, identify the conflicting files and explain how to
          resolve them.
+
       5. Push? Conditions: the local branch has commits that have not been
          pushed to the remote branch. **test ewj55** 
+
       6. Pull needed, your branch is behind! Conditions: If the user is a 1 or
          more commits behind on the current branch. (jhg246)
+
       7. Push failed because of conflicting file changes. Try running git diff
          *'filename'* ! Conditions: If the user attempted a push and it failed
          due to conflicting file changes. (jhg246)
-      8. Explain
-         [stashes](https://www.geeksforgeeks.org/git/git-stash/ "Stores the present state of the local repo")
+
+      8. Explain \[stashes\](https://git/git-stash/ keeps logs between
+         uncommitted changes and committed changes and labels them stage or
+         unstaged)
+
          including: what they are, how to make one, and how to see old ones
          Condition: conflict when pulling (sbe80)<br>
+
       9. Place these files in gitignore? Conditions: Files such as .env,
          \_\_pycache\_\_.py, output build directories, etc. should be flagged.
          Suggest that the user create a .gitignore file and slate those files
          for entry. (raf322)<br>
+
       10. Suggest and explain
           [git pull --rebase](https://git-scm.com/book/en/v2/Git-Branching-Rebasing)
           if the user has five failed git pull or git push commands in a row.
@@ -313,7 +324,7 @@ TODO: need to isolate git behavior from global config. Fix this with
 `GIT_CONFIG_GLOBAL` pointing to a temp file, `GIT_CONFIG_NOSYSTEM=1`, the
 identity env vars, and `git init -b main`.
 
-### Test case 1: files are changed. *(Written by bj147)*
+### Test case 1: files are changed. *(Written by bj147)* // use as reference
 
 1. Create one temp directory.
 2. Execute the following in this temp directory:
@@ -368,36 +379,42 @@ identity env vars, and `git init -b main`.
    conflicts? The output should identify foo.txt as a conflicting file and
    explain how to resolve the conflict.
 
-
 ### Test Case 4: Push (ewj55)
-0. Initialize `Test4_condition == 0` by default
-1. use the termnial to navigate to the local repo directory tracking a remote branch ('origin/main')<br>
-2. Execute command (`git fetch origin`) and ensure local track references are up to date <br>
-3. Make a minor edit to the file, stage the change (`git add .`), then commit locally ('git commit -m "Test commit"')
-**Condition Checks:**
-   4. run `git log origin/main..HEAD` into terminal
-   5. If command returns one or more comit SHAs, set `Test4_condition == 1`.
-**Output/Expected Execution**
-   6. If `Test4_condition == 1`, execute `git-hints` CLI tool on terminal
-   7. Confirm reactive hint 'Push?' is displayed in terminal output.
-   8. If `git-hints` output contains `"Push?"` string AND `'git push'` command, then Test 4 has passed.
+   **SETUP (Arrange)**
+1. Create two isolated tmp directories: `remote_dir` and `local_dir`
+2. In `remote_dir`, initialize a bare repo: 
+   - `git init --bare -b main`
+3. In `local_dir`, initialize a local repo, config dummy identity, then follow provided steps:
+   - `git init -b main`
+   - `git config user.name "user1" && git config user.email "user1@foo.com"`
+   - `git remote add origin ../remote_dir`
+4. Create an initial commit and push to set upstream tracking:
+   - `echo "initial" > file.txt && git add . && git commit -m "Initial commit"`
+   - `git push -u origin main`
+5. Create one new unpushed local commit:
+   - `echo "change" >> file.txt && git add . && git commit -m "Unpushed local edit"`
+
+   **Output/Expected Execution** 
+6. Execute `git log origin/main..HEAD` in `local_dir`: If output returns 1, there is a local unpushed status
+7. Execute `git-hints` CLI tool inside the local directory `local_dir`.
+   **Assertion**
+8. If `git-hints` output contains reactive hint string `"Push?"` AND suggested command `'git push'`, then Test 4 passes.
 
 ### Test Case 5: Repo Test (ewj55)
-0. Initialize `Test5_condition = 0`
-1. execute `mkdir test_folder && cd test_folder`
 
-**Condition Checks**
-2. Run `git status`
-3. If terminal output contains `fatal: not a git repository (or any of the parent directories): .git` OR `fatal: not a git repository`, set `Test5_condition = 1` display git-hint associated with repo cloning.
-
-**Output / Expected Execution:**
-4. If `Test5_condition == 1`, run `git-hints` CLI tool
-5. Verify git-hint `How to clone a repo` is displayed as terminal output
-6.  If `git-hints` output string contains `"clone"` AND command `'git clone'`, Test 5 passed.
-
+**Setup (Arrange):**
+1. Create isolated tmp dir in system tmp space (outside any existing Git repo tree)
+2. Using terminal, navigate into isolatd tmp dir without running the `git init`
+    command: 
+      - `mkdir test_folder && cd test_folder` 
+**Executions and Assertions**
+3\. Execute `git status` and verify terminal output contains `"fatal: not a git repository"`.
+4\. Execute the `git-hints` CLI tool inside `test_folder`. 
+**Assertion**
+5. If `git-hints` output contains the proactive hint string `"clone"` AND the suggested command `'git clone'`, then Test 5 has passed
 
 Personal experience
--------------------
+------------------- 
 
 Here are examples of Git situations that confused me/caused me to
 struggle/didn't do what I expected: <mark>\[Homework: add to this

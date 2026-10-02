@@ -41,7 +41,7 @@ Main design problems
 1. *Assigned: ewj55.* **Several conditions can't be seen by a CLI you run on
    demand.** The tool sees the repo's state when it runs, but not the results of
    commands the user ran earlier. These hints depend on exactly that:
-
+    // git-hints explain should log only when asked by user a specific git block that may contains errors [two classes of explain, explain for errors or explain for logic][maybe need git hints to be in two classes, error explanations and normal but unexpected explanations][should split hints into two categories and depending on the output, githints will pull from one of the catefories, error hints from errror category, and logic hints from unexpected categories]
    * "a git pull fails…" ([L27](ideas.md#L27), [L30](ideas.md#L30))
    * "attempted a push and it failed" ([L37](ideas.md#L37))
    * "five failed pushes or pulls in a row" ([L128](ideas.md#L128))
