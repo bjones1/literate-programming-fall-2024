@@ -467,7 +467,47 @@ the reactive or proactive sections plan through how to accomplish X tasks.
 4. Variant: skip the fetch in step 2 (status shows `+1 -0`). Expected: **Push?**
    is shown and `diverged` is not.
 
-<<<<<<< HEAD
+### Test case 8: Push Failed. (ams2083) -- Requirement Reactive 5
+
+1. Call `git_setup()`. Create three temporary directories: `remote`, `local`, and `other`.
+2. Call `config_user("user1", "user1@foo.com")`.
+3. In `remote`, create a bare repository with `git init --bare -b main`.
+4. In `other`, clone the `remote` repository using `git clone <remote> <other>`.
+5. In `other`:
+   1. Create `foo.txt` containing `xxx`.
+   2. Run `git add foo.txt`.
+   3. Run `git commit -m "Add foo."`.
+   4. Run `git push -u origin main`.
+6. Clone the `remote` repository into `local` using `git clone <remote> <local>`.
+7. In other, modify `foo.txt`, commit the change, and push it to the remote:
+   1. Append `y` to foo.txt.
+   2. Run `git commit -am "Update foo."`.
+   3. Run `git push`.
+8. In `local`, create a different `local` commit without first pulling the newer remote commit:
+   1. Create `bar.txt` containing `zzz`.
+   2. Run `git add bar.txt`.
+   3. Run `git commit -m "Add bar."`.
+9. Run `git-hints explain push` in the `local` repository.
+10. Confirm that the push fails because the `remote` branch contains commits that are not present in the `local` branch.
+11. Expected hint: *Push failed?*
+12. Verify that the hint explains that `remote` contains newer commits and suggests [pulling](https://git-scm.com/docs/git-pull) with `git pull` before attempting to [push](https://git-scm.com/docs/git-push) with `git push` again.
+
+### Test case 9: Configure upstream branch. (ams2083) -- Requirement Proactive 4
+
+1. Call `git_setup()`. Create one temporary directory.
+2. Call `config_user("user1", "user1@foo.com")`.
+3. In the temporary directory, create a Git repository with `git init -b main`.
+4. Create `foo.txt` containing `xxx`.
+5. Run `git add foo.txt`.
+6. Run `git commit -m "Add foo."`.
+7. Create and switch to a new local branch using `git switch -c feature-test`.
+8. Do not configure an upstream remote branch for `feature-test`.
+9. Run `git rev-parse --abbrev-ref --symbolic-full-name @{upstream}` and verify that the command fails because no upstream is configured.
+10. Run `git-hints` in the local repository.
+11. Expected hint: *Configure upstream branch?*
+12. Verify the hint explains `feature-test` exists only as a local branch and [doesn't track](https://git-scm.com/docs/git-rev-parse/2.27.0) an upstream remote branch. 
+13. Verify that the hint suggests configuring an upstream branch before attempting to push.
+
 ### Test case 10: Detached HEAD state. (Written by drj228)
 For Requirement Proactive 11, written by jit45.
 
@@ -526,49 +566,6 @@ PowerShell on October 2, 2026.
 - Test case 9: `git rev-parse --verify HEAD` returned exit code 128
   before the first commit, both before and after staging a file.
   After the initial commit, it returned a commit hash and exit code 0.
-
-=======
-### Test case 8: Push Failed. (ams2083) -- Requirement Reactive 5
-
-1. Call `git_setup()`. Create three temporary directories: `remote`, `local`, and `other`.
-2. Call `config_user("user1", "user1@foo.com")`.
-3. In `remote`, create a bare repository with `git init --bare -b main`.
-4. In `other`, clone the `remote` repository using `git clone <remote> <other>`.
-5. In `other`:
-   1. Create `foo.txt` containing `xxx`.
-   2. Run `git add foo.txt`.
-   3. Run `git commit -m "Add foo."`.
-   4. Run `git push -u origin main`.
-6. Clone the `remote` repository into `local` using `git clone <remote> <local>`.
-7. In other, modify `foo.txt`, commit the change, and push it to the remote:
-   1. Append `y` to foo.txt.
-   2. Run `git commit -am "Update foo."`.
-   3. Run `git push`.
-8. In `local`, create a different `local` commit without first pulling the newer remote commit:
-   1. Create `bar.txt` containing `zzz`.
-   2. Run `git add bar.txt`.
-   3. Run `git commit -m "Add bar."`.
-9. Run `git-hints explain push` in the `local` repository.
-10. Confirm that the push fails because the `remote` branch contains commits that are not present in the `local` branch.
-11. Expected hint: *Push failed?*
-12. Verify that the hint explains that `remote` contains newer commits and suggests [pulling](https://git-scm.com/docs/git-pull) with `git pull` before attempting to [push](https://git-scm.com/docs/git-push) with `git push` again.
-
-### Test case 9: Configure upstream branch. (ams2083) -- Requirement Proactive 4
-
-1. Call `git_setup()`. Create one temporary directory.
-2. Call `config_user("user1", "user1@foo.com")`.
-3. In the temporary directory, create a Git repository with `git init -b main`.
-4. Create `foo.txt` containing `xxx`.
-5. Run `git add foo.txt`.
-6. Run `git commit -m "Add foo."`.
-7. Create and switch to a new local branch using `git switch -c feature-test`.
-8. Do not configure an upstream remote branch for `feature-test`.
-9. Run `git rev-parse --abbrev-ref --symbolic-full-name @{upstream}` and verify that the command fails because no upstream is configured.
-10. Run `git-hints` in the local repository.
-11. Expected hint: *Configure upstream branch?*
-12. Verify the hint explains `feature-test` exists only as a local branch and [doesn't track](https://git-scm.com/docs/git-rev-parse/2.27.0) an upstream remote branch. 
-13. Verify that the hint suggests configuring an upstream branch before attempting to push.
->>>>>>> b6e7375ee67dc03e1036833104323639bf94ed3e
 
 Personal experience
 -------------------
