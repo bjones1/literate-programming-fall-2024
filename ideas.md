@@ -546,18 +546,6 @@ For Requirement Proactive 12, written by jit45.
 10. Run `git-hints all` again. Verify that the no-commits hint
     is absent now that the repository contains a commit.
 
-### Manual verification and LLM feedback (drj228)
-
-Manually checked the Git conditions in a temporary repository using
-PowerShell on October 2, 2026.
-
-- Test case 8: `git symbolic-ref --quiet --short HEAD` returned
-  `main` with exit code 0, then no branch name with exit code 1
-  after detaching HEAD. After creating `saved-work`, it returned
-  `saved-work` with exit code 0.
-- Test case 9: `git rev-parse --verify HEAD` returned exit code 128
-  before the first commit, both before and after staging a file.
-  After the initial commit, it returned a commit hash and exit code 0.
 
 Personal experience
 ------------------- 
