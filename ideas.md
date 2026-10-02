@@ -14,77 +14,77 @@ This file records the initial design of the git-hints tool.
 
    1. Reactive
 
-      1. [Stage](https://www.w3schools.com/git/git_staging_environment.asp "Also called the index; select which files changes to store in a commit")
-         files? Conditions: changed files in repo. <mark>\[Homework: for each
-         hint, follow the format discussed in [item 3](#cc-SbouyCXTsP) under
-         requirements and exemplified here.\]</mark> **bj147 will test.**
-      2. Keep unstaged changes out of this commit? Conditions: both staged and
-         unstaged changes exist. Explain that a plain `git commit` records
-         staged changes, so unrelated edits can remain unstaged without being
-         discarded. Suggest
-         [git diff --cached](https://git-scm.com/docs/git-diff "Shows the staged changes selected for the next commit.")
-         to review the staging area before committing. (drj228) **sbe80 will
-         test**
-      3. Resolve merge conflicts? Conditions: a git pull fails because of merge
-         conflicts, identify the conflicting files and explain how to resolve
+      1. Files? Conditions: changed files in repo. Detect [status](https://git-scm.com/docs/git-statusand) with `git status` suggest reviewing the listed files and using `git add <filename>` to stage the changes.
+          **bj147 will test.**
+      
+      
+      
+      
+      
+      
+      
+
+
+      2. Resolve merge conflicts? Conditions: a git pull fails because of merge
+         conflicts. Suggest using the [git diff](https://git-scm.com/docs/git-diff) command `git diff --name-only --diff-filter=U` to identify the conflicting files and explain how to resolve
          them. **sbe80 will test**
-      4. Resolve pull conflicts? Conditions: if a git pull fails because of
-         uncommitted changes, identify the conflicting files and explain how to
-         resolve them.
-      5. Push? Conditions: the local branch has commits that have not been
-         pushed to the remote branch. **test ewj55** 
-      6. Pull needed, your branch is behind! Conditions: If the user is a 1 or
-         more commits behind on the current branch. (jhg246)
-      7. Push failed because of conflicting file changes. Try running git diff
-         *'filename'* ! Conditions: If the user attempted a push and it failed
-         due to conflicting file changes. (jhg246)
-      8. Explain
-         [stashes](https://www.geeksforgeeks.org/git/git-stash/ "Stores the present state of the local repo")
-         including: what they are, how to make one, and how to see old ones
-         Condition: conflict when pulling (sbe80)<br>
-      9. Place these files in gitignore? Conditions: Files such as .env,
-         \_\_pycache\_\_.py, output build directories, etc. should be flagged.
-         Suggest that the user create a .gitignore file and slate those files
-         for entry. (raf322)<br>
-      10. Suggest and explain
-          [git pull --rebase](https://git-scm.com/book/en/v2/Git-Branching-Rebasing)
-          if the user has five failed git pull or git push commands in a row.
-          Explain that rebasing may cause merge conflicts and that the user
+      3. Resolve pull conflicts? Conditions: a `git pull` fails because of uncommitted changes. Suggest identifying the conflicting files then explain [stashes](https://git-scm.com/docs/git-stash) and how to use them to temporarily save changes.
+      
+
+      4. Push local commits? Conditions: the current branch is ahead of its upstream branch by one or more commits and is not behind the upstream branch. Detect [status](https://git-scm.com/docs/git-status) with `git status -sb`. Explain that the commits currently exist only in the local repository and suggest git push to send them to the remote repository.
+         **test ewj55** 
+      
+      
+      6. Push failed? Conditions: the user attempted a push and it failed due ot conflicting file changes. Suggest using [git diff](https://git-scm.com/docs/git-diff) `git diff --filename` to review the differences in the affected file and understand what has changed locally before pushing again. (jhg246) **ams2083 will test**
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      7. Rebasing? Conditions: the user has five failed `git pull` or `git push` commands in a row.
+          Suggest [git pull --rebase](https://git-scm.com/book/en/v2/Git-Branching-Rebasing)
+          and explain that rebasing may cause merge conflicts and that the user
           should ensure their local work is committed or otherwise backed up
-          before proceeding. Condition: five failed git pull or git push
-          commands in a row (sbe80).
+          before proceeding. (sbe80).
+   
+   
    2. Proactive
 
-      1. How to clone a repo. Conditions: repo doesn't exist in the current
-         directory. **test ewj55**
+      1. Clone a repo? Conditions: the current directory is not inside a Git repository. Use`git rev-parse --is-inside-work-tree` to [parse through parameters](https://git-scm.com/docs/git-rev-parse/2.9.5). If the command exits with code 0 and prints `true`, the directory is inside a Git working tree. If it exits with code 128, its not inside a Git repository. If it's not inside a repository, suggest using `git clone <repository-url>` to create a local copy of an existing remote repository.
+      **test ewj55**
 
-      2. Pull remote changes? Conditions: remote branch is ahead of the local
-         branch.
+      2. Pull remote changes? Conditions: Your local branch is behind its upstream branch by one or more commits and is not ahead of the upstream branch. Detect [status](https://git-scm.com/docs/git-status) with `git status -sb`. Suggest git pull to bring the remote commits into your local repository.
 
-      3. The current branch is xxx. Conditions: always as long as three hints
-         are not already being displayed (sbe80).
 
-      4. Configure upstream branch? Conditions: if the current branch does not
-         have an upstream remote branch configured, explain this and suggest
-         setting one before attempting to push.
+      3. Current branch? Condition: three other hints are not in use. Detect the [current branch](https://git-scm.com/docs/git-show) using `git branch --show-current`. Display the current branch to the user as a hint until overwritten. (sbe80).
 
-      5. Explain
+      
+      4. Configure upstream branch? Condition: if the current branch does not
+         have an upstream remote branch configured. [Detect](https://git-scm.com/docs/git-rev-parse/2.27.0) with `git rev-parse --abbrev-ref --symbolic-full-name @{upstream}` and suggest
+         setting one before attempting to push.**ams2083 will test**
+      
+      5. File states and read-only mode? Conditions: When attempting to edit a file opened in a commit or different view. Suggest explaining
          [file states](https://git-scm.com/book/en/v2/Getting-Started-What-is-Git%3F "Files in Git move between modified, staged, and committed states.")
-         and editor read-only modes? Conditions: When attempting to edit a file
-         opened in a commit or diff view. (ewj55)
+         and editor read-only [modes](https://git-scm.com/docs/git-status) by using `git status` to show the file's designation. (ewj55)
 
-      6. Display
-         [sync status](https://git-scm.com/docs/git-status "Shows whether your local branch is up to date or ahead of the remote repository.")
-         indicator in terminal? Conditions: When local commits exist that have
-         not been pushed to origin. (ewj55)
+      
 
-      7. Review staged changes before committing? Conditions: the staging area
+
+
+
+      
+      6. Review staged changes before committing? Conditions: the staging area
          contains changes ready for a commit. Suggest
-         [git diff --cached](https://git-scm.com/docs/git-diff "Shows the staged changes that will be included in the next commit.")
-         so the user can check exactly what will be committed. These changes are
-         in the staging area and have not yet become a commit. (drj228)
+         [git diff --cached](https://git-scm.com/docs/git-diff "Shows the staged changes that will be included in the next commit.")so the user can check exactly what will be committed and unrelated edits can remain unstaged without being discarded. 
+         Suggest [git commit](https://git-scm.com/docs/git-commit "Creates a new commit from staged changes.")
+         with `git commit -m "message"` to create a new commit containing the desired staged changes so the user can commit them when they're satisfied. (drj228) **sbe80 will test**
 
-      8. Configure your commit identity? Conditions: `user.name` or `user.email`
+      7. Configure your commit identity? Conditions: `user.name` or `user.email`
          is missing or empty in the effective Git configuration. Explain how to
          set the missing value using
          [git config](https://git-scm.com/docs/git-config "Reads and updates Git settings, including the name and email recorded in commits.")
@@ -92,29 +92,29 @@ This file records the initial design of the git-hints tool.
          "you@example.com"`. These settings identify the author of local
          commits; they do not sign the user into GitHub. (drj228)
 
-      9. Commit staged changes? Conditions: files are staged, but no commit has
-         been created yet. Explain how the files are currently in staging area
-         and ready to be saved to local repository. Suggest
-         [git commit](https://git-scm.com/docs/git-commit "Creates a new commit from staged changes.")
-         with `git commit -m "message"` to create a new commit containing the
-         staged changes. (ams2083)
+      
 
-      10. Add untracked files to Git? Conditions: one or more untracked files
-          exist in working directory. Explain Git can see the files but isn't
-          tracking their changes. Suggest
+
+
+
+
+
+      8. Untracked files need to be sorted? Conditions: one or more untracked files exist in working directory. 
+      First, detect untracked files with `git status --porcelain` before explaining Git can see the files but isn't tracking their changes. If an untracked file should normally be ignored such as .env, \_\_pycache\_\_.py, output build, and directories, suggest that the user create a .gitignore file and slate those files for entry. If an ordinary untracked file exists, suggest
           [git add](https://git-scm.com/docs/git-add "Adds file contents to the staging area.")
-          with `git add filename` to move the file into the staging area or
-          explain the file can be added to `.gitignore` if it shouldn't be
-          tracked. (ams2083)
+          with `git add filename` to move the file into the staging area(ams2083)
 
-      11. Your repo was changed by more than 50% (untracked files, lines of
-          code, deleted files, etc.), would you like to commit it?
+      
+      
+      
+      9. Commit repo? Conditions: Repo has been changed by more than 50% (untracked files, lines of
+          code, deleted files, etc.). Using `git status --porcelain` to [identify](https://git-scm.com/docs/git-status) these files and compare the number to the total number of tracked files. Suggest committing these changes if untracked exceeds 50%.
 
-      12. A timer to check how much progress the user has made. If the repo has
+      10. Stuck? Conditions: User has made little to no changes over a set amount of time. Implement a timer to check how much progress the user has made. Compare repository [state](https://git-scm.com/docs/git-status) using `git status --porcelain`, and if the repo has
           little to no changes over a set amount of time, that means the user is
           most likely stuck.
 
-      13. You are in a detached HEAD state. Conditions: the repository exists,
+      11. Detached HEAD state? Conditions: the repository exists,
           but HEAD is not attached to a local branch. Explain that the user is
           working in the local repository at a specific commit instead of on a
           named branch. Suggest
@@ -122,22 +122,22 @@ This file records the initial design of the git-hints tool.
           to create and switch to a new branch if the user wants to preserve
           future commits. (jit45)
 
-      14. This repository does not have any commits yet. Conditions: the current
+      12. This repository does not have any commits yet? Conditions: the current
           directory is a Git repository, but HEAD does not yet resolve to a
-          commit. Explain that the local repository has no saved commit yet. If
+          commit. Use `git rev-parse --verify HEAD` to confirm and explain that the local repository has no saved commit yet. If
           files are staged, suggest
           [git commit -m "Initial commit"](https://git-scm.com/docs/git-commit "Creates a new commit from the staged changes.")
           to create the first commit. (jit45)
 
-      15. <br>
-      16. Warn the user that the current branch has diverged from upstream
-          (sbe80).
+      
+      13. Branch has diverged from upstream? Conditions: the local branch is both ahead and behind its upstream branch. Use `git status -sb` to check [status](https://git-scm.com/docs/git-status) and see if both ahead and behind counts are greater than zero then display this hint instead of the generic Push or Pull hints.
+          (sbe80)
 
-      17. Committing to protected/main branch. Conditions: the current branch is
+      14. Committing to protected/main branch? Conditions: the current branch is
           master/main and there are changes. If other branches exist, suggest
-          other branches. If no other branches exist, suggest creating a new
-          branch with `git switch -c <name>` (raf322)
-   3. Definitions<br>
+          other branches. If no other branches exist, suggest creating a [new branch](https://git-scm.com/docs/git-switch) with `git switch -c <name>` (raf322)
+   
+   3. Definitions
 
       1. Allow users to request a definition using `git-hints def <command>`.
          The tool should display a short definition of the requested Git
@@ -225,57 +225,57 @@ Implementation
    3. The local branch has commits that have not been pushed to the remote
       branch: run `git status -sb`. If the branch status shows that the local
       branch is ahead of its upstream branch by one or more commits, then local
-      commits exist that have not yet been pushed to the remote repository.
+      commits exist that are not yet public.
 
-   4. No repo exists in the current directory:
+4. No repo exists in the current directory:
       [Git status](https://www.geeksforgeeks.org/git/git-status "Shows current state of working directory")
       (sbe80), could also be detected by the standard non-zero exit exception
       from `GitPython` when running commands outside a Git directory
 
-   5. See if the file changes are only local or public: `git status -sb` (ewj55)
 
-   6. Use `git fetch` followed by `git diff HEAD...@{upstream}` to view
+   
+   5. Use `git fetch` followed by `git diff HEAD...@{upstream}` to view
       differences in a file, used to help the user fix merge conflicts (jhg246)
 
-   7. Staged changes are ready to commit: run `git diff --cached --quiet`. Exit
+   6. Staged changes are ready to commit: run `git diff --cached --quiet`. Exit
       code 1 means staged differences exist; exit code 0 means there are none.
       Treat other exit codes as errors instead of triggering the hint. This
       detects the condition for the staged-review hint. (drj228)
 
-   8. Commit identity is not configured: run `git config --get user.name` and
+   7. Commit identity is not configured: run `git config --get user.name` and
       `git config --get user.email`. An exit code of 1 indicates that the
       requested setting is missing. Also check for an empty returned value.
       Report other command failures separately. These checks use the effective
       configuration, including repository and global settings. (drj228)
 
-   9. Untracked files exist: run `git status --porcelain`. Lines beginning with
+   8. Untracked files exist: run `git status --porcelain`. Lines beginning with
       `??` indicate files that Git sees in the working directory but isn't
-      currently tracking. (ams2083)<br>
+      currently tracking. (ams2083)
 
-   10. HEAD is detached rather than attached to a local branch: run `git
+   9. HEAD is detached rather than attached to a local branch: run `git
        symbolic-ref --quiet --short HEAD`. A zero exit code means HEAD is
        attached to a branch and the command prints the branch name. A non-zero
        exit code in an otherwise valid Git repository indicates that HEAD is
        detached. This detects the condition for the detached HEAD hint. (jit45)
 
-   11. Committing to main/master: Run  `git branch --show-current` to identify
+   10. Committing to main/master: Run  `git branch --show-current` to identify
        current branch. If the branch is main, check for other remote/active
        branches with `git branch -a`. If the list contains no other branches
        besides the protected branch(es), suggest the creation of a new branch.
        Otherwise, suggest other branches on the list.(raf322)
 
-   12. Run `git status -sb`. If the status reports that the local branch is
+   11. Run `git status -sb`. If the status reports that the local branch is
        ahead *and* behind its upstream branch, the branches have diverged. 
        (sbe80)
-
-   13. The explain command (Requirement 5) must pass Git arguments through
+  
+   12. The explain command (Requirement 5) must pass Git arguments through
        without Typer attempting to parse them as options. Configure the command
        to allow extra arguments and ignore unknown options (for example, using
        allow\_extra\_args=True and ignore\_unknown\_options=True) so commands
        such as `git-hints explain pull --rebase` and `git-hints explain reset
        --hard HEAD~1` are passed to Git correctly (sbe80).
 
-   14. The explain command (Requirement 5) should not require the word `git`
+   13. The explain command (Requirement 5) should not require the word `git`
        after the word `explain`. (sbe80)
 2. Language and libraries:
 
@@ -365,8 +365,8 @@ All Git commands executed as part of a test shall use the isolated test environm
 
 ### Test Case 4: Push (ewj55)
 0. Initialize `Test4_condition == 0` by default
-1. use the termnial to navigate to the local repo directory tracking a remote branch ('origin/main')<br>
-2. Execute command (`git fetch origin`) and ensure local track references are up to date <br>
+1. use the termnial to navigate to the local repo directory tracking a remote branch ('origin/main')
+2. Execute command (`git fetch origin`) and ensure local track references are up to date 
 3. Make a minor edit to the file, stage the change (`git add .`), then commit locally ('git commit -m "Test commit"')
 **Condition Checks:**
    4. run `git log origin/main..HEAD` into terminal
