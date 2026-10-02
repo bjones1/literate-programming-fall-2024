@@ -87,18 +87,16 @@ This file records the initial design of the git-hints tool.
       7. Configure your commit identity? Conditions: `user.name` or `user.email`
          is missing or empty in the effective Git configuration. Explain how to
          set the missing value using
-         [git config](https://git-scm.com/docs/git-config "Reads and updates Git settings, including the name and email recorded in commits.")
-         with `git config user.name "Your Name"` or `git config user.email
-         "you@example.com"`. These settings identify the author of local
-         commits; they do not sign the user into GitHub. (drj228)
+         [git config](https://git-scm.com/docs/git-config "Reads and updates Git settings.")
+         with `git config --global user.name "Your Name"` or
+         `git config --global user.email "you@example.com"`.
+
+         The `--global` option sets the default for all repositories belonging to
+         the current user. Use `--local` inside a repository to configure an
+         identity for that repository only. Local settings override global
+         settings. An empty local override should be corrected locally.These settings identify commit authors; they do not sign the user into GitHub. (drj228) 
 
       
-
-
-
-
-
-
       8. Untracked files need to be sorted? Conditions: one or more untracked files exist in working directory. 
       First, detect untracked files with `git status --porcelain` before explaining Git can see the files but isn't tracking their changes. If an untracked file should normally be ignored such as .env, \_\_pycache\_\_.py, output build, and directories, suggest that the user create a .gitignore file and slate those files for entry. If an ordinary untracked file exists, suggest
           [git add](https://git-scm.com/docs/git-add "Adds file contents to the staging area.")
@@ -120,14 +118,14 @@ This file records the initial design of the git-hints tool.
           named branch. Suggest
           [git switch -c](https://git-scm.com/docs/git-switch "Creates a new branch and switches to it.")
           to create and switch to a new branch if the user wants to preserve
-          future commits. (jit45)
+          future commits. (jit45) **drj228 will test**
 
       12. This repository does not have any commits yet? Conditions: the current
           directory is a Git repository, but HEAD does not yet resolve to a
           commit. Use `git rev-parse --verify HEAD` to confirm and explain that the local repository has no saved commit yet. If
           files are staged, suggest
           [git commit -m "Initial commit"](https://git-scm.com/docs/git-commit "Creates a new commit from the staged changes.")
-          to create the first commit. (jit45)
+          to create the first commit. (jit45) **drj228 will test**
 
       13. Branch has diverged from upstream? Conditions: the local branch is both ahead and behind its upstream branch. Suggest [git pull](https://git-scm.com/docs/git-pull "Fetches and integrates remote commits; --rebase replays yours on top of them.")
           or `git pull --rebase`, then `git push`. (sbe80; edited by jhg246)
@@ -174,12 +172,17 @@ This file records the initial design of the git-hints tool.
       for more information (ewj55)
    4. Maybe highlight sections from the docs to show where that specific hint
       came from (ewj55)
-   5. Hints must consist of Markdown text. Each documentation link must include
-      a title summarizing the linked term or command. Limit each title to 160
-      characters, and put longer explanations in the linked documentation.
-      Example:
-      [repo](https://git-scm.com/book/en/v2/Git-Basics-Getting-a-Git-Repository "A Git repository stores project history as commits.")
-      (drj228)
+   5. Hints must consist of Markdown text. Each documentation link must
+      include a title summarizing the linked term or command, limited to
+      160 characters. Put longer explanations in the linked documentation.
+
+      The initial CLI will display hints as plain text, converting Markdown
+      links into their label, URL, and title text. For example:
+      Git status — Shows the working tree and staging-area status.
+      Documentation: https://git-scm.com/docs/git-status
+
+      Descriptions must be visible in the terminal without hovering over
+      a link. (drj228)
 4. Hint algorithms:
 
    1. Display at most three hints at once. If additional hints have their
@@ -189,9 +192,20 @@ This file records the initial design of the git-hints tool.
 
    2. Prioritize hints that explain a failed command or an unresolved merge
       conflict before routine workflow suggestions. Display no more than three
-      hints at once, as specified by the hint-display limit above, and do not
-      repeat a dismissed hint until its triggering condition changes. (ewj55;
-      clarified by drj228 and jit45)
+      hints at once. Users may dismiss a currently triggered hint with
+      `git-hints dismiss <hint-id>`.
+
+      Save the hint ID and the values used to detect its condition in
+      `git-hints/dismissals.json` inside the repository's Git directory.
+      Exclude dismissed hints from normal output and `git-hints all` while
+      those values remain unchanged.
+
+      Clear the dismissal when those values change or when the tool observes
+      that the condition no longer exists. Show the hint again only if its
+      condition applies. Unrelated repository changes do not clear a dismissal.
+      For example, configuring a missing user name while the email is still
+      missing allows the commit-identity hint to appear again.
+      (ewj55; clarified by drj228 and jit45)
 
    3. All hints should be given a priority, with higher priority hints being
       displayed first (sbe80)
@@ -204,8 +218,10 @@ This file records the initial design of the git-hints tool.
       "Warning:", say what will be lost, and tell the user to back up first).
       (sbe80; edited by jhg246)
 
-   5. Every hint should be given an ID. This will make testing much easier
-      (sbe80).
+   5. Every hint must have a unique, permanent text ID, such as `diverged`,
+      `push-ahead`, or `commit-identity`. IDs must not depend on list positions or displayed wording. Display the ID with each hint and use it for dismissal commands and test assertions. Each hint must define the condition values recorded when it is dismissed.
+      (sbe80; clarified by drj228)
+
 5. Estimate user intent:
 
    1. Infer likely user intent from observable repository state and commands
@@ -222,20 +238,26 @@ Implementation
 
    1. Changed files: `git status`.
 
-   2. A Git command executed through the tool failed: capture its exit code,
-      standard output, and standard error when the tool runs it. Use this
-      information to select an appropriate hint. The tool cannot reliably
-      recover the result of an earlier command run outside the tool. (drj228)
+   2. A Git command executed through `git-hints explain` failed: run the
+      command using `subprocess.run()` with an argument list, `shell=False`,
+      and `check=False`. Capture standard error and inspect `returncode`.
+      Leave standard input and standard output connected to the terminal
+      so interactive commands can operate normally. Use the command,
+      exit code, and standard error to select an appropriate hint.
+      The tool cannot reliably recover the result of an earlier command
+      run outside the tool. (drj228)
 
    3. The local branch has commits that have not been pushed to the remote
       branch: run `git status -sb`. If the branch status shows that the local
       branch is ahead of its upstream branch by one or more commits, then local
       commits exist that are not yet public.
 
-4. No repo exists in the current directory:
-      [Git status](https://www.geeksforgeeks.org/git/git-status "Shows current state of working directory")
-      (sbe80), could also be detected by the standard non-zero exit exception
-      from `GitPython` when running commands outside a Git directory
+   4. Determine whether the current directory is inside a Git working tree:
+      run `git rev-parse --is-inside-work-tree` using `subprocess`.
+      Exit code 0 with output `true` confirms a working tree. If the command
+      fails, inspect standard error to distinguish a directory outside a
+      repository from other Git errors. Do not treat every failure as a
+      reason to suggest cloning. (sbe80; clarified by drj228)
 
    5. Incoming changes: `git diff --name-only HEAD...@{upstream}` lists the
       files a pull would bring in (needs an upstream). Conflicting files, once a
@@ -291,7 +313,13 @@ Implementation
    3. Formatter/linter: ruff
    4. Type checker: ty
    5. CLI: Typer
-   6. Git interface: GitPython
+   6. Git interface: Python's built-in `subprocess` module. Run Git commands
+      as argument lists with `shell=False` and `check=False`. Inspect
+      `returncode` explicitly so expected nonzero results, such as exit code 1
+      when checking for staged changes or a missing configuration value, are
+      handled according to each command's documented meaning. Report
+      unexpected failures separately instead of treating them as hint
+      conditions. (drj228)
    7. Testing: Pytest
 
 Testing
@@ -301,11 +329,15 @@ The test tool contains:
 
 * `make_temps(num)`: creates and returns `num` temporary directories. These are
   removed when the test completes.
-* `make_repo(temp_dir, commands)`: runs the list of `commands` in `temp_dir`,
-  which creates and populate the repo. Each command is either a list of
-  arguments, which is executed as a shell command (typically a git command), or
-  a lambda function with no parameters, typically used to create/modify/delete
-  files.
+* `make_repo(temp_dir, commands)`: runs the list of `commands` in
+  `temp_dir` to create and populate the repository. Each command is
+  either an argument list, such as
+  `["git", "commit", "-m", "Add foo."]`, executed using
+  `subprocess.run()` with `shell=False`, or a lambda function with
+  no parameters used to create, modify, or delete files. Pass each
+  argument separately and keep messages containing spaces in a
+  single list element. Do not join arguments into a shell string.
+  (drj228)
 * `config_user(username, email)`: Set Git's `user.name` and `user.email`. 
 * `git_setup()`: creates an isolated Git configuration for the test environment. The test environment shall:
    * use an empty temporary file for GIT_CONFIG_GLOBAL so that the user's global Git configuration does not affect test results
@@ -434,6 +466,66 @@ the reactive or proactive sections plan through how to accomplish X tasks.
    docs. The `behind` and **Push?** hints are not shown.
 4. Variant: skip the fetch in step 2 (status shows `+1 -0`). Expected: **Push?**
    is shown and `diverged` is not.
+
+### Test case 8: Detached HEAD state. (Written by drj228)
+For Requirement Proactive 11, written by jit45.
+
+1. Call `git_setup()` and create one temporary directory.
+2. Initialize a repository in that directory with `git init -b main`.
+3. Call `config_user("user1", "user1@example.com")`.
+4. Create `foo.txt` containing `xxx`, stage it, and commit it.
+   Run Git commands as argument lists with `shell=False`.
+5. Run `git-hints all`. Verify that the detached-HEAD hint is absent
+   while HEAD is attached to `main`.
+6. Run `git switch --detach HEAD`.
+7. Run `git symbolic-ref --quiet --short HEAD`. Verify exit code 1,
+   indicating that HEAD is detached. Confirm that no rebase or
+   bisect is in progress.
+8. Run `git-hints all`. Verify that the detached-HEAD hint appears,
+   explains that HEAD points to a commit instead of a named branch,
+   and suggests `git switch -c <name>` to preserve future commits.
+   Verify that it includes a link to the official Git documentation.
+   Identify the hint by its permanent ID rather than exact wording.
+9. Run `git switch -c saved-work`.
+10. Run `git-hints all` again. Verify that the detached-HEAD hint
+    is absent because HEAD is now attached to `saved-work`.
+
+### Test case 9: Repository has no commits. (Written by drj228)
+For Requirement Proactive 12, written by jit45.
+
+1. Call `git_setup()` and create one temporary directory.
+2. Initialize a repository in that directory with `git init -b main`.
+3. Call `config_user("user1", "user1@example.com")`.
+   Run Git commands as argument lists with `shell=False`.
+4. Run `git rev-parse --verify HEAD`. Verify that it fails because
+   the repository has no commits.
+5. Run `git-hints all`. Verify that the no-commits hint appears
+   and explains that the repository has no saved commit yet.
+   Since no files are staged, it should not suggest committing yet.
+6. Create `foo.txt` containing `xxx` and run `git add foo.txt`.
+7. Run `git-hints all` again. Verify that the no-commits hint
+   now suggests `git commit -m "Initial commit"` and includes
+   a link to the official Git commit documentation.
+   Identify the hint by its permanent ID rather than exact wording.
+8. Run `git commit -m "Initial commit"`.
+9. Run `git rev-parse --verify HEAD`. Verify exit code 0 and
+   a commit hash in the output.
+10. Run `git-hints all` again. Verify that the no-commits hint
+    is absent now that the repository contains a commit.
+
+### Manual verification and LLM feedback (drj228)
+
+Manually checked the Git conditions in a temporary repository using
+PowerShell on October 2, 2026.
+
+- Test case 8: `git symbolic-ref --quiet --short HEAD` returned
+  `main` with exit code 0, then no branch name with exit code 1
+  after detaching HEAD. After creating `saved-work`, it returned
+  `saved-work` with exit code 0.
+- Test case 9: `git rev-parse --verify HEAD` returned exit code 128
+  before the first commit, both before and after staging a file.
+  After the initial commit, it returned a commit hash and exit code 0.
+
 
 Personal experience
 -------------------

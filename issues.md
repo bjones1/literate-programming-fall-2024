@@ -86,8 +86,7 @@ Main design problems
    rank, for example: error/blocked → risk of losing data → workflow →
    informational.
 
-5. *Assigned: drj228.* **Dismissal isn't specified.** 4.2 needs:
-
+5. *(RESOLVED) Assigned: drj228.* **Dismissal isn't specified.** 4.2 needs:
    * a dismiss command
    * stable hint IDs. 4.5 ([L187](ideas.md#L187)) now asks for IDs; make them
      fixed names like `diverged` or `push-ahead`, not list positions. The lost
@@ -154,7 +153,7 @@ Technical corrections
   `__pycache__/`. Also, if `.env` is already tracked, adding it to `.gitignore`
   does nothing; the hint also needs `git rm --cached`.
 
-* *Assigned: drj228.* **[L83](ideas.md#L83):** without `--global`, `git config
+* *(RESOLVED) Assigned: drj228.* **[L83](ideas.md#L83):** without `--global`, `git config
   user.name` applies to the current repo only. Students almost always want
   `--global`.
 
@@ -176,7 +175,7 @@ Technical corrections
   awkward to parse (`remotes/origin/HEAD -> origin/main`, `*` markers). `git
   for-each-ref --format='%(refname:short)' refs/heads refs/remotes` is cleaner.
 
-* *Assigned: drj228.* **Exit codes and GitPython ([L220](ideas.md#L220),
+* *(RESOLVED) Assigned: drj228.* **Exit codes and GitPython ([L220](ideas.md#L220),
   [L225](ideas.md#L225), [L235](ideas.md#L235)):** these checks rely on exit
   codes, but GitPython raises `GitCommandError` on any non-zero exit unless you
   pass `with_exceptions=False`. More broadly, the doc specifies raw CLI commands
@@ -204,7 +203,7 @@ Technical corrections
   yet, gitignore candidates, stash, and the failure count for the `git reset`
   hint.
 
-* *Assigned: drj228.* **3.5 vs. the CLI:** link titles are tooltips, and a
+* *(RESOLVED) Assigned: drj228.* **3.5 vs. the CLI:** link titles are tooltips, and a
   terminal has nowhere to show them. Decide how the Markdown gets rendered.
 
 * *Assigned: ewj55.* **3.2:** a user is often in several "stages" at once, and
@@ -230,7 +229,7 @@ Testing section
   neither fetches nor sets an upstream; it's often simpler to `git clone` the
   remote.
 
-* *Assigned: drj228.* **Shell strings aren't portable** ([L267](ideas.md#L267)).
+* *(RESOLVED) Assigned: drj228.* **Shell strings aren't portable** ([L267](ideas.md#L267)).
   On Windows, `shell=True` runs cmd.exe, where `git commit -m 'msg here'` splits
   at the space. Use argv lists.
 
