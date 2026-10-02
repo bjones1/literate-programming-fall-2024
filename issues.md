@@ -55,7 +55,7 @@ Main design problems
    unmerged paths (`git diff --name-only --diff-filter=U`) plus `MERGE_HEAD` or
    the rebase directories.
 
-2. *Assigned: ams2083.* **Duplicate hints.** With a cap of three hints, these
+2. *RESOLVED Assigned: ams2083.* **Duplicate hints.** With a cap of three hints, these
    crowd out everything else:
 
    * Push ([L33](ideas.md#L33)) is the same as sync indicator
@@ -73,7 +73,7 @@ Main design problems
    * When the branch has diverged ([L130](ideas.md#L130)), Push and both Pull
      hints fire too, filling all three slots. The diverged hint should replace
      them.
-3. *Assigned: jhg246.* **"Behind" and "diverged" are stale without a fetch.**
+3. *RESOLVED Assigned: jhg246.* **"Behind" and "diverged" are stale without a fetch.**
    Ahead/behind is measured against the last-fetched remote-tracking branch. The
    doc needs a fetch policy. Fetching on every run is slow, needs network, and
    can hang on a credential prompt (use `GIT_TERMINAL_PROMPT=0` plus a timeout).
@@ -118,12 +118,12 @@ Recent additions (6daa871)
   * **The tool can't see the trigger** (see design problem 1).
   * **It's in the wrong list.** It's triggered by failures, so it belongs in
     Reactive.
-* *Assigned: jhg246.* **Diverged hint ([L130](ideas.md#L130)):**
+* *RESOLVED Assigned: jhg246.* **Diverged hint ([L130](ideas.md#L130)):**
   * It doesn't follow the required hint format: no "Conditions:", no command, no
     doc link (3.1/3.3).
   * It should tell the user what to do: `git pull` or `git pull --rebase`, then
     `git push`.
-* *Assigned: jhg246.* **Safety levels (4.4, [L184](ideas.md#L184)):** define the
+* *RESOLVED Assigned: jhg246.* **Safety levels (4.4, [L184](ideas.md#L184)):** define the
   three levels and say what each one changes in the output. One way to draw the
   lines:
   * *safe*: read-only or only adds.
@@ -145,7 +145,7 @@ Recent additions (6daa871)
 Technical corrections
 ---------------------
 
-* *Assigned: jhg246.* **[L37](ideas.md#L37):** a push isn't rejected for
+* *RESOLVED Assigned: jhg246.* **[L37](ideas.md#L37):** a push isn't rejected for
   "conflicting file changes". It's rejected as non-fast-forward because the
   remote has commits you don't. The fix is pull, then push; `git diff filename`
   doesn't help.
@@ -162,13 +162,13 @@ Technical corrections
   a rebase or bisect. Exclude those cases, or the tool will wrongly suggest `git
   switch -c` in the middle of a rebase.
 
-* *Assigned: ams2083.* **[L210-213](ideas.md#L210):** this item gives a link
+* *RESOLVED Assigned: ams2083.* **[L210-213](ideas.md#L210):** this item gives a link
   where it should give a command and what its output means. `git rev-parse
   --is-inside-work-tree` exits with 128 outside a repo. GitPython's `Repo()`
   raises `InvalidGitRepositoryError` when it's constructed, not a command exit
   code.
 
-* *Assigned: jhg246.* **[L217](ideas.md#L217):** `git diff HEAD...@{upstream}`
+* *RESOLVED Assigned: jhg246.* **[L217](ideas.md#L217):** `git diff HEAD...@{upstream}`
   shows what a pull would bring in, not help with conflicts, and it names no
   file.
 
@@ -199,7 +199,7 @@ Technical corrections
   `--porcelain` output is guaranteed stable across Git versions and user config;
   `-s` output isn't.
 
-* *Assigned: ams2083.* **Missing implementations:** conflicts, behind (only the
+* *RESOLVED Assigned: ams2083.* **Missing implementations:** conflicts, behind (only the
   diverged case at [L246](ideas.md#L246) is covered), no upstream, no commits
   yet, gitignore candidates, stash, and the failure count for the `git reset`
   hint.
@@ -265,7 +265,7 @@ Nits
   what readers see. Renumber the source, and refer to hints by ID.
 * *(RESOLVED) Assigned: sbe80.* **`set_remotes(local, repo 1, repo 2)`:** use
   `repo1, repo2`, and say which remote name each one gets.
-* *Assigned: ams2083.* **Hint template:** many hints skip the "Question?
+* *RESOLVED Assigned: ams2083.* **Hint template:** many hints skip the "Question?
   Conditions:" format or leave out the command and doc link that 3.1/3.3
   require; the diverged hint is the latest. Proactive 11 and 12
   ([L102](ideas.md#L102), [L105](ideas.md#L105)) have no author.
