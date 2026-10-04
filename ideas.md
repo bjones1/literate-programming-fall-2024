@@ -488,35 +488,35 @@ All Git commands executed as part of a test shall use the isolated test environm
 5. If `git-hints` output contains the proactive hint string `"clone"` AND the suggested command `'git clone'`, then Test 5 has passed
 
 ### Test Case 6: Pull needed, Branch is behind (jhg246) For Requirement Proactive 7
+Run in one PowerShell terminal (`$t` and the helpers must persist). Setup, steps 1-5:
 
-1. Call `git_setup()`. Create three temp directories: `remote`, `local`, `other`. Call
-   `config_user("user1", "user1@foo.com")`.
-2. In `remote`: `git init --bare -b main` (the remote must be bare).
-3. In `other`: `git clone <remote> <other>`, create `foo.txt` containing `xxx`,
-   `git add foo.txt`, `git commit -m "Add foo."`, `git push -u origin main`.
-4. Run `git clone <remote> <local>`.
-5. In `other`: append `y` to `foo.txt`, `git commit -am "Change foo."`, `git
-   push`.
-6. Run `git-hints` in `local`. Expected: no `behind` hint, because `local`
-   hasn't fetched (`git status --porcelain=v2 --branch` shows `# branch.ab +0
-   -0`).
-7. In `local`, run `git fetch` (status now shows `+0 -1`), then `git-hints`.
-   Expected: **Is my branch up to date before I start editing?** (ID `behind`),
-   labeled "as of last fetch". The `diverged` and **Push?** hints are not shown.
-   Run Git commands as argv lists, and assert on hint IDs rather than exact text.
+```powershell
+$env:GIT_CONFIG_GLOBAL=(New-TemporaryFile).FullName; $env:GIT_CONFIG_NOSYSTEM=1   # git_setup()
+$env:GIT_AUTHOR_NAME=$env:GIT_COMMITTER_NAME="user1"; $env:GIT_AUTHOR_EMAIL=$env:GIT_COMMITTER_EMAIL="user1@foo.com"   # config_user()
+$t=(New-Item -ItemType Directory (Join-Path ([IO.Path]::GetTempPath()) "t-$(Get-Random)")).FullName
+function g($d) { git -C "$t/$d" @args }; function ab { g local status --porcelain=v2 --branch | Select-String branch.ab }; function hints { Push-Location "$t/local"; git-hints; Pop-Location }
+New-Item -ItemType Directory "$t/remote","$t/local","$t/other" | Out-Null; g remote init --bare -b main
+git clone "$t/remote" "$t/other"; Set-Content "$t/other/foo.txt" xxx; g other add foo.txt; g other commit -m "Add foo."; g other push -u origin main
+git clone "$t/remote" "$t/local"; Add-Content "$t/other/foo.txt" y; g other commit -am "Change foo."; g other push
+```
+
+Checks. Step 6: `ab; hints`: `+0 -0`, no `behind` hint (no fetch yet).
+Step 7: `g local fetch; ab; hints`: `+0 -1`; **Pull needed, your branch is behind!**
+(ID `behind`), labeled "as of last fetch"; no `diverged` or **Push?** hint.
+
 
 ### Test case 7: Branch has diverged. (jhg246) -- For Requirement Proactive 16
+Run Test 6's setup block only (a fetch beforehand would change step 3), then:
 
-1. Do steps 1-5 of Test case 6 ^
-2. In `local`: create `bar.txt` containing `zzz`, `git add bar.txt`, `git commit
-   -m "Add bar."`, then `git fetch` (status shows `+1 -1`).
-3. Run `git-hints` in `local`. Expected: **Your branch has diverged from
-   upstream.** (ID `diverged`), suggesting `git pull` or `git pull --rebase`,
-   then `git push`, with a link to the
-   [git pull](https://git-scm.com/docs/git-pull)
-   docs. The `behind` and **Push?** hints are not shown.
-4. Variant: skip the fetch in step 2 (status shows `+1 -0`). Expected: **Push?**
-   is shown and `diverged` is not.
+```powershell
+Set-Content "$t/local/bar.txt" zzz; g local add bar.txt; g local commit -m "Add bar."   # 2
+ab; hints   # 3: +1 -0, Push? shown, diverged not shown
+g local fetch; ab; hints   # 4: +1 -1
+```
+
+Step 4 expected: **Your branch has diverged from upstream.** (ID `diverged`),
+suggesting `git pull` or `git pull --rebase`, then `git push`, with a [git pull](https://git-scm.com/docs/git-pull "Fetches and integrates remote commits; --rebase replays yours on top of them.") link. No `behind` or **Push?** hint.
+
 
 ### Test case 8: Push Failed. (ams2083) -- Requirement Reactive 3
 
