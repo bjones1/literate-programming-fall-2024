@@ -156,8 +156,8 @@ state when `git-hints` runs. (jit45)
           commit. (jit45) **drj228 will test**
 
       16. Branch has diverged from upstream? Conditions: the local branch is
-          both ahead and behind its upstream branch. Suggest `git pull` or
-          `git pull --rebase`, then `git push`.
+          both ahead and behind its upstream branch. Suggest [git pull](https://git-scm.com/docs/git-pull "Fetches and integrates remote commits; --rebase replays yours on top of them.") or `git pull --rebase`, then
+          [git push](https://git-scm.com/docs/git-push "Uploads local commits to the remote branch.").
           (sbe80; edited by jhg246)
           **jhg246 will test.**
 
