@@ -26,7 +26,7 @@ state when `git-hints` runs. (jit45)
       2. Resolve pull conflicts? Conditions: `git-hints explain pull` fails
          because local uncommitted changes would be overwritten. Identify the
          affected files and explain how to preserve or resolve the local
-         changes.
+         changes. **jit45 will test**
 
       3. Push failed? Conditions: `git-hints explain push` fails because the
          remote branch contains commits that are not present in the local
@@ -138,7 +138,7 @@ state when `git-hints` runs. (jit45)
           compare that number to the total number of tracked files. Untracked
           files should be handled separately and should not count toward this
           percentage. If more than half of the tracked files have changes,
-          suggest reviewing and committing the changes. (jit45)
+          suggest reviewing and committing the changes. (jit45) **jit45 will test**
 
       14. Detached HEAD state? Conditions: the repository exists, HEAD is not
           attached to a local branch, and Git is not currently performing a
@@ -223,7 +223,7 @@ state when `git-hints` runs. (jit45)
       Descriptions must be visible in the terminal without hovering over
       a link. (drj228)
 
-5. Hint algorithms:
+   5. Hint algorithms:
 
    1. Display at most three hints at once. If additional hints have their
       conditions met, inform the user that more are available. The
@@ -314,7 +314,7 @@ Implementation
    5. Incoming changes: `git diff --name-only HEAD...@{upstream}` lists the
       files a pull would bring in (needs an upstream). Conflicting files, once a
       merge has stopped: `git diff --name-only --diff-filter=U`. Fetch policy
-      (ahead/behind checks, items 3 and 12): never fetch by default; label
+      (ahead/behind checks): never fetch by default; label
       results "as of last fetch". `git-hints --fetch` runs `git fetch` first,
       with `GIT_TERMINAL_PROMPT=0` and a timeout. (jhg246
 
@@ -357,14 +357,14 @@ Implementation
        ahead *and* behind its upstream branch, the branches have diverged. 
        (sbe80)
   
-   12. The explain command (Requirement 5) must pass Git arguments through
+   12. The `git-hints explain` command must pass Git arguments through
        without Typer attempting to parse them as options. Configure the command
        to allow extra arguments and ignore unknown options (for example, using
        allow\_extra\_args=True and ignore\_unknown\_options=True) so commands
        such as `git-hints explain pull --rebase` and `git-hints explain reset
        --hard HEAD~1` are passed to Git correctly (sbe80).
 
-   13. The explain command (Requirement 5) should not require the word `git`
+   13. The `git-hints explain` command should not require the word `git`
        after the word `explain`. (sbe80)
 2. Language and libraries:
 
@@ -425,7 +425,7 @@ All Git commands executed as part of a test shall use the isolated test environm
    [Stage](https://www.w3schools.com/git/git_staging_environment.asp "Also called the index; select which files changes to store in a commit")
    files?
 
-### Test case 2: files are changed. (Written by sbe80) -- Requirement Reactive 1
+### Test case 2: files are changed. (Written by sbe80) -- Requirement Proactive 2
 
 1. Create one temporary directory.
 2. Execute the following in this temporary directory:
@@ -444,7 +444,7 @@ All Git commands executed as part of a test shall use the isolated test environm
    staged changes and suggests
    [`git diff --cached`](https://git-scm.com/docs/git-diff "Show changes staged for the next commit").
 
-### Test case 3: Resolving merge conflicts. (Written by sbe80) -- Requirement Reactive 2
+### Test case 3: Resolving merge conflicts. (Written by sbe80) -- Requirement Reactive 1
 
 1. Create two temporary directories.
 2. Execute the following in the first temporary directory:
@@ -471,7 +471,7 @@ All Git commands executed as part of a test shall use the isolated test environm
    5. If command returns one or more comit SHAs, set `Test4_condition == 1`.
 **Output/Expected Execution**
    6. If `Test4_condition == 1`, execute `git-hints` CLI tool on terminal
-   7. Confirm reactive hint 'Push?' is displayed in terminal output.
+   7. Confirm proactive hint 'Push?' is displayed in terminal output.
    8. If `git-hints` output contains `"Push?"` string AND `'git push'` command, then Test 4 has passed.
 
 ### Test Case 5: Repo Test (ewj55)
@@ -505,7 +505,7 @@ All Git commands executed as part of a test shall use the isolated test environm
    labeled "as of last fetch". The `diverged` and **Push?** hints are not shown.
    Run Git commands as argv lists, and assert on hint IDs rather than exact text.
 
-### Test case 7: Branch has diverged. (jhg246) -- For Requirement Proactive 13
+### Test case 7: Branch has diverged. (jhg246) -- For Requirement Proactive 16
 
 1. Do steps 1-5 of Test case 6 ^
 2. In `local`: create `bar.txt` containing `zzz`, `git add bar.txt`, `git commit
@@ -518,7 +518,7 @@ All Git commands executed as part of a test shall use the isolated test environm
 4. Variant: skip the fetch in step 2 (status shows `+1 -0`). Expected: **Push?**
    is shown and `diverged` is not.
 
-### Test case 8: Push Failed. (ams2083) -- Requirement Reactive 5
+### Test case 8: Push Failed. (ams2083) -- Requirement Reactive 3
 
 1. Call `git_setup()`. Create three temporary directories: `remote`, `local`, and `other`.
 2. Call `config_user("user1", "user1@foo.com")`.
@@ -543,7 +543,7 @@ All Git commands executed as part of a test shall use the isolated test environm
 11. Expected hint: *Push failed?*
 12. Verify that the hint explains that `remote` contains newer commits and suggests [pulling](https://git-scm.com/docs/git-pull) with `git pull` before attempting to [push](https://git-scm.com/docs/git-push) with `git push` again.
 
-### Test case 9: Configure upstream branch. (ams2083) -- Requirement Proactive 4
+### Test case 9: Configure upstream branch. (ams2083) -- Requirement Proactive 9
 
 1. Call `git_setup()`. Create one temporary directory.
 2. Call `config_user("user1", "user1@foo.com")`.
@@ -604,6 +604,65 @@ For Requirement Proactive 15, written by jit45.
    a commit hash in the output.
 10. Run `git-hints all` again. Verify that the no-commits hint
     is absent now that the repository contains a commit.
+
+### Test case 12: Commit repo? (Written by jit45) -- Requirement Proactive 13
+
+1. Call `git_setup()` and create one temporary directory.
+2. Call `config_user("user1", "user1@example.com")`.
+3. Initialize a repository in the temporary directory with `git init -b main`.
+4. Create four tracked files named `one.txt`, `two.txt`, `three.txt`, and
+   `four.txt`, each containing initial text.
+5. Run `git add one.txt two.txt three.txt four.txt`.
+6. Run `git commit -m "Add initial files."`.
+7. Modify `one.txt` and `two.txt`, leaving both changes unstaged.
+8. Create an untracked file named `untracked.txt`.
+9. Run `git status --porcelain` and verify that exactly two of the four tracked
+   files are changed and that `untracked.txt` appears as untracked.
+10. Run `git-hints all`.
+11. Verify that the **Commit repo?** hint is absent because exactly 50% of the
+    tracked files are changed. The untracked file must not count toward the
+    percentage.
+12. Modify `three.txt`, leaving the change unstaged.
+13. Run `git status --porcelain` again and verify that three of the four tracked
+    files are now changed.
+14. Run `git-hints all`.
+15. Verify that the **Commit repo?** hint appears because more than 50% of the
+    tracked files have staged, unstaged, or deleted changes relative to HEAD.
+16. Verify that the hint suggests reviewing and committing the changes.
+17. Identify the hint by its permanent hint ID rather than relying on exact
+    displayed wording once the permanent ID is assigned.
+
+### Test case 13: Resolve pull conflicts. (Written by jit45) -- Requirement Reactive 2
+
+1. Call `git_setup()` and create three temporary directories named `remote`,
+   `local`, and `other`.
+2. Call `config_user("user1", "user1@example.com")`.
+3. In `remote`, create a bare repository with `git init --bare -b main`.
+4. In `other`, clone the remote repository using
+   `git clone <remote> <other>`.
+5. In `other`, create `foo.txt` containing `xxx`.
+6. Run `git add foo.txt`.
+7. Run `git commit -m "Add foo."`.
+8. Run `git push -u origin main`.
+9. Clone the remote repository into `local` using
+   `git clone <remote> <local>`.
+10. In `local`, modify `foo.txt` by appending `local change`, but do not stage
+    or commit the change.
+11. In `other`, modify `foo.txt` by appending `remote change`.
+12. In `other`, run `git commit -am "Update foo remotely."`.
+13. In `other`, run `git push`.
+14. In `local`, run `git status --porcelain` and verify that `foo.txt` has an
+    uncommitted local modification.
+15. In `local`, run `git-hints explain pull`.
+16. Verify that the pull fails because the incoming remote change would
+    overwrite the uncommitted local change to `foo.txt`.
+17. Verify that the **Resolve pull conflicts?** reactive hint appears.
+18. Verify that the hint identifies `foo.txt` as an affected file and explains
+    how the user can preserve or resolve the local change before pulling again.
+19. Verify that the repository still contains the user's uncommitted local
+    change after the failed pull.
+20. Identify the hint by its permanent hint ID rather than relying on exact
+    displayed wording once the permanent ID is assigned.
 
 
 Personal experience
