@@ -12,155 +12,193 @@ This file records the initial design of the git-hints tool.
    add to this list. Include your netid to identify portions you
    contributed.\]</mark>
 
-   1. Reactive
+Reactive hints are triggered by the result of a Git command executed through
+`git-hints explain`. Proactive hints are triggered by observable repository
+state when `git-hints` runs. (jit45)
+
+ 1. Reactive
+
+      1. Resolve merge conflicts? Conditions: a Git command executed through
+         `git-hints explain` leaves the repository with unresolved merge
+         conflicts. Identify the conflicting files and explain how to resolve
+         them. **sbe80 will test**
+
+      2. Resolve pull conflicts? Conditions: `git-hints explain pull` fails
+         because local uncommitted changes would be overwritten. Identify the
+         affected files and explain how to preserve or resolve the local
+         changes.
+
+      3. Push failed? Conditions: `git-hints explain push` fails because the
+         remote branch contains commits that are not present in the local
+         branch. Explain that the user should integrate the remote changes
+         before attempting to push again. (jhg246)
+
+      4. Explain
+         [stashes](https://www.geeksforgeeks.org/git/git-stash/ "Stores the present state of the local repo")
+         including: what they are, how to make one, and how to see old ones.
+         Condition: a command executed through `git-hints explain` reports a
+         conflict where temporarily setting aside local changes would help.
+         (sbe80)
+
+      5. Suggest and explain
+         [git pull --rebase](https://git-scm.com/book/en/v2/Git-Branching-Rebasing)
+         if five failed `git pull` or `git push` commands have been executed
+         through `git-hints explain` in a row. Explain that rebasing may cause
+         merge conflicts and that the user should ensure their local work is
+         committed or otherwise backed up before proceeding. (sbe80).
+
+
+   2. Proactive
 
       1. [Stage](https://www.w3schools.com/git/git_staging_environment.asp "Also called the index; select which files changes to store in a commit")
-         files? Conditions: changed files in repo. <mark>\[Homework: for each
-         hint, follow the format discussed in [item 3](#cc-SbouyCXTsP) under
-         requirements and exemplified here.\]</mark> **bj147 will test.**
+         files? Conditions: changed files exist in the repository.
+         **bj147 will test.**
+
       2. Keep unstaged changes out of this commit? Conditions: both staged and
          unstaged changes exist. Explain that a plain `git commit` records
          staged changes, so unrelated edits can remain unstaged without being
          discarded. Suggest
          [git diff --cached](https://git-scm.com/docs/git-diff "Shows the staged changes selected for the next commit.")
-         to review the staging area before committing. (drj228) **sbe80 will
-         test**
-      3. Resolve merge conflicts? Conditions: a git pull fails because of merge
-         conflicts, identify the conflicting files and explain how to resolve
-         them. **sbe80 will test**
-      4. Resolve pull conflicts? Conditions: if a git pull fails because of
-         uncommitted changes, identify the conflicting files and explain how to
-         resolve them.
-      5. Push? Conditions: the local branch has commits that have not been
-         pushed to the remote branch. **test ewj55** 
-      6. Pull needed, your branch is behind! Conditions: If the user is a 1 or
-         more commits behind on the current branch. (jhg246)
-      7. Push failed because of conflicting file changes. Try running git diff
-         *'filename'* ! Conditions: If the user attempted a push and it failed
-         due to conflicting file changes. (jhg246)
-      8. Explain
-         [stashes](https://www.geeksforgeeks.org/git/git-stash/ "Stores the present state of the local repo")
-         including: what they are, how to make one, and how to see old ones
-         Condition: conflict when pulling (sbe80)<br>
-      9. Place these files in gitignore? Conditions: Files such as .env,
-         \_\_pycache\_\_.py, output build directories, etc. should be flagged.
+         to review the staging area before committing. (drj228)
+         **sbe80 will test**
+
+      3. Push? Conditions: the local branch has commits that have not been
+         pushed to the remote branch. **test ewj55**
+
+      4. Pull needed, your branch is behind! Conditions: the local branch is
+         one or more commits behind its upstream branch. (jhg246)
+
+      5. Place these files in gitignore? Conditions: Files such as .env,
+         __pycache__.py, output build directories, etc. should be flagged.
          Suggest that the user create a .gitignore file and slate those files
-         for entry. (raf322)<br>
-      10. Suggest and explain
-          [git pull --rebase](https://git-scm.com/book/en/v2/Git-Branching-Rebasing)
-          if the user has five failed git pull or git push commands in a row.
-          Explain that rebasing may cause merge conflicts and that the user
-          should ensure their local work is committed or otherwise backed up
-          before proceeding. (sbe80).
-   
-   
-   2. Proactive
+         for entry. (raf322)
 
-      1. Clone a repo? Conditions: the current directory is not inside a Git repository. Use`git rev-parse --is-inside-work-tree` to [parse through parameters](https://git-scm.com/docs/git-rev-parse/2.9.5). If the command exits with code 0 and prints `true`, the directory is inside a Git working tree. If it exits with code 128, its not inside a Git repository. If it's not inside a repository, suggest using `git clone <repository-url>` to create a local copy of an existing remote repository.
-      **test ewj55**
+      6. Clone a repo? Conditions: the current directory is not inside a Git
+         repository. Use `git rev-parse --is-inside-work-tree` to determine
+         whether the current directory is inside a Git working tree. If the
+         command exits with code 0 and prints `true`, the directory is inside
+         a Git working tree. If it exits with code 128, it is not inside a Git
+         repository. If it is not inside a repository, suggest using
+         `git clone <repository-url>` to create a local copy of an existing
+         remote repository.
+         **test ewj55**
 
-      2. Pull remote changes? Conditions: Your local branch is behind its upstream branch by one or more commits and is not ahead of the upstream branch. Detect [status](https://git-scm.com/docs/git-status) with `git status -sb`. Suggest git pull to bring the remote commits into your local repository. **jhg246 will test**
+      7. Is my branch up to date before I start editing? Conditions: the current
+         branch has an upstream branch and is behind it by one or more commits
+         while not being ahead of it. Detect the state with `git status -sb`
+         using the latest locally known remote-tracking information. Explain
+         that the local branch does not contain the newest known remote commits
+         and suggest `git pull` before beginning new work. Make clear that this
+         status is only as current as the most recent fetch.
+         (jhg246; adapted from jit45 personal experience)
+         **jhg246 will test**
 
+      8. Current branch? Condition: three other hints are not in use. Detect the
+         current branch using `git branch --show-current`. Display the current
+         branch to the user as a hint until overwritten. (sbe80).
 
-      3. Current branch? Condition: three other hints are not in use. Detect the [current branch](https://git-scm.com/docs/git-show) using `git branch --show-current`. Display the current branch to the user as a hint until overwritten. (sbe80).
+      9. Configure upstream branch? Condition: if the current branch does not
+         have an upstream remote branch configured. Detect with
+         `git rev-parse --abbrev-ref --symbolic-full-name @{upstream}`
+         and suggest setting one before attempting to push.
+         **ams2083 will test**
 
-      
-      4. Configure upstream branch? Condition: if the current branch does not
-         have an upstream remote branch configured. [Detect](https://git-scm.com/docs/git-rev-parse/2.27.0) with `git rev-parse --abbrev-ref --symbolic-full-name @{upstream}` and suggest
-         setting one before attempting to push.**ams2083 will test**
-      
-      5. File states and read-only mode? Conditions: When attempting to edit a file opened in a commit or different view. Suggest explaining
-         [file states](https://git-scm.com/book/en/v2/Getting-Started-What-is-Git%3F "Files in Git move between modified, staged, and committed states.")
-         and editor read-only [modes](https://git-scm.com/docs/git-status) by using `git status` to show the file's designation. (ewj55)
+      10. Review staged changes before committing? Conditions: the staging area
+          contains changes ready for a commit. Suggest `git diff --cached`
+          so the user can check exactly what will be committed and unrelated
+          edits can remain unstaged without being discarded. Suggest
+          `git commit -m "message"` to create a new commit containing the
+          desired staged changes so the user can commit them when they are
+          satisfied. (drj228) **sbe80 will test**
 
-      
+      11. Configure your commit identity? Conditions: `user.name` or
+          `user.email` is missing or empty in the effective Git configuration.
+          Explain how to set the missing value using
+          `git config --global user.name "Your Name"` or
+          `git config --global user.email "you@example.com"`.
 
+          The `--global` option sets the default for all repositories belonging
+          to the current user. Use `--local` inside a repository to configure
+          an identity for that repository only. Local settings override global
+          settings. An empty local override should be corrected locally.
+          These settings identify commit authors; they do not sign the user
+          into GitHub. (drj228)
 
+      12. Untracked files need to be sorted? Conditions: one or more untracked
+          files exist in the working directory. Detect untracked files with
+          `git status --porcelain`. If an untracked file should normally be
+          ignored, such as .env, __pycache__.py, output build files, and
+          directories, suggest adding it to .gitignore. If an ordinary
+          untracked file exists, suggest `git add filename` to move the file
+          into the staging area. (ams2083)
 
+      13. Commit repo? Conditions: More than 50% of the repository's tracked
+          files have staged, unstaged, or deleted changes relative to HEAD.
+          Use `git status --porcelain` to identify changed tracked files and
+          compare that number to the total number of tracked files. Untracked
+          files should be handled separately and should not count toward this
+          percentage. If more than half of the tracked files have changes,
+          suggest reviewing and committing the changes. (jit45)
 
-      
-      6. Review staged changes before committing? Conditions: the staging area
-         contains changes ready for a commit. Suggest
-         [git diff --cached](https://git-scm.com/docs/git-diff "Shows the staged changes that will be included in the next commit.")so the user can check exactly what will be committed and unrelated edits can remain unstaged without being discarded. 
-         Suggest [git commit](https://git-scm.com/docs/git-commit "Creates a new commit from staged changes.")
-         with `git commit -m "message"` to create a new commit containing the desired staged changes so the user can commit them when they're satisfied. (drj228) **sbe80 will test**
+      14. Detached HEAD state? Conditions: the repository exists, HEAD is not
+          attached to a local branch, and Git is not currently performing a
+          rebase or bisect operation. Explain that the user is working in the
+          local repository at a specific commit instead of on a named branch.
+          Suggest `git switch -c <name>` to create and switch to a new branch
+          if the user wants to preserve future commits.
+          (jit45) **drj228 will test**
 
-      7. Configure your commit identity? Conditions: `user.name` or `user.email`
-         is missing or empty in the effective Git configuration. Explain how to
-         set the missing value using
-         [git config](https://git-scm.com/docs/git-config "Reads and updates Git settings.")
-         with `git config --global user.name "Your Name"` or
-         `git config --global user.email "you@example.com"`.
+      15. This repository does not have any commits yet? Conditions: the
+          current directory is a Git repository, but HEAD does not yet resolve
+          to a commit. Use `git rev-parse --verify HEAD` to confirm and explain
+          that the local repository has no saved commit yet. If files are
+          staged, suggest `git commit -m "Initial commit"` to create the first
+          commit. (jit45) **drj228 will test**
 
-         The `--global` option sets the default for all repositories belonging to
-         the current user. Use `--local` inside a repository to configure an
-         identity for that repository only. Local settings override global
-         settings. An empty local override should be corrected locally.These settings identify commit authors; they do not sign the user into GitHub. (drj228) 
-
-      
-      8. Untracked files need to be sorted? Conditions: one or more untracked files exist in working directory. 
-      First, detect untracked files with `git status --porcelain` before explaining Git can see the files but isn't tracking their changes. If an untracked file should normally be ignored such as .env, \_\_pycache\_\_.py, output build, and directories, suggest that the user create a .gitignore file and slate those files for entry. If an ordinary untracked file exists, suggest
-          [git add](https://git-scm.com/docs/git-add "Adds file contents to the staging area.")
-          with `git add filename` to move the file into the staging area(ams2083)
-
-      
-      
-      
-      9. Commit repo? Conditions: Repo has been changed by more than 50% (untracked files, lines of
-          code, deleted files, etc.). Using `git status --porcelain` to [identify](https://git-scm.com/docs/git-status) these files and compare the number to the total number of tracked files. Suggest committing these changes if untracked exceeds 50%.
-
-      10. Stuck? Conditions: User has made little to no changes over a set amount of time. Implement a timer to check how much progress the user has made. Compare repository [state](https://git-scm.com/docs/git-status) using `git status --porcelain`, and if the repo has
-          little to no changes over a set amount of time, that means the user is
-          most likely stuck.
-
-      11. Detached HEAD state? Conditions: the repository exists,
-          but HEAD is not attached to a local branch. Explain that the user is
-          working in the local repository at a specific commit instead of on a
-          named branch. Suggest
-          [git switch -c](https://git-scm.com/docs/git-switch "Creates a new branch and switches to it.")
-          to create and switch to a new branch if the user wants to preserve
-          future commits. (jit45) **drj228 will test**
-
-      12. This repository does not have any commits yet? Conditions: the current
-          directory is a Git repository, but HEAD does not yet resolve to a
-          commit. Use `git rev-parse --verify HEAD` to confirm and explain that the local repository has no saved commit yet. If
-          files are staged, suggest
-          [git commit -m "Initial commit"](https://git-scm.com/docs/git-commit "Creates a new commit from the staged changes.")
-          to create the first commit. (jit45) **drj228 will test**
-
-      13. Branch has diverged from upstream? Conditions: the local branch is both ahead and behind its upstream branch. Suggest [git pull](https://git-scm.com/docs/git-pull "Fetches and integrates remote commits; --rebase replays yours on top of them.")
-          or `git pull --rebase`, then `git push`. (sbe80; edited by jhg246)
+      16. Branch has diverged from upstream? Conditions: the local branch is
+          both ahead and behind its upstream branch. Suggest `git pull` or
+          `git pull --rebase`, then `git push`.
+          (sbe80; edited by jhg246)
           **jhg246 will test.**
 
-      14. Committing to protected/main branch? Conditions: the current branch is
-          master/main and there are changes. If other branches exist, suggest
-          other branches. If no other branches exist, suggest creating a [new branch](https://git-scm.com/docs/git-switch) with `git switch -c <name>` (raf322)
+      17. Committing to protected/main branch? Conditions: the current branch
+          is master/main and there are changes. If other branches exist,
+          suggest other branches. If no other branches exist, suggest creating
+          a new branch with `git switch -c <name>`. (raf322)
    
-   3. Definitions
+   3. CLI commands
 
-      1. Allow users to request a definition using `git-hints def <command>`.
-         The tool should display a short definition of the requested Git
-         command, explain what it does, and provide a link to the official Git
-         documentation. If the command is unknown, report that it is
+      1. `git-hints`: inspect observable repository state and display up to
+         three currently triggered proactive hints in priority order. If more
+         than three hints are triggered, inform the user that additional hints
+         are available. (jit45)
+
+      2. `git-hints all`: display every currently triggered proactive hint
+         instead of applying the normal three-hint display limit. (jit45)
+
+      3. `git-hints def <command>`: display a short definition of the requested
+         Git command, explain what it does, and provide a link to the official
+         Git documentation. If the command is unknown, report that it is
          unsupported. (jit45)
-      2. Add a `--help` comand which details use of the `hints def` command
-         (sbe80).
-   4. How to
 
-      1. Provide a `git-hints howto <task>` command that gives step-by-step
-         instructions for supported tasks such as committing, pulling, and
-         pushing. If the requested task is unknown, tell the user it is
-         unsupported instead of generating unverified instructions. (jit45)
-      2. Add a `--help` comand which details use of the `hints howto` command
-         (sbe80)
-   5. Explain error: git-hints explain executes the specified Git command and
-      captures its exit code and standard error. The tool uses this information
-      to select an appropriate hint. Standard output is not captured so that
-      commands that open an interactive editor (such as git commit without -m or
-      git rebase -i) continue to function normally. The tool cannot reliably
-      recover the result of a Git command that was run outside the tool.
-      (drj228)
-3. <a id="cc-SbouyCXTsP"></a>Hint structure:
+      4. `git-hints howto <task>`: give step-by-step instructions for supported
+         tasks such as committing, pulling, and pushing. If the requested task
+         is unknown, report that it is unsupported instead of generating
+         unverified instructions. (jit45)
+
+      5. `git-hints explain <git command>`: execute the specified Git command
+         and capture its exit code and standard error. Use this information to
+         select an appropriate reactive hint. Standard output should remain
+         connected to the terminal so commands that open an interactive editor
+         continue to function normally. The tool cannot reliably recover the
+         result of a Git command that was run outside the tool. (drj228)
+
+      6. Typer automatically generates `--help` for commands and subcommands.
+         Each command and subcommand docstring must include at least one usage
+         example so the generated help is useful. Examples should use the
+         complete command names, such as `git-hints def status` and
+         `git-hints howto commit`. (jit45)
+   4. <a id="cc-SbouyCXTsP"></a>Hint structure:
 
    1. Each actionable hint must show the terminal command and explain its
       expected result. The initial implementation will support the CLI. If a GUI
@@ -184,50 +222,63 @@ This file records the initial design of the git-hints tool.
 
       Descriptions must be visible in the terminal without hovering over
       a link. (drj228)
-4. Hint algorithms:
+
+5. Hint algorithms:
 
    1. Display at most three hints at once. If additional hints have their
-      conditions met, inform the user that more are available. Provide a
-      `git-hints all` command that displays every currently triggered hint.
-      (jit45)
+      conditions met, inform the user that more are available. The
+      `git-hints all` command defined in the CLI commands requirement displays
+      every currently triggered hint. (jit45)
 
-   2. Prioritize hints that explain a failed command or an unresolved merge
-      conflict before routine workflow suggestions. Display no more than three
-      hints at once. Users may dismiss a currently triggered hint with
+   2. Assign every hint exactly one priority class and display higher-priority
+      classes first:
+
+      1. Error/blocked: failed commands, unresolved merge conflicts, or another
+         condition that prevents the current Git workflow from proceeding.
+
+      2. Data-loss risk: warnings associated with potentially destructive or
+         highly destructive actions.
+
+      3. Workflow: actionable next-step suggestions based on repository state.
+
+      4. Informational: status or explanatory guidance that does not block work.
+
+      If two triggered hints have the same priority class, order them by their
+      permanent hint ID.
+
+      Users may dismiss a currently triggered hint with
       `git-hints dismiss <hint-id>`.
 
       Save the hint ID and the values used to detect its condition in
       `git-hints/dismissals.json` inside the repository's Git directory.
+
       Exclude dismissed hints from normal output and `git-hints all` while
       those values remain unchanged.
 
       Clear the dismissal when those values change or when the tool observes
       that the condition no longer exists. Show the hint again only if its
       condition applies. Unrelated repository changes do not clear a dismissal.
+
       For example, configuring a missing user name while the email is still
       missing allows the commit-identity hint to appear again.
-      (ewj55; clarified by drj228 and jit45)
 
-   3. All hints should be given a priority, with higher priority hints being
-      displayed first (sbe80)
+      (ewj55; clarified by drj228, sbe80, and jit45)
 
-   4. Give every hint one sefety level, shown in its output. *Safe*: read-only
-      or only adds (no label). *Potentially destructive*: recoverable through
-      the reflog (prefix "Caution:"). *Highly Destructive*: can lose work the
+   3. Give every hint one safety level, shown in its output. **Safe**: read-only
+      or only adds (no label). **Potentially destructive**: recoverable through
+      the reflog (prefix "Caution:"). **Highly Destructive**: can lose work the
       reflog cannot restore (uncommitted changes, untracked files, others'
-      remote commits), ex. `reset --hard`, `clean -fd`, `push --force` (prefix
-      "Warning:", say what will be lost, and tell the user to back up first).
+      remote commits), e.g. `reset --hard`, `clean -fd`, `push --force`
+      (prefix "Warning:", say what will be lost, and tell the user to back up
+      first).
       (sbe80; edited by jhg246)
 
-   5. Every hint must have a unique, permanent text ID, such as `diverged`,
-      `push-ahead`, or `commit-identity`. IDs must not depend on list positions or displayed wording. Display the ID with each hint and use it for dismissal commands and test assertions. Each hint must define the condition values recorded when it is dismissed.
+   4. Every hint must have a unique, permanent text ID, such as `diverged`,
+      `push-ahead`, or `commit-identity`. IDs must not depend on list positions
+      or displayed wording. Display the ID with each hint and use it for
+      dismissal commands and test assertions. Each hint must define the
+      condition values recorded when it is dismissed.
       (sbe80; clarified by drj228)
-
-5. Estimate user intent:
-
-   1. Infer likely user intent from observable repository state and commands
-      executed through the tool. If the available Git state does not provide
-      enough evidence, do not guess the user's intent. (jit45)
 
 Implementation
 --------------
@@ -282,11 +333,19 @@ Implementation
       `??` indicate files that Git sees in the working directory but isn't
       currently tracking. (ams2083)
 
-   9. HEAD is detached rather than attached to a local branch: run `git
-       symbolic-ref --quiet --short HEAD`. A zero exit code means HEAD is
-       attached to a branch and the command prints the branch name. A non-zero
-       exit code in an otherwise valid Git repository indicates that HEAD is
-       detached. This detects the condition for the detached HEAD hint. (jit45)
+   9. HEAD is detached rather than attached to a local branch: run
+      `git symbolic-ref --quiet --short HEAD`. A zero exit code means HEAD is
+      attached to a branch and the command prints the branch name. A non-zero
+      exit code in an otherwise valid Git repository means HEAD is detached.
+
+      Before triggering the detached-HEAD hint, also verify that Git is not
+      currently performing a rebase or bisect. Check the paths returned by
+      `git rev-parse --git-path rebase-merge`,
+      `git rev-parse --git-path rebase-apply`, and
+      `git rev-parse --git-path BISECT_START`.
+
+      If any corresponding operation state exists, suppress the detached-HEAD
+      hint. (jit45)
 
    10. Committing to main/master: Run  `git branch --show-current` to identify
        current branch. If the branch is main, check for other remote/active
@@ -428,7 +487,7 @@ All Git commands executed as part of a test shall use the isolated test environm
 **Assertion**
 5. If `git-hints` output contains the proactive hint string `"clone"` AND the suggested command `'git clone'`, then Test 5 has passed
 
-### Test Case 6: Pull needed, Branch is behind (jhg246) For Requirement Proactive 2
+### Test Case 6: Pull needed, Branch is behind (jhg246) For Requirement Proactive 7
 
 1. Call `git_setup()`. Create three temp directories: `remote`, `local`, `other`. Call
    `config_user("user1", "user1@foo.com")`.
@@ -442,9 +501,9 @@ All Git commands executed as part of a test shall use the isolated test environm
    hasn't fetched (`git status --porcelain=v2 --branch` shows `# branch.ab +0
    -0`).
 7. In `local`, run `git fetch` (status now shows `+0 -1`), then `git-hints`.
-   Expected: **Pull needed, your branch is behind!** (ID `behind`), labeled "as
-   of last fetch". The `diverged` and **Push?** hints are not shown. Run Git
-   commands as argv lists, and assert on hint IDs rather than exact text.
+   Expected: **Is my branch up to date before I start editing?** (ID `behind`),
+   labeled "as of last fetch". The `diverged` and **Push?** hints are not shown.
+   Run Git commands as argv lists, and assert on hint IDs rather than exact text.
 
 ### Test case 7: Branch has diverged. (jhg246) -- For Requirement Proactive 13
 
@@ -501,7 +560,7 @@ All Git commands executed as part of a test shall use the isolated test environm
 13. Verify that the hint suggests configuring an upstream branch before attempting to push.
 
 ### Test case 10: Detached HEAD state. (Written by drj228)
-For Requirement Proactive 11, written by jit45.
+For Requirement Proactive 14, written by jit45.
 
 1. Call `git_setup()` and create one temporary directory.
 2. Initialize a repository in that directory with `git init -b main`.
@@ -524,7 +583,7 @@ For Requirement Proactive 11, written by jit45.
     is absent because HEAD is now attached to `saved-work`.
 
 ### Test case 11: Repository has no commits. (Written by drj228)
-For Requirement Proactive 12, written by jit45.
+For Requirement Proactive 15, written by jit45.
 
 1. Call `git_setup()` and create one temporary directory.
 2. Initialize a repository in that directory with `git init -b main`.
