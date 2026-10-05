@@ -33,8 +33,9 @@ This file records the initial design of the git-hints tool.
          resolve them.
       5. Push? Conditions: the local branch has commits that have not been
          pushed to the remote branch. **test ewj55** 
-      6. Pull needed, your branch is behind! Conditions: If the user is a 1 or
-         more commits behind on the current branch. (jhg246)
+      6. Pull needed, your branch is behind! Conditions: If the user is 1 or
+         more commits behind on the current branch. (jhg246) **raf322 will
+         test**
       7. Push failed because of conflicting file changes. Try running git diff
          *'filename'* ! Conditions: If the user attempted a push and it failed
          due to conflicting file changes. (jhg246)
@@ -42,10 +43,11 @@ This file records the initial design of the git-hints tool.
          [stashes](https://www.geeksforgeeks.org/git/git-stash/ "Stores the present state of the local repo")
          including: what they are, how to make one, and how to see old ones
          Condition: conflict when pulling (sbe80)<br>
-      9. Place these files in gitignore? Conditions: Files such as .env,
-         \_\_pycache\_\_.py, output build directories, etc. should be flagged.
+      9. Place these files in gitignore? Conditions: Files such as
+         \_\_pycache\_\_/, output build directories, etc. should be flagged.
          Suggest that the user create a .gitignore file and slate those files
-         for entry. (raf322)<br>
+         for entry. Suggest `git rm --cached` if user wants to unstage a file
+         from the commit (raf322)<br>
       10. Suggest and explain
           [git pull --rebase](https://git-scm.com/book/en/v2/Git-Branching-Rebasing)
           if the user has five failed git pull or git push commands in a row.
@@ -59,7 +61,7 @@ This file records the initial design of the git-hints tool.
          directory. **test ewj55**
 
       2. Pull remote changes? Conditions: remote branch is ahead of the local
-         branch.
+         branch. **raf322 will test**
 
       3. The current branch is xxx. Conditions: always as long as three hints
          are not already being displayed (sbe80).
@@ -127,13 +129,12 @@ This file records the initial design of the git-hints tool.
           commit. Explain that the local repository has no saved commit yet. If
           files are staged, suggest
           [git commit -m "Initial commit"](https://git-scm.com/docs/git-commit "Creates a new commit from the staged changes.")
-          to create the first commit. (jit45)
+          to create the first commit. (jit45)<br>
 
-      15. <br>
-      16. Warn the user that the current branch has diverged from upstream
+      15. Warn the user that the current branch has diverged from upstream
           (sbe80).
 
-      17. Committing to protected/main branch. Conditions: the current branch is
+      16. Committing to protected/main branch. Conditions: the current branch is
           master/main and there are changes. If other branches exist, suggest
           other branches. If no other branches exist, suggest creating a new
           branch with `git switch -c <name>` (raf322)
@@ -144,7 +145,7 @@ This file records the initial design of the git-hints tool.
          command, explain what it does, and provide a link to the official Git
          documentation. If the command is unknown, report that it is
          unsupported. (jit45)
-      2. Add a `--help` comand which details use of the `hints def` command
+      2. Add a `--help` command which details use of the `hints def` command
          (sbe80).
    4. How to
 
@@ -152,7 +153,7 @@ This file records the initial design of the git-hints tool.
          instructions for supported tasks such as committing, pulling, and
          pushing. If the requested task is unknown, tell the user it is
          unsupported instead of generating unverified instructions. (jit45)
-      2. Add a `--help` comand which details use of the `hints howto` command
+      2. Add a `--help` command which details use of the `hints howto` command
          (sbe80)
    5. Explain error: git-hints explain executes the specified Git command and
       captures its exit code and standard error. The tool uses this information
@@ -258,14 +259,15 @@ Implementation
        exit code in an otherwise valid Git repository indicates that HEAD is
        detached. This detects the condition for the detached HEAD hint. (jit45)
 
-   11. Committing to main/master: Run  `git branch --show-current` to identify
+   11. Committing to main/master: Run `git branch --show-current` to identify
        current branch. If the branch is main, check for other remote/active
-       branches with `git branch -a`. If the list contains no other branches
-       besides the protected branch(es), suggest the creation of a new branch.
-       Otherwise, suggest other branches on the list.(raf322)
+       branches with `git for-each-ref --format='%(refname:short)' refs/heads
+       refs/remotes`. If the list contains no other branches besides the
+       protected branch(es), suggest the creation of a new branch. Otherwise,
+       suggest other branches on the list. (raf322)
 
    12. Run `git status -sb`. If the status reports that the local branch is
-       ahead *and* behind its upstream branch, the branches have diverged. 
+       ahead *and* behind its upstream branch, the branches have diverged.
        (sbe80)
 
    13. The explain command (Requirement 5) must pass Git arguments through
@@ -295,22 +297,29 @@ The test tool contains:
 * `make_temps(num)`: creates and returns `num` temporary directories. These are
   removed when the test completes.
 * `make_repo(temp_dir, commands)`: runs the list of `commands` in `temp_dir`,
-  which creates and populate the repo. Each command is either a list of
+  which creates and populates the repo. Each command is either a list of
   arguments, which is executed as a shell command (typically a git command), or
   a lambda function with no parameters, typically used to create/modify/delete
   files.
-* `config_user(username, email)`: Set Git's `user.name` and `user.email`. 
-* `git_setup()`: creates an isolated Git configuration for the test environment. The test environment shall:
-   * use an empty temporary file for GIT_CONFIG_GLOBAL so that the user's global Git configuration does not affect test results
-   * set GIT_CONFIG_NOSYSTEM=1 so that the system Git configuration does not affect test results
-   * provide Git author and committer identity through environment variables so that tests do not depend on the machine's configured identity
-   * initialize test repositories with git init -b main so that tests do not depend on the machine's init.defaultBranch setting.
+* `config_user(username, email)`: Set Git's `user.name` and `user.email`.
+* `git_setup()`: creates an isolated Git configuration for the test environment.
+  The test environment shall:
+  * use an empty temporary file for GIT\_CONFIG\_GLOBAL so that the user's
+    global Git configuration does not affect test results
+  * set GIT\_CONFIG\_NOSYSTEM=1 so that the system Git configuration does not
+    affect test results
+  * provide Git author and committer identity through environment variables so
+    that tests do not depend on the machine's configured identity
+  * initialize test repositories with git init -b main so that tests do not
+    depend on the machine's init.defaultBranch setting.
 
 A typical test would make temporary directories, then use these to make repos,
 then set remotes. After changing to the local repo temp dir, it runs git-hints
 and checks that the output is correct.
 
-All Git commands executed as part of a test shall use the isolated test environment established by git_setup(). This prevents test results from varying based on the Git configuration of the machine running the tests.
+All Git commands executed as part of a test shall use the isolated test
+environment established by git\_setup(). This prevents test results from varying
+based on the Git configuration of the machine running the tests.
 
 ### Test case 1: files are changed. *(Written by bj147)*
 
@@ -354,7 +363,8 @@ All Git commands executed as part of a test shall use the isolated test environm
    3. Create a file called `foo.txt` with the content `xxx`.
    4. Add it: `git add foo.txt`.
    5. Commit it: `git commit -m "Add foo."`.
-3. Clone the first repo into the second using `git clone <temp_dir1> <temp_dir2>`
+3. Clone the first repo into the second using `git clone <temp_dir1>
+   <temp_dir2>`
 4. In repo 1, add `y` to `foo.txt` and commit
 5. In repo 2, add `z` to `foo.txt` and commit
 6. Run `git pull` in the first repo
@@ -362,32 +372,36 @@ All Git commands executed as part of a test shall use the isolated test environm
    conflicts? The output should identify foo.txt as a conflicting file and
    explain how to resolve the conflict.
 
-
 ### Test Case 4: Push (ewj55)
-0. Initialize `Test4_condition == 0` by default
-1. use the termnial to navigate to the local repo directory tracking a remote branch ('origin/main')<br>
-2. Execute command (`git fetch origin`) and ensure local track references are up to date <br>
-3. Make a minor edit to the file, stage the change (`git add .`), then commit locally ('git commit -m "Test commit"')
-**Condition Checks:**
-   4. run `git log origin/main..HEAD` into terminal
-   5. If command returns one or more comit SHAs, set `Test4_condition == 1`.
-**Output/Expected Execution**
-   6. If `Test4_condition == 1`, execute `git-hints` CLI tool on terminal
-   7. Confirm reactive hint 'Push?' is displayed in terminal output.
-   8. If `git-hints` output contains `"Push?"` string AND `'git push'` command, then Test 4 has passed.
+
+1. Initialize `Test4_condition == 0` by default
+2. use the termnial to navigate to the local repo directory tracking a remote
+   branch ('origin/main')<br>
+3. Execute command (`git fetch origin`) and ensure local track references are up
+   to date <br>
+4. Make a minor edit to the file, stage the change (`git add .`), then commit
+   locally ('git commit -m "Test commit"') **Condition Checks:** 4. run `git log
+   origin/main..HEAD` into terminal 5. If command returns one or more comit
+   SHAs, set `Test4_condition == 1`. **Output/Expected Execution** 6. If
+   `Test4_condition == 1`, execute `git-hints` CLI tool on terminal 7. Confirm
+   reactive hint 'Push?' is displayed in terminal output. 8. If `git-hints`
+   output contains `"Push?"` string AND `'git push'` command, then Test 4 has
+   passed.
 
 ### Test Case 5: Repo Test (ewj55)
-0. Initialize `Test5_condition = 0`
-1. execute `mkdir test_folder && cd test_folder`
 
-**Condition Checks**
-2. Run `git status`
-3. If terminal output contains `fatal: not a git repository (or any of the parent directories): .git` OR `fatal: not a git repository`, set `Test5_condition = 1` display git-hint associated with repo cloning.
+1. Initialize `Test5_condition = 0`
+2. execute `mkdir test_folder && cd test_folder`
 
-**Output / Expected Execution:**
-4. If `Test5_condition == 1`, run `git-hints` CLI tool
-5. Verify git-hint `How to clone a repo` is displayed as terminal output
-6.  If `git-hints` output string contains `"clone"` AND command `'git clone'`, Test 5 passed.
+**Condition Checks** 2. Run `git status` 3. If terminal output contains `fatal:
+not a git repository (or any of the parent directories): .git` OR `fatal: not a
+git repository`, set `Test5_condition = 1` display git-hint associated with repo
+cloning.
+
+**Output / Expected Execution:** 4. If `Test5_condition == 1`, run `git-hints`
+CLI tool 5. Verify git-hint `How to clone a repo` is displayed as terminal
+output 6. If `git-hints` output string contains `"clone"` AND command `'git
+clone'`, Test 5 passed.
 
 // create a setup where the LLM makes code that will popup quick sentences for
 every git command. Create a way how to display a setup. Do a step by step in how
@@ -397,6 +411,54 @@ this setup should work for the model.
 in X state, display X hint. After that verify that X hint was displayed. Check
 the reactive or proactive sections plan through how to accomplish X tasks.
 
+### Test Case 6: Pull Test (raf322)
+
+1. Call `make_temps(3)` to create three temp directories: `temp1`, `temp2` and
+   `remote`. `remote` will act as a shared server between the other two.
+2. In `remote`, run `git init --bare -b main`.
+3. In `temp1`, execute:
+   1. Create a repo with `git init -b main`.
+   2. Call `config_user("user1", "user1@foo.com")`.
+   3. Create a file called `foo.txt` with the content `xxx`.
+   4. Add and commit it with the message `"Add foo."`.
+   5. Add the `remote` directory as a remote called `origin`.
+   6. Push `main` to `origin` with `git push -u origin main`.
+4. In `temp2`, execute:
+   1. Clone `remote` into the directory with `git clone <remote> .`.
+   2. Call `config_user("user2", "user2@foo.com")`.
+   3. Change `foo.txt` so that it contains `xxxy`.
+   4. Commit with `git commit -am "Modify foo."` and push with `git push`.
+5. Change back to `temp1` and run `git fetch`, so that it learns about the new
+   commit on the remote. `temp1` is now 1 commit behind `origin/main`, with no
+   commits of its own that the remote lacks and no uncommitted changes.
+6. Run `git-hints` in `temp1`.
+
+### Test Case 7: Branch Behind Test (raf322)
+
+1. Call `make_temps(3)` to create three temp directories: `local1`, `local2` and
+   `remote`. `remote` will act as a shared server between the other two.
+2. In `remote`, run `git init --bare -b main`.
+3. In `local1`, execute:
+   1. Create a repo with `git init -b main`.
+   2. Call `config_user("user1", "user1@foo.com")`.
+   3. Create a file called `foo.txt` with the content `xxx`.
+   4. Add and commit it with the message `"Add foo."`.
+   5. Add the `remote` directory as a remote called `origin`.
+   6. Push `main` to `origin` with `git push -u origin main`.
+4. In `local2`, execute:
+   1. Clone `remote` into the directory with `git clone <remote> .`.
+   2. Call `config_user("user2", "user2@foo.com")`.
+   3. Change `foo.txt` so that it contains `xxxy`.
+   4. Commit with `git commit -am "Modify foo."`.
+   5. Change `foo.txt` so that it contains `xxxyz`.
+   6. Commit with `git commit -am "Modify foo again."` and push both commits
+      with `git push`.
+5. `cd` to `local1` and run `git fetch`, so that it learns about the new commits
+   on the remote. `local1` is now 2 commits behind `origin/main`, with no
+   commits of its own that the remote lacks and no uncommitted changes.
+6. Run `git-hints` in `local1`. Expected hint: Pull needed, your branch is
+   behind!
+
 Personal experience
 -------------------
 
@@ -405,13 +467,13 @@ struggle/didn't do what I expected: <mark>\[Homework: add to this
 section.\]</mark>
 
 * (jhg246) When starting out with git it can be very easy to make a mess of a
-  repository if you dont understand how to navigate branches and merges. This
+  repository if you don't understand how to navigate branches and merges. This
   happened to me and it was very confusing and frustrating. The solution was to
   use ' git reset ' to return to a version of the repository that was
   functional. Maybe we could warn the user if they are in a branch that has no
   remote source and they are making changes/staging changes?
 
-* (sbe80) I had a lot of confusion regarding conflicts. Theres many ways to fix
+* (sbe80) I had a lot of confusion regarding conflicts. There's many ways to fix
   them and all are potential confusion points. Another thing I found confusing
   initially was when to keep files local and when to add them to the remote repo
   and how to properly navigate that.
@@ -438,7 +500,7 @@ section.\]</mark>
   and create avoidable conflicts. A hint showing whether my branch is behind the
   remote would make that state clearer before I begin working.
 
-* (raf322) For me, one of the things I have stuggled with getting used to doing
+* (raf322) For me, one of the things I have struggled with getting used to doing
   is stashing changes and keeping track of them. There have been times where I
   have been working on a project, trying to keep track of which stash has the
   changes I want to implement, and then giving up and not using stashes at all
