@@ -21,7 +21,7 @@ Individual
    Destructive**: can lose work the reflog cannot restore (uncommitted changes,
    untracked files, others' remote commits), e.g. `reset --hard`, `clean -fd`,
    `push --force` (prefix "Warning:", say what will be lost, and tell the user
-   to back up first). (sbe80; edited by jhg246)"
+   to back up first). (sbe80; edited by jhg246)" (Resolved)
 6. **drj228 will rethink** "Git interface: Python's built-in `subprocess`
    module." This makes sense for `git-hints explain`, but perhaps not for plain
    `git-hints`.

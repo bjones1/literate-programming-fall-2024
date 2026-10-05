@@ -106,8 +106,14 @@ CLI commands
    1. Error/blocked: failed commands, unresolved merge conflicts, or another
       condition that prevents the current Git workflow from proceeding.
 
-   2. Data-loss risk: warnings associated with potentially destructive or highly
-      destructive actions.
+   2. Data-loss risk: use this class when an action may discard or overwrite
+      work the user may want to keep, including uncommitted or staged changes,
+      untracked files, local commits, or remote commits. Name what is at risk.
+      Prefix the suggested command with `Caution:` when committed work may be
+      changed but is usually recoverable through the reflog. Prefix it with
+      `Warning:` when uncommitted or untracked work, or commits on a remote,
+      may be permanently lost; explain what could be lost and tell the user to
+      back it up first. Read-only actions need no safety prefix.
 
    3. Workflow: actionable next-step suggestions based on repository state.
 
@@ -116,15 +122,7 @@ CLI commands
    If two triggered hints have the same priority class, order them by their
    permanent hint ID.
 
-7. Give every hint one safety level, shown in its output. **Safe**: read-only or
-   only adds (no label). **Potentially destructive**: recoverable through the
-   reflog (prefix "Caution:"). **Highly Destructive**: can lose work the reflog
-   cannot restore (uncommitted changes, untracked files, others' remote
-   commits), e.g. `reset --hard`, `clean -fd`, `push --force` (prefix
-   "Warning:", say what will be lost, and tell the user to back up first).
-   (sbe80; edited by jhg246) **(sbe80 will remove/clarify)**
-
-8. Every hint must have a unique, permanent text ID, such as `diverged`,
+7. Every hint must have a unique, permanent text ID, such as `diverged`,
    `push-ahead`, or `commit-identity`. IDs must not depend on list positions or
    displayed wording. Display the ID with each hint and use it for `--exclude`
    or `--dismiss` switches and test assertions. (sbe80; clarified by drj228)
@@ -438,42 +436,69 @@ based on the Git configuration of the machine running the tests.
 
 ### <mark>TODO: move test cases to follow the implementation of each hint.</mark>
 
-### Test case 2: files are changed. (Written by sbe80) -- Requirement Proactive 2
+### Test case 2: Staged and unstaged changes. (Written by sbe80) -- Requirements Proactive 2 and 10
 
-1. Create one temporary directory.
-2. Execute the following in this temporary directory:
-   1. Call `config_user("user1", "user1@foo.com")`.
-   2. Create an empty git repo with `git init -b main`.
-   3. Create a file called `foo.txt` with the content `xxx`.
-   4. Add it: `git add foo.txt`.
-   5. Commit it: `git commit -m "Add foo."`.
-   6. Modify `foo.txt`: append `y` to it.
-   7. Stage the modification: `git add foo.txt`.
-   8. Modify `foo.txt` again: append `z` to it, leaving this second modification
-      unstaged.
-3. Run `git-hints` in the temporary directory.
-4. Expected hint: **Keep unstaged changes out of this commit?**
-5. Verify that the output explains that a plain `git commit` records only the
-   staged changes and suggests
-   [`git diff --cached`](https://git-scm.com/docs/git-diff "Show changes staged for the next commit").
+1. Call `git_setup()` and create one temporary directory.
+2. In the temporary directory, initialize a repository with `git init -b main`.
+3. Call `config_user("user1", "user1@foo.com")` after initializing the
+   repository.
+4. Create `foo.txt` containing `xxx`, stage it with `git add foo.txt`, and
+   commit it with `git commit -m "Add foo."`.
+5. Check the staged-only state:
+   1. Append `y` to `foo.txt` and run `git add foo.txt`.
+   2. Run `git-hints --all`.
+   3. Verify that the Proactive 2 hint is absent, because there are no
+      unstaged changes.
+   4. Verify that the Proactive 10 hint appears, identified by its own
+      permanent hint ID. Verify that it recommends reviewing staged changes
+      with `git diff --cached` and explains how to commit the selected changes
+      with `git commit -m "message"`. Check the corresponding official Git
+      documentation links.
+6. Check the unstaged-only state:
+   1. Commit the staged change with `git commit -m "Append y."`.
+   2. Append `z` to `foo.txt` without staging it.
+   3. Run `git-hints --all` and verify both the Proactive 2 and Proactive 10
+      hints are absent: the file has unstaged changes, but nothing is staged
+      for the next commit.
+7. Check the staged-plus-unstaged state:
+   1. Run `git add foo.txt` to stage the `z` change.
+   2. Append `w` to `foo.txt` and leave this change unstaged.
+   3. Run `git-hints --all`.
+   4. Verify that both Proactive 2 and Proactive 10 appear, each identified by
+      its own permanent hint ID. Verify that Proactive 2 explains a plain `git
+      commit` records staged changes only and suggests `git diff --cached`.
+   5. Verify that Proactive 10 recommends reviewing the staged changes with
+      `git diff --cached` and committing the selected changes with `git commit
+      -m "message"`. Confirm the two hints are distinct and include the
+      corresponding official Git documentation links, including
+      `https://git-scm.com/docs/git-diff` and
+      `https://git-scm.com/docs/git-commit`.
 
 ### Test case 3: Resolving merge conflicts. (Written by sbe80) -- Requirement Reactive 1
 
-1. Create two temporary directories.
-2. Execute the following in the first temporary directory:
-   1. Call `config_user("user1", "user1@foo.com")`.
-   2. Create an empty git repo with `git init -b main`.
-   3. Create a file called `foo.txt` with the content `xxx`.
-   4. Add it: `git add foo.txt`.
-   5. Commit it: `git commit -m "Add foo."`.
-3. Clone the first repo into the second using `git clone <temp_dir1>
-   <temp_dir2>`
-4. In repo 1, add `y` to `foo.txt` and commit
-5. In repo 2, add `z` to `foo.txt` and commit
-6. Run `git pull` in the first repo
-7. Run git-hints in the first repository. Expected hint: Resolve merge
-   conflicts? The output should identify foo.txt as a conflicting file and
-   explain how to resolve the conflict.
+1. Call `git_setup()` and create two temporary directories, `repo1` and `repo2`.
+2. In `repo1`, initialize a repository with `git init -b main` and call
+   `config_user("user1", "user1@foo.com")`.
+3. Create `foo.txt` containing `xxx`, stage it with `git add foo.txt`, and
+   commit it with `git commit -m "Add foo."`.
+4. Clone `repo1` into `repo2` with `git clone <repo1> <repo2>`.
+5. In `repo1`, append `y` to `foo.txt`, stage it with `git add foo.txt`, and
+   commit it with `git commit -m "Append y."`.
+6. In `repo2`, call `config_user("user2", "user2@foo.com")`. Append `z` to
+   `foo.txt`, stage it with `git add foo.txt`, and commit it with `git commit -m
+   "Append z."`.
+7. In `repo2`, run `git-hints explain pull --no-rebase` and capture its exit
+   code and output.
+8. Verify that the Git command exits non-zero and leaves an unresolved merge
+   conflict. Verify with `git diff --name-only --diff-filter=U` that `foo.txt`
+   is conflicted.
+9. Verify that the reactive merge-conflict hint appears, identified by its
+   permanent hint ID. Verify that it:
+   1. Names `foo.txt` as a conflicted file.
+   2. Has the Error/blocked priority class.
+   3. Explains how to resolve the conflict.
+   4. Includes a link to the official Git documentation for merging, such as
+      `https://git-scm.com/docs/git-merge`.
 
 ### Test Case 4: Push (ewj55)
 
