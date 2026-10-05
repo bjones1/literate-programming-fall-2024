@@ -1,7 +1,18 @@
 `git-hints` specification
 =========================
 
-<mark>TODO: short summary of what this does.</mark>
+`git-hints` is a Python command-line tool that helps Git learners see where they
+are and what to do next. Run with no arguments, it inspects the current
+repository's state then displays up to three proactive hints (or every hint with
+`--all`), ordered from blocking errors through data-loss risks and workflow
+suggestions to informational notes. Run as `git-hints explain <git command>`, it
+executes the Git command, captures its exit code and standard error, and offers
+explanatory hints for failures such as merge conflicts, pulls blocked by
+uncommitted changes, and rejected pushes. Each hint has a permanent ID and shows
+the terminal command to run and its expected result. It also names the Git stage
+the user is working in (working directory, staging area, local repository, or
+remote) and links to the official documentation, so users learn Git's mental
+model as they work.
 
 CLI commands
 ------------
@@ -11,17 +22,38 @@ CLI commands
    hints are triggered, inform the user that additional hints are available.
    (jit45)
 
-   1. `git-hints --all`: display every currently triggered proactive hint
-      instead of applying the normal three-hint display limit. (jit45)
+   1. `--all`: display every currently triggered proactive hint instead of
+      applying the normal three-hint display limit. (jit45)
+
+   2. `--exclude`: exclude the following list of `git-hint` ids from the
+      generated hints.
+
+   3. `git-hints --dismiss <hint-id>`: dismiss a currently triggered hint.
+      **Future work. Do not implement.**
+
+      Save the hint ID and the values used to detect its condition in
+      `git-hints/dismissals.json` inside the repository's Git directory.
+
+      Exclude dismissed hints from normal output and `git-hints --all` while
+      those values remain unchanged.
+
+      Clear the dismissal when those values change or when the tool observes
+      that the condition no longer exists. Show the hint again only if its
+      condition applies. Unrelated repository changes do not clear a dismissal.
+
+      For example, configuring a missing user name while the email is still
+      missing allows the commit-identity hint to appear again.
+
+      (ewj55; clarified by drj228, sbe80, and jit45)
 2. `git-hints def <command>`: display a short definition of the requested Git
    command, explain what it does, and provide a link to the official Git
    documentation. If the command is unknown, report that it is unsupported.
-   (jit45)
+   (jit45) **Future work. Do not implement.**
 
 3. `git-hints howto <task>`: give step-by-step instructions for supported tasks
    such as committing, pulling, and pushing. If the requested task is unknown,
    report that it is unsupported instead of generating unverified instructions.
-   (jit45)
+   (jit45) **Future work. Do not implement.**
 
 4. `git-hints explain <git command>`: execute the specified Git command and
    capture its exit code and standard error. Use this information to select an
@@ -30,24 +62,11 @@ CLI commands
    normally. The tool cannot reliably recover the result of a Git command that
    was run outside the tool. (drj228)
 
-5. `git-hints dismiss <hint-id>`: dismiss a currently triggered hint.
+5. `git-hints [explain] --bug <user comments explaining why the hint was
+   wrong>`: Gather the current repo state and (for `explain`) git command output
+   then post an issue in the Github repo. **Future work. Do not implement.**
 
-   Save the hint ID and the values used to detect its condition in
-   `git-hints/dismissals.json` inside the repository's Git directory.
-
-   Exclude dismissed hints from normal output and `git-hints --all` while those
-   values remain unchanged.
-
-   Clear the dismissal when those values change or when the tool observes that
-   the condition no longer exists. Show the hint again only if its condition
-   applies. Unrelated repository changes do not clear a dismissal.
-
-   For example, configuring a missing user name while the email is still missing
-   allows the commit-identity hint to appear again.
-
-   (ewj55; clarified by drj228, sbe80, and jit45)
-
-6. Typer automatically generates `--help` for commands and subcommands. Each
+6. Typer automatically generates `--help` for commands and subcommands. Each
    command and subcommand docstring must include at least one usage example so
    the generated help is useful. Examples should use the complete command names,
    such as `git-hints def status` and `git-hints howto commit`. (jit45)
@@ -67,7 +86,7 @@ CLI commands
    more information (ewj55)
 
 4. Maybe highlight sections from the docs to show where that specific hint came
-   from (ewj55)
+   from (ewj55) **TODO: ewj55 will clarify.**
 
 5. Hints must consist of Markdown text. Each documentation link must include a
    title summarizing the linked term or command, limited to 160 characters. Put
@@ -81,15 +100,7 @@ CLI commands
    Descriptions must be visible in the terminal without hovering over a link.
    (drj228)
 
-Hint algorithms
----------------
-
-1. Display at most three hints at once. If additional hints have their
-   conditions met, inform the user that more are available. The `git-hints
-   --all` command defined in the CLI commands requirement displays every
-   currently triggered hint. (jit45)
-
-2. Assign every hint exactly one priority class and display higher-priority
+6. Assign every hint exactly one priority class and display higher-priority
    classes first:
 
    1. Error/blocked: failed commands, unresolved merge conflicts, or another
@@ -105,19 +116,18 @@ Hint algorithms
    If two triggered hints have the same priority class, order them by their
    permanent hint ID.
 
-3. Give every hint one safety level, shown in its output. **Safe**: read-only or
+7. Give every hint one safety level, shown in its output. **Safe**: read-only or
    only adds (no label). **Potentially destructive**: recoverable through the
    reflog (prefix "Caution:"). **Highly Destructive**: can lose work the reflog
    cannot restore (uncommitted changes, untracked files, others' remote
    commits), e.g. `reset --hard`, `clean -fd`, `push --force` (prefix
    "Warning:", say what will be lost, and tell the user to back up first).
-   (sbe80; edited by jhg246)
+   (sbe80; edited by jhg246) **(sbe80 will remove/clarify)**
 
-4. Every hint must have a unique, permanent text ID, such as `diverged`,
+8. Every hint must have a unique, permanent text ID, such as `diverged`,
    `push-ahead`, or `commit-identity`. IDs must not depend on list positions or
-   displayed wording. Display the ID with each hint and use it for dismissal
-   commands and test assertions. Each hint must define the condition values
-   recorded when it is dismissed. (sbe80; clarified by drj228)
+   displayed wording. Display the ID with each hint and use it for `--exclude`
+   or `--dismiss` switches and test assertions. (sbe80; clarified by drj228)
 
 Implementation
 --------------
@@ -129,23 +139,40 @@ runs. (jit45)
 
 #### Stage files
 
-- Hint: Do you want to [stage](https://www.w3schools.com/git/git_staging_environment.asp "Also called the index; select which files changes to store in a commit")
-files?
-- Conditions: changed files exist in the repository; run `git status` and <mark>TODO</mark>.
-- Test case:
+* Hint: Do you want to
+  [stage](https://git-scm.com/docs/git-add "Also called the index; select which changed files to store in a commit")
+  files?
 
-   1. Create one temp directory.
-   2. Execute the following in this temp directory:
-      1. Call `config_user("user1", "user1@foo.com")`.
-      2. Create an empty git repo with `git init -b main`.
-      3. Create a file called `foo.txt` with the content `xxx`.
-      4. Add it: `git add foo.txt`.
-      5. Commit it: `git commit -m "Add foo."`.
-      6. Modify `foo.txt`: append `y` to it.
-   3. Run `git-hints` in the temp dir. Expected hint:
-      [Stage](https://www.w3schools.com/git/git_staging_environment.asp "Also called the index; select which files changes to store in a commit")
-      files?
+  Git stage: Your edits are in the working directory; Git won't put them in a
+  commit until you stage them.
 
+  Command: `git add <files to stage>`; afterward, `git status` lists these files
+  under "Changes to be committed."
+
+* ID: `unstaged-changes`, priority class: workflow, safety: safe.
+
+* Conditions: Unstaged edits to tracked files exist in the repository. Run `git
+  diff --quiet`; an exit code of 0 means no unstaged edits; 1 means there are
+  unstaged edits; other return codes indicate an error.
+
+* Test case:
+
+  1. Perform `git_setup()`.
+  2. Create one temp directory.
+  3. Execute the following in this temp directory:
+     1. Call `config_user("user1", "user1@foo.com")`.
+     2. Create an empty git repo with `git init -b main`.
+     3. Create a file called `foo.txt` with the content `xxx`.
+     4. Add it: `git add foo.txt`.
+     5. Commit it: `git commit -m "Add foo."`.
+     6. Modify `foo.txt`: append `y` to it.
+     7. Run `git-hints --all` in the temp dir. Expected hint ID:
+        `unstaged-changes`.
+     8. Stage the changes: `git add foo.txt`.
+     9. Run `git-hints --all` in the temp dir. Hint ID: `unstaged-changes` must
+        not appear.
+
+#### <mark>TODO: each of the following hints should be rewritten to follow the above hints.</mark>
 
 2. Keep unstaged changes out of this commit? Conditions: both staged and
    unstaged changes exist. Explain that a plain `git commit` records staged
@@ -294,10 +321,11 @@ Reactive hints are triggered by the result of a Git command executed through
    explicitly so expected nonzero results, such as exit code 1 when checking for
    staged changes or a missing configuration value, are handled according to
    each command's documented meaning. Report unexpected failures separately
-   instead of treating them as hint conditions. (drj228)
+   instead of treating them as hint conditions. (drj228) TODO: rethink -- makes
+   sense for `git-hints explain`, but perhaps not for plain `git-hints`.
 7. Testing: Pytest
 
-## <mark>TODO</mark> -- these should be merged with specific implementations above
+## <mark>TODO -- these should be merged with specific implementations above</mark>
 
 2. A Git command executed through `git-hints explain` failed: run the command
    using `subprocess.run()` with an argument list, `shell=False`, and
@@ -408,7 +436,7 @@ All Git commands executed as part of a test shall use the isolated test
 environment established by git\_setup(). This prevents test results from varying
 based on the Git configuration of the machine running the tests.
 
-### <mark>TODO</mark>: move test cases to follow the implementation of each hint.
+### <mark>TODO: move test cases to follow the implementation of each hint.</mark>
 
 ### Test case 2: files are changed. (Written by sbe80) -- Requirement Proactive 2
 
