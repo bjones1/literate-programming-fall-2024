@@ -5,9 +5,9 @@
 are and what to do next. Run with no arguments, it inspects the current
 repository's state then displays up to three proactive hints (or every hint with
 `--all`), ordered from blocking errors through data-loss risks and workflow
-suggestions to informational notes. Run as `git-hints explain <git command>`, it
-executes the Git command, captures its exit code and standard error, and offers
-explanatory hints for failures such as merge conflicts, pulls blocked by
+suggestions to informational notes. Run as `git-hints explain -- <git command>`,
+it executes the Git command, captures its exit code and standard error, and
+offers explanatory hints for failures such as merge conflicts, pulls blocked by
 uncommitted changes, and rejected pushes. Each hint has a permanent ID and shows
 the terminal command to run and its expected result. It also names the Git stage
 the user is working in (working directory, staging area, local repository, or
@@ -25,11 +25,11 @@ CLI commands
    1. `--all`: display every currently triggered proactive hint instead of
       applying the normal three-hint display limit. (jit45)
 
-   2. `--exclude`: exclude the following list of `git-hint` ids from the
-      generated hints.
+   2. `--exclude <hint-id1[,hint-id2[,...]]>`: exclude the list of `git-hints`
+      ids from the generated hints. **Future work. Do not implement.**
 
-   3. `git-hints --dismiss <hint-id>`: dismiss a currently triggered hint.
-      **Future work. Do not implement.**
+   3. `--dismiss <hint-id1[,hint-id2[,...]]>`: dismiss one or more currently
+      triggered hints. **Future work. Do not implement.**
 
       Save the hint ID and the values used to detect its condition in
       `git-hints/dismissals.json` inside the repository's Git directory.
@@ -45,6 +45,8 @@ CLI commands
       missing allows the commit-identity hint to appear again.
 
       (ewj55; clarified by drj228, sbe80, and jit45)
+
+   4. `--ids-only` outputs only the IDs of hints; typically used for testing.
 2. `git-hints def <command>`: display a short definition of the requested Git
    command, explain what it does, and provide a link to the official Git
    documentation. If the command is unknown, report that it is unsupported.
@@ -55,16 +57,23 @@ CLI commands
    report that it is unsupported instead of generating unverified instructions.
    (jit45) **Future work. Do not implement.**
 
-4. `git-hints explain <git command>`: execute the specified Git command and
-   capture its exit code and standard error. Use this information to select an
-   appropriate reactive hint. Standard output should remain connected to the
-   terminal so commands that open an interactive editor continue to function
-   normally. The tool cannot reliably recover the result of a Git command that
-   was run outside the tool. (drj228)
+4. `git-hints explain -- <git command>`: execute the specified Git command and
+   capture its exit code and standard error, printing both back to the console
+   but also including hints on how to resolve this error; it returns the same
+   exit code that `git` produced. It uses this information to select an
+   appropriate reactive hint. The `<git command>` must start with `git`,
+   producing an error otherwise. If running the Git command produces no error,
+   `git-hints` adds a note saying no error was detected, instead generating an
+   appropriate hint.
 
-5. `git-hints [explain] --bug <user comments explaining why the hint was
-   wrong>`: Gather the current repo state and (for `explain`) git command output
-   then post an issue in the Github repo. **Future work. Do not implement.**
+   Implementation note: on Windows, disable expansion via
+   `windows_expand_args=False` since Typer/Click expands wildcards, `~`, and
+   environment variables that `git` should instead interpret.
+
+5. `git-hints --bug <user comments explaining why the hint was wrong>
+   [explain -- ...]`: Gather the current repo state and (for `explain`) git
+   command output then post an issue in the GitHub repo. **Future work. Do not
+   implement.**
 
 6. Typer automatically generates `--help` for commands and subcommands. Each
    command and subcommand docstring must include at least one usage example so
@@ -80,10 +89,10 @@ CLI commands
 
 2. Each hint should include a 1-sentence breakdown of what Git stage the user is
    currently in (Working in the directory, staging area, local repo, or remote),
-   so the user learns the Git mental model while working (ewj55)
+   so the user learns the Git mental model while working (ewj55).
 
 3. Every hint about a specific task and command links to the official docs for
-   more information (ewj55)
+   more information (ewj55).
 
 4. Maybe highlight sections from the docs to show where that specific hint came
    from (ewj55) **TODO: ewj55 will clarify.**
@@ -111,9 +120,9 @@ CLI commands
       untracked files, local commits, or remote commits. Name what is at risk.
       Prefix the suggested command with `Caution:` when committed work may be
       changed but is usually recoverable through the reflog. Prefix it with
-      `Warning:` when uncommitted or untracked work, or commits on a remote,
-      may be permanently lost; explain what could be lost and tell the user to
-      back it up first. Read-only actions need no safety prefix.
+      `Warning:` when uncommitted or untracked work, or commits on a remote, may
+      be permanently lost; explain what could be lost and tell the user to back
+      it up first. Read-only actions need no safety prefix.
 
    3. Workflow: actionable next-step suggestions based on repository state.
 
@@ -141,10 +150,10 @@ runs. (jit45)
   [stage](https://git-scm.com/docs/git-add "Also called the index; select which changed files to store in a commit")
   files?
 
-  Git stage: Your edits are in the working directory; Git won't put them in a
+* Git stage: Your edits are in the working directory; Git won't put them in a
   commit until you stage them.
 
-  Command: `git add <files to stage>`; afterward, `git status` lists these files
+* Command: `git add <files to stage>`; afterward, `git status` lists these files
   under "Changes to be committed."
 
 * ID: `unstaged-changes`, priority class: workflow, safety: safe.
@@ -155,10 +164,9 @@ runs. (jit45)
 
 * Test case:
 
-  1. Perform `git_setup()`.
-  2. Create one temp directory.
-  3. Execute the following in this temp directory:
-     1. Call `config_user("user1", "user1@foo.com")`.
+  1. Invoke `make_temps(1)` to create a temporary directory.
+  2. Execute the following in this temp directory:
+     1. Call `config_user("user1", "user1@example.com")`.
      2. Create an empty git repo with `git init -b main`.
      3. Create a file called `foo.txt` with the content `xxx`.
      4. Add it: `git add foo.txt`.
@@ -336,14 +344,15 @@ Reactive hints are triggered by the result of a Git command executed through
    Identify the conflicting files and explain how to resolve them. **sbe80 will
    test**
 
-2. Resolve pull conflicts? Conditions: `git-hints explain pull` fails because
-   local uncommitted changes would be overwritten. Identify the affected files
-   and explain how to preserve or resolve the local changes. **jit45 will test**
+2. Resolve pull conflicts? Conditions: `git-hints explain -- git pull` fails
+   because local uncommitted changes would be overwritten. Identify the affected
+   files and explain how to preserve or resolve the local changes. **jit45 will
+   test**
 
-3. Push failed? Conditions: `git-hints explain push` fails because the remote
-   branch contains commits that are not present in the local branch. Explain
-   that the user should integrate the remote changes before attempting to push
-   again. (jhg246)
+3. Push failed? Conditions: `git-hints explain -- git push` fails because the
+   remote branch contains commits that are not present in the local branch.
+   Explain that the user should integrate the remote changes before attempting
+   to push again. (jhg246)
 
 4. Explain
    [stashes](https://www.geeksforgeeks.org/git/git-stash/ "Stores the present state of the local repo")
@@ -358,7 +367,7 @@ Reactive hints are triggered by the result of a Git command executed through
    and that the user should ensure their local work is committed or otherwise
    backed up before proceeding. (sbe80).
 
-### Language and libraries:
+### Language and libraries
 
 1. Language: Python
 2. Package manager: uv
@@ -373,6 +382,7 @@ Reactive hints are triggered by the result of a Git command executed through
    instead of treating them as hint conditions. (drj228) TODO: rethink -- makes
    sense for `git-hints explain`, but perhaps not for plain `git-hints`.
 7. Testing: Pytest
+8. Git: version 2.32 or later, which added `GIT_CONFIG_GLOBAL`.
 
 ## <mark>TODO -- these should be merged with specific implementations above</mark>
 
@@ -456,34 +466,58 @@ Testing
 
 The test tool contains:
 
-* `make_temps(num)`: creates and returns `num` temporary directories. These are
-  removed when the test completes.
+* `make_temps(num)`: creates and returns `num` temporary directories using
+  pytest's `tmp_path_factory`.
 * `make_repo(temp_dir, commands)`: runs the list of `commands` in `temp_dir` to
   create and populate the repository. Each command is either an argument list,
   such as `["git", "commit", "-m", "Add foo."]`, executed using
   `subprocess.run()` with `shell=False`, or a lambda function with no parameters
   used to create, modify, or delete files. Pass each argument separately and
   keep messages containing spaces in a single list element. Do not join
-  arguments into a shell string. (drj228)
-* `config_user(username, email)`: Set Git's `user.name` and `user.email`.
+  arguments into a shell string. (drj228) Lambdas run with `temp_dir` as the
+  current working directory, so they can use relative paths; `make_repo`
+  restores the previous working directory before returning.
+* `config_user(username, email)`: Set Git's global `user.name` and `user.email`.
 * `git_setup()`: creates an isolated Git configuration for the test environment.
   The test environment shall:
-  * use an empty temporary file for GIT\_CONFIG\_GLOBAL so that the user's
-    global Git configuration does not affect test results
-  * set GIT\_CONFIG\_NOSYSTEM=1 so that the system Git configuration does not
-    affect test results
-  * provide Git author and committer identity through environment variables so
-    that tests do not depend on the machine's configured identity
-  * initialize test repositories with git init -b main so that tests do not
-    depend on the machine's init.defaultBranch setting.
+  * Remove every inherited environment variable whose name starts with `GIT_`,
+    plus `EMAIL` and `XDG_CONFIG_HOME`. Git sets `GIT_DIR`, `GIT_WORK_TREE`, and
+    `GIT_INDEX_FILE` when pytest runs from a Git hook, which would make tests
+    act on the outer repository. `GIT_AUTHOR_*`, `GIT_COMMITTER_*`, and `EMAIL`
+    override `user.name` and `user.email`. `GIT_CONFIG_PARAMETERS` and
+    `GIT_CONFIG_COUNT` add configuration that bypasses the files below.
+  * Set `HOME` to an empty temporary directory. Git reads some files from the
+    home directory even when `GIT_CONFIG_GLOBAL` is set, such as the global
+    ignore file `~/.config/git/ignore`.
+  * Set
+    [`GIT_CONFIG_GLOBAL`](https://git-scm.com/docs/git-config#Documentation/git-config.txt-GITCONFIGGLOBAL)
+    ([more docs](https://git-scm.com/docs/git#Documentation/git.txt-GITCONFIGGLOBAL))
+    to a writable temporary file containing only `[init]\ndefaultBranch = main`,
+    so that the user's global Git configuration does not affect test results.
+  * Set
+    [`GIT_CONFIG_NOSYSTEM=1`](https://git-scm.com/docs/git#Documentation/git.txt-GITCONFIGNOSYSTEM)
+    so that the system Git configuration, such as Git for Windows'
+    `core.autocrlf=true`, does not affect test results.
+  * Set
+    [`GIT_CEILING_DIRECTORIES`](https://git-scm.com/docs/git#Documentation/git.txt-GITCEILINGDIRECTORIES)
+    to pytest's base temporary directory (`tmp_path_factory.getbasetemp()`), so
+    Git never finds a repository above a test's temporary directory.
+  * Set
+    [`GIT_TERMINAL_PROMPT=0`](https://git-scm.com/docs/git#Documentation/git.txt-GITTERMINALPROMPT)
+    and
+    [`GIT_EDITOR=true`](https://git-scm.com/docs/git#Documentation/git.txt-GITEDITOR),
+    so no test waits for a password or an editor.
+  * Set `LC_ALL=C`, so Git's messages are in English.
 
-A typical test would make temporary directories, then use these to make repos,
-then set remotes. After changing to the local repo temp dir, it runs git-hints
-and checks that the output is correct.
+A typical test would make temporary directories, then use these to make repos.
+After changing to the local repo temp dir, it runs `git-hints --ids-only <other
+parameters>` and checks that the output is correct.
 
-All Git commands executed as part of a test shall use the isolated test
-environment established by git\_setup(). This prevents test results from varying
-based on the Git configuration of the machine running the tests.
+All Git commands executed as part of a test, including those that `git-hints`
+runs, shall use the isolated test environment established by `git_setup()`. This
+prevents test results from varying based on the Git configuration of the machine
+running the tests. This should be implemented as a PyTest autouse fixture which
+applies to all tests.
 
 ### <mark>TODO: move test cases to follow the implementation of each hint.</mark>
 
