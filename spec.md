@@ -172,12 +172,63 @@ runs. (jit45)
 
 #### <mark>TODO: each of the following hints should be rewritten to follow the above hints.</mark>
 
-2. Keep unstaged changes out of this commit? Conditions: both staged and
-   unstaged changes exist. Explain that a plain `git commit` records staged
-   changes, so unrelated edits can remain unstaged without being discarded.
-   Suggest
-   [git diff --cached](https://git-scm.com/docs/git-diff "Shows the staged changes selected for the next commit.")
-   to review the staging area before committing. (drj228) **sbe80 will test**
+#### Keep [unstaged changes](https://git-scm.com/docs/git-diff "Shows unstaged changes in the working tree.") out of this commit?
+
+   * Hint: Do you want to keep unstaged changes out of this commit? [git commit](https://git-scm.com/docs/git-commit "Records the staged changes in a new commit.") records staged changes only.
+
+   * Git stage: Some of your edits are in the staging area and will be included
+     in the next commit; other edits remain in the working directory and will
+     not be included.
+
+   * Command: `git diff --cached`; afterward, the displayed changes are the
+     ones staged for the next commit. When ready, commit those changes with
+     `git commit -m "message"`.
+
+   * ID: `staged-and-unstaged-changes`, priority class: workflow, safety: safe.
+
+   * Conditions: The repository has at least one staged change and at least one
+     unstaged change to a tracked file. The hint is absent when only staged
+     changes or only unstaged changes exist. (drj228; test sbe80)
+
+   * Test case 2: Staged and unstaged changes. (Written by sbe80) --
+     Requirements Proactive 2 and 10
+
+     1. Call `git_setup()` and create one temporary directory.
+     2. In the temporary directory, initialize a repository with `git init -b main`.
+     3. Call `config_user("user1", "user1@foo.com")` after initializing the
+        repository.
+     4. Create `foo.txt` containing `xxx`, stage it with `git add foo.txt`, and
+        commit it with `git commit -m "Add foo."`.
+     5. Check the staged-only state:
+        1. Append `y` to `foo.txt` and run `git add foo.txt`.
+        2. Run `git-hints --all`.
+        3. Verify that the Proactive 2 hint is absent, because there are no
+           unstaged changes.
+        4. Verify that the Proactive 10 hint appears, identified by its own
+           permanent hint ID. Verify that it recommends reviewing staged
+           changes with `git diff --cached` and explains how to commit the
+           selected changes with `git commit -m "message"`. Check the
+           corresponding official Git documentation links.
+     6. Check the unstaged-only state:
+        1. Commit the staged change with `git commit -m "Append y."`.
+        2. Append `z` to `foo.txt` without staging it.
+        3. Run `git-hints --all` and verify both the Proactive 2 and Proactive
+           10 hints are absent: the file has unstaged changes, but nothing is
+           staged for the next commit.
+     7. Check the staged-plus-unstaged state:
+        1. Run `git add foo.txt` to stage the `z` change.
+        2. Append `w` to `foo.txt` and leave this change unstaged.
+        3. Run `git-hints --all`.
+        4. Verify that both Proactive 2 and Proactive 10 appear, each
+           identified by its own permanent hint ID. Verify that Proactive 2
+           explains a plain `git commit` records staged changes only and
+           suggests `git diff --cached`.
+        5. Verify that Proactive 10 recommends reviewing the staged changes
+           with `git diff --cached` and committing the selected changes with
+           `git commit -m "message"`. Confirm the two hints are distinct and
+           include the corresponding official Git documentation links,
+           including `https://git-scm.com/docs/git-diff` and
+           `https://git-scm.com/docs/git-commit`.
 
 3. Push? Conditions: the local branch has commits that have not been pushed to
    the remote branch. **test ewj55**
@@ -435,44 +486,6 @@ environment established by git\_setup(). This prevents test results from varying
 based on the Git configuration of the machine running the tests.
 
 ### <mark>TODO: move test cases to follow the implementation of each hint.</mark>
-
-### Test case 2: Staged and unstaged changes. (Written by sbe80) -- Requirements Proactive 2 and 10
-
-1. Call `git_setup()` and create one temporary directory.
-2. In the temporary directory, initialize a repository with `git init -b main`.
-3. Call `config_user("user1", "user1@foo.com")` after initializing the
-   repository.
-4. Create `foo.txt` containing `xxx`, stage it with `git add foo.txt`, and
-   commit it with `git commit -m "Add foo."`.
-5. Check the staged-only state:
-   1. Append `y` to `foo.txt` and run `git add foo.txt`.
-   2. Run `git-hints --all`.
-   3. Verify that the Proactive 2 hint is absent, because there are no
-      unstaged changes.
-   4. Verify that the Proactive 10 hint appears, identified by its own
-      permanent hint ID. Verify that it recommends reviewing staged changes
-      with `git diff --cached` and explains how to commit the selected changes
-      with `git commit -m "message"`. Check the corresponding official Git
-      documentation links.
-6. Check the unstaged-only state:
-   1. Commit the staged change with `git commit -m "Append y."`.
-   2. Append `z` to `foo.txt` without staging it.
-   3. Run `git-hints --all` and verify both the Proactive 2 and Proactive 10
-      hints are absent: the file has unstaged changes, but nothing is staged
-      for the next commit.
-7. Check the staged-plus-unstaged state:
-   1. Run `git add foo.txt` to stage the `z` change.
-   2. Append `w` to `foo.txt` and leave this change unstaged.
-   3. Run `git-hints --all`.
-   4. Verify that both Proactive 2 and Proactive 10 appear, each identified by
-      its own permanent hint ID. Verify that Proactive 2 explains a plain `git
-      commit` records staged changes only and suggests `git diff --cached`.
-   5. Verify that Proactive 10 recommends reviewing the staged changes with
-      `git diff --cached` and committing the selected changes with `git commit
-      -m "message"`. Confirm the two hints are distinct and include the
-      corresponding official Git documentation links, including
-      `https://git-scm.com/docs/git-diff` and
-      `https://git-scm.com/docs/git-commit`.
 
 ### Test case 3: Resolving merge conflicts. (Written by sbe80) -- Requirement Reactive 1
 
