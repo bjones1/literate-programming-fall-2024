@@ -270,19 +270,43 @@ runs. (jit45)
    current branch using `git branch --show-current`. Display the current branch
    to the user as a hint until overwritten. (sbe80).
 
-9. Configure upstream branch? Condition: if the current branch does not have an
-   upstream remote branch configured. Detect with `git rev-parse --abbrev-ref
-   --symbolic-full-name @{upstream}` and suggest setting one before attempting
-   to push. **ams2083 will test**
+**ams2083**
+* Hint: Do you want to configure an [upstream branch](https://git-scm.com/docs/git-branch "A remote branch that your local branch tracks") before pushing?
 
-10. Review staged changes before committing? Conditions: the staging area
+* Git stage: Your current branch has no upstream branch configured. An upstream allows Git to identify which remote branch your local branch tracks, simplifying future pushes and pulls.
+
+* Command: `git push -u origin <branch-name>` pushes the current branch to `origin` and configures its upstream for future pushes and pulls.
+
+* ID: `no-upstream-branch`, priority class: workflow, safety: safe.
+
+* Conditions: The current branch has no upstream branch configured. Confirm that the repository is on a local branch, rather than in a detached HEAD state, using `git symbolic-ref --quiet --short HEAD`. Check for an upstream using `git rev-parse --abbrev-ref --symbolic-full-name "@{upstream}"`. Confirm that the `origin` remote exists using `git remote`. Suggest configuring an upstream only when the current branch has no resolvable upstream and `origin` exists. Do not display the hint in detached HEAD state or when a valid upstream is configured.
+
+* Test case:
+
+1. Invoke `make_temps(2)` to create two temporary directories.
+2. In the first directory:
+   1. Initialize a repository with `git init -b main`.
+   2. Call `config_user("user1", "user1@foo.com")`.
+   3. Create `foo.txt` containing `xxx`.
+   4. Stage it with `git add foo.txt`.
+   5. Commit it with `git commit -m "Add foo."`.
+   6. Create and switch to a new branch with `git switch -c feature-test`.
+3. In the second directory, initialize a bare remote repository with `git init --bare`.
+4. In the first directory, add the second repository as the `origin` remote using `git remote add origin <path-to-second-directory>`.
+5. Run `git rev-parse --abbrev-ref --symbolic-full-name @{upstream}` and verify that it fails because no upstream is configured.
+6. Run `git-hints --all`. Verify that the hint with ID `no-upstream-branch` appears and recommends `git push -u origin feature-test`.  7. Verify that the hint recommends `git push -u origin feature-test`.
+7. Run `git push -u origin feature-test` to push the branch and configure its upstream.
+8. Run `git rev-parse --abbrev-ref --symbolic-full-name "@{upstream}"` and verify that it returns `origin/feature-test`.
+9. Run `git-hints --all` and verify that the hint with ID `no-upstream-branch` is absent.
+
+9. Review staged changes before committing? Conditions: the staging area
     contains changes ready for a commit. Suggest `git diff --cached` so the user
     can check exactly what will be committed and unrelated edits can remain
     unstaged without being discarded. Suggest `git commit   -m    "message"` to
     create a new commit containing the desired staged changes so the user can
     commit them when they are satisfied. (drj228) **sbe80 will test**
 
-11. Configure your commit identity? Conditions: `user.name` or `user.email` is
+10. Configure your commit identity? Conditions: `user.name` or `user.email` is
     missing or empty in the effective Git configuration. Explain how to set the
     missing value using `git config --global user.name "Your Name"` or `git
     config --global user.email "you@example.com"`.
@@ -293,14 +317,51 @@ runs. (jit45)
     local override should be corrected locally. These settings identify commit
     authors; they do not sign the user into GitHub. (drj228)
 
-12. Untracked files need to be sorted? Conditions: one or more untracked files
-    exist in the working directory. Detect untracked files with `git    status
-    --porcelain`. If an untracked file should normally be ignored, such as .env,
-    **pycache**.py, output build files, and directories, suggest adding it to
-    .gitignore. If an ordinary untracked file exists, suggest `git add filename`
-    to move the file into the staging area. (ams2083)
+**ams2083**
+* Hint: Do you need to [stage](https://git-scm.com/docs/git-add "Add files to the staging area") or [ignore](https://git-scm.com/docs/gitignore "Specify intentionally untracked files that Git should ignore") untracked files?
+  
+  * Git stage: Your working directory contains files that Git is not currently tracking. Ordinary project files should be staged if you want to include them in a future commit. Files containing secrets, temporary files, caches, and generated build outputs should generally be ignored.
 
-13. Commit repo? Conditions: More than 50% of the repository's tracked files
+  * Command: Run `git status --porcelain=v1` to identify untracked files, indicated by lines beginning with `??`. Use `git add <filename>` to stage files you want to track, or add appropriate patterns to `.gitignore` for files that should remain untracked. Run `git status` afterward to verify the changes.
+
+  * ID: `untracked-files`, priority class: workflow, safety: safe.
+
+  * Conditions: One or more untracked files exist in the working directory. Run `git status --porcelain=v1` and check for lines beginning with `??`. If ordinary untracked files exist, suggest staging them with `git add <filename>`. If files commonly excluded from version control are detected, such as `.env`, `__pycache__/`, `*.pyc`, or generated build outputs, suggest adding appropriate patterns to `.gitignore`. Display the hint when at least one untracked file or directory exists. Do not display the hint when no untracked files remain.
+
+  * Test case:
+
+    1. Call `git_setup()`. Create one temporary directory.
+    2. In the temporary directory, initialize a repository with `git init -b main`.
+    3. Call `config_user("user1", "user1@foo.com")`.
+    4. Create `foo.txt` containing `xxx`, stage it with `git add foo.txt`, and commit it with `git commit -m "Add foo."`.
+    5. Check the ordinary untracked file state:
+       1. Create `notes.txt` containing `Hello world` without staging it.
+       2. Run `git status --porcelain=v1` and verify that `?? notes.txt` appears.
+       3. Run `git-hints --all`.
+       4. Verify that the hint with ID `untracked-files` appears and recommends `git add notes.txt`.
+       5. Verify that the hint includes the appropriate official Git documentation links.
+    6. Check the staged file state:
+       1. Run `git add notes.txt` to stage the untracked file.
+       2. Run `git status --porcelain=v1` and verify that `notes.txt` is now staged rather than untracked.
+       3. Run `git-hints --all`.
+       4. Verify that the hint with ID `untracked-files` is absent because no untracked files remain.
+    7. Check the untracked file that should be ignored:
+       1. Create a file named `.env` containing `TEST_VARIABLE=example`.
+       2. Create a directory named `__pycache__` containing a file called `example.pyc`.
+       3. Run `git status --porcelain=v1` and verify that `.env` and `__pycache__/` appear as untracked.
+       4. Run `git-hints --all`.
+       5. Verify that the hint with ID `untracked-files` appears.
+       6. Verify that the hint recommends adding appropriate patterns to `.gitignore` instead of staging these files. Check the corresponding official Git documentation links.
+    8. Check the ignored file state:
+       1. Create a `.gitignore` file containing patterns for `.env`, `__pycache__/`, and `*.pyc`.
+       2. Stage `.gitignore` with `git add .gitignore`.
+       3. Run `git status --porcelain` and verify that `.env` and `__pycache__/` no longer appear as untracked.
+       4. Run `git-hints --all`.
+       5. Verify that the hint with ID `untracked-files` is absent because all remaining files are either tracked or ignored.
+       3. Run `git-hints --all`.
+       4. Verify that the hint with ID `untracked-files` is absent because no untracked files remain.
+
+11. Commit repo? Conditions: More than 50% of the repository's tracked files
     have staged, unstaged, or deleted changes relative to HEAD. Use
     `git    status --porcelain` to identify changed tracked files and compare
     that number to the total number of tracked files. Untracked files should be
@@ -308,28 +369,28 @@ runs. (jit45)
     half of the tracked files have changes, suggest reviewing and committing the
     changes. (jit45) **jit45 will test**
 
-14. Detached HEAD state? Conditions: the repository exists, HEAD is not attached
+12. Detached HEAD state? Conditions: the repository exists, HEAD is not attached
     to a local branch, and Git is not currently performing a rebase or bisect
     operation. Explain that the user is working in the local repository at a
     specific commit instead of on a named branch. Suggest `git switch -c <name>`
     to create and switch to a new branch if the user wants to preserve future
     commits. (jit45) **drj228 will test**
 
-15. This repository does not have any commits yet? Conditions: the current
+13. This repository does not have any commits yet? Conditions: the current
     directory is a Git repository, but HEAD does not yet resolve to a commit.
     Use `git rev-parse --verify HEAD` to confirm and explain that the local
     repository has no saved commit yet. If files are staged, suggest
     `git    commit -m "Initial commit"` to create the first commit. (jit45)
     **drj228 will test**
 
-16. Branch has diverged from upstream? Conditions: the local branch is both
+14. Branch has diverged from upstream? Conditions: the local branch is both
     ahead and behind its upstream branch. Suggest
     [git pull](https://git-scm.com/docs/git-pull "Fetches and integrates remote commits; --rebase replays yours on top of them.")
     or `git pull --rebase`, then
     [git push](https://git-scm.com/docs/git-push "Uploads local commits to the remote branch.").
     (sbe80; edited by jhg246) **jhg246 will test.**
 
-17. Committing to protected/main branch? Conditions: the current branch is
+15. Committing to protected/main branch? Conditions: the current branch is
     master/main and there are changes. If other branches exist, suggest other
     branches. If no other branches exist, suggest creating a new branch with
     `git switch -c <name>`. (raf322)
@@ -424,11 +485,7 @@ Reactive hints are triggered by the result of a Git command executed through
    command failures separately. These checks use the effective configuration,
    including repository and global settings. (drj228)
 
-8. Untracked files exist: run `git status --porcelain`. Lines beginning with
-   `??` indicate files that Git sees in the working directory but isn't
-   currently tracking. (ams2083)
-
-9. HEAD is detached rather than attached to a local branch: run `git
+8. HEAD is detached rather than attached to a local branch: run `git
    symbolic-ref --quiet --short HEAD`. A zero exit code means HEAD is attached
    to a branch and the command prints the branch name. A non-zero exit code in
    an otherwise valid Git repository means HEAD is detached.
@@ -441,24 +498,24 @@ Reactive hints are triggered by the result of a Git command executed through
    If any corresponding operation state exists, suppress the detached-HEAD hint.
    (jit45)
 
-10. Committing to main/master: Run `git branch --show-current` to identify
+9. Committing to main/master: Run `git branch --show-current` to identify
     current branch. If the branch is main, check for other remote/active
     branches with `git for-each-ref --format='%(refname:short)'
     refs/heads   refs/remotes`. If the list contains no other branches besides
     the protected branch(es), suggest the creation of a new branch. Otherwise,
     suggest other branches on the list. (raf322)
 
-11. Run `git status -sb`. If the status reports that the local branch is ahead
+10. Run `git status -sb`. If the status reports that the local branch is ahead
     *and* behind its upstream branch, the branches have diverged. (sbe80)
 
-12. The `git-hints explain` command must pass Git arguments through without
+11. The `git-hints explain` command must pass Git arguments through without
     Typer attempting to parse them as options. Configure the command to allow
     extra arguments and ignore unknown options (for example, using
     allow\_extra\_args=True and ignore\_unknown\_options=True) so commands such
     as `git-hints explain pull --rebase` and `git-hints explain reset   --hard
     HEAD~1` are passed to Git correctly (sbe80).
 
-13. The `git-hints explain` command should not require the word `git` after the
+12. The `git-hints explain` command should not require the word `git` after the
     word `explain`. (sbe80)
 
 Testing
@@ -612,58 +669,6 @@ Step 4 expected: **Your branch has diverged from upstream.** (ID `diverged`),
 suggesting `git pull` or `git pull --rebase`, then `git push`, with a
 [git pull](https://git-scm.com/docs/git-pull "Fetches and integrates remote commits; --rebase replays yours on top of them.")
 link. No `behind` or **Push?** hint.
-
-### Test case 8: Push Failed. (ams2083) -- Requirement Reactive 3
-
-1. Call `git_setup()`. Create three temporary directories: `remote`, `local`,
-   and `other`.
-2. Call `config_user("user1", "user1@foo.com")`.
-3. In `remote`, create a bare repository with `git init --bare -b main`.
-4. In `other`, clone the `remote` repository using `git clone <remote> <other>`.
-5. In `other`:
-   1. Create `foo.txt` containing `xxx`.
-   2. Run `git add foo.txt`.
-   3. Run `git commit -m "Add foo."`.
-   4. Run `git push -u origin main`.
-6. Clone the `remote` repository into `local` using `git clone <remote>
-   <local>`.
-7. In other, modify `foo.txt`, commit the change, and push it to the remote:
-   1. Append `y` to foo.txt.
-   2. Run `git commit -am "Update foo."`.
-   3. Run `git push`.
-8. In `local`, create a different `local` commit without first pulling the newer
-   remote commit:
-   1. Create `bar.txt` containing `zzz`.
-   2. Run `git add bar.txt`.
-   3. Run `git commit -m "Add bar."`.
-9. Run `git-hints explain push` in the `local` repository.
-10. Confirm that the push fails because the `remote` branch contains commits
-    that are not present in the `local` branch.
-11. Expected hint: *Push failed?*
-12. Verify that the hint explains that `remote` contains newer commits and
-    suggests [pulling](https://git-scm.com/docs/git-pull) with `git pull` before
-    attempting to [push](https://git-scm.com/docs/git-push) with `git push`
-    again.
-
-### Test case 9: Configure upstream branch. (ams2083) -- Requirement Proactive 9
-
-1. Call `git_setup()`. Create one temporary directory.
-2. Call `config_user("user1", "user1@foo.com")`.
-3. In the temporary directory, create a Git repository with `git init -b main`.
-4. Create `foo.txt` containing `xxx`.
-5. Run `git add foo.txt`.
-6. Run `git commit -m "Add foo."`.
-7. Create and switch to a new local branch using `git switch -c feature-test`.
-8. Do not configure an upstream remote branch for `feature-test`.
-9. Run `git rev-parse --abbrev-ref --symbolic-full-name @{upstream}` and verify
-   that the command fails because no upstream is configured.
-10. Run `git-hints` in the local repository.
-11. Expected hint: *Configure upstream branch?*
-12. Verify the hint explains `feature-test` exists only as a local branch and
-    [doesn't track](https://git-scm.com/docs/git-rev-parse/2.27.0) an upstream
-    remote branch.
-13. Verify that the hint suggests configuring an upstream branch before
-    attempting to push.
 
 ### Test case 10: Detached HEAD state. (Written by drj228)
 
