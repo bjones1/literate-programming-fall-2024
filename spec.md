@@ -180,7 +180,7 @@ runs. (jit45)
 
 #### <mark>TODO: each of the following hints should be rewritten to follow the above hints.</mark>
 
-#### Keep [unstaged changes](https://git-scm.com/docs/git-diff "Shows unstaged changes in the working tree.") out of this commit?
+#### Keep [unstaged changes](https://git-scm.com/docs/git-diff "Shows unstaged changes in the working tree.") out of this commit? **Sbe80**
 
    * Hint: Do you want to keep unstaged changes out of this commit? [git commit](https://git-scm.com/docs/git-commit "Records the staged changes in a new commit.") records staged changes only.
 
@@ -194,12 +194,9 @@ runs. (jit45)
 
    * ID: `staged-and-unstaged-changes`, priority class: workflow, safety: safe.
 
-   * Conditions: The repository has at least one staged change and at least one
-     unstaged change to a tracked file. The hint is absent when only staged
-     changes or only unstaged changes exist. (drj228; test sbe80)
+   * Conditions: Display this hint when the staging area contains at least one staged change and the working tree contains at least one unstaged change to a tracked file. Run `git diff --cached --quiet` to check for staged changes and `git diff --quiet` to check for unstaged changes to tracked files. For either command, exit code 1 means changes exist, exit code 0 means none exist, and any other exit code indicates an error. Show the hint only when both commands exit with code 1; do not show it when only staged changes or only unstaged changes exist. (drj228; sbe80 will test)
 
-   * Test case 2: Staged and unstaged changes. (Written by sbe80) --
-     Requirements Proactive 2 and 10
+   * Test case: Staged and unstaged changes.
 
      1. Call `git_setup()` and create one temporary directory.
      2. In the temporary directory, initialize a repository with `git init -b main`.
@@ -294,17 +291,32 @@ runs. (jit45)
 3. In the second directory, initialize a bare remote repository with `git init --bare`.
 4. In the first directory, add the second repository as the `origin` remote using `git remote add origin <path-to-second-directory>`.
 5. Run `git rev-parse --abbrev-ref --symbolic-full-name @{upstream}` and verify that it fails because no upstream is configured.
-6. Run `git-hints --all`. Verify that the hint with ID `no-upstream-branch` appears and recommends `git push -u origin feature-test`.  7. Verify that the hint recommends `git push -u origin feature-test`.
+6. Run `git-hints --all`. Verify that the hint with ID `no-upstream-branch` appears and recommends `git push -u origin feature-test`.
 7. Run `git push -u origin feature-test` to push the branch and configure its upstream.
 8. Run `git rev-parse --abbrev-ref --symbolic-full-name "@{upstream}"` and verify that it returns `origin/feature-test`.
 9. Run `git-hints --all` and verify that the hint with ID `no-upstream-branch` is absent.
 
-9. Review staged changes before committing? Conditions: the staging area
-    contains changes ready for a commit. Suggest `git diff --cached` so the user
-    can check exactly what will be committed and unrelated edits can remain
-    unstaged without being discarded. Suggest `git commit   -m    "message"` to
-    create a new commit containing the desired staged changes so the user can
-    commit them when they are satisfied. (drj228) **sbe80 will test**
+#### Review staged changes before committing? **sbe80**
+
+   * Hint: Would you like to review your [staged changes](https://git-scm.com/docs/git-diff "Show changes staged for the next commit") before committing? Use [git commit](https://git-scm.com/docs/git-commit "Record the staged changes in a new commit") when they are ready.
+
+   * Git stage: You have changes in the staging area that will be included in the next commit. Unstaged edits remain in the working directory and will not be included.
+
+   * Command: Run `git diff --cached` to review the staged changes. When they are ready, run `git commit -m "message"` to create a commit containing those staged changes.
+
+   * ID: `staged-changes`, priority class: workflow, safety: safe.
+
+   * Conditions: Display this hint when the staging area contains at least one change to be committed. Run `git diff --cached --quiet`; exit code 1 means staged changes exist, exit code 0 means none exist, and any other exit code indicates an error. Do not display the hint when the staging area is empty. This includes staged files in a repository with no commits yet. (drj228; sbe80 will test)
+
+   * Test case:
+
+     1. Call `git_setup()` and create one temporary directory.
+     2. Initialize a repository in that directory with `git init -b main`.
+     3. Call `config_user("user1", "user1@example.com")`.
+     4. Run `git-hints --all` and verify that the `staged-changes` hint is absent.
+     5. Create `foo.txt` containing `xxx` and stage it with `git add foo.txt`.
+     6. Run `git-hints --all` and verify that the `staged-changes` hint appears. Verify that it recommends `git diff --cached` and `git commit -m "message"`, and includes links to the official `git diff` and `git commit` documentation.
+     7. Commit the file with `git commit -m "Add foo."` and run `git-hints --all` again. Verify that the `staged-changes` hint is absent.
 
 10. Configure your commit identity? Conditions: `user.name` or `user.email` is
     missing or empty in the effective Git configuration. Explain how to set the
@@ -395,7 +407,7 @@ runs. (jit45)
     branches. If no other branches exist, suggest creating a new branch with
     `git switch -c <name>`. (raf322)
 
-### `git-hints explain <git command>`
+### `git-hints explain -- git <command> [<args>...]`
 
 Reactive hints are triggered by the result of a Git command executed through
 `git-hints explain`. (jit45)
@@ -512,11 +524,12 @@ Reactive hints are triggered by the result of a Git command executed through
     Typer attempting to parse them as options. Configure the command to allow
     extra arguments and ignore unknown options (for example, using
     allow\_extra\_args=True and ignore\_unknown\_options=True) so commands such
-    as `git-hints explain pull --rebase` and `git-hints explain reset   --hard
+    as `git-hints explain -- git pull --rebase` and `git-hints explain -- git reset --hard
     HEAD~1` are passed to Git correctly (sbe80).
 
-12. The `git-hints explain` command should not require the word `git` after the
-    word `explain`. (sbe80)
+12. The `git-hints explain` command requires the command after `explain` to begin
+    with `git`. Use the `--` separator, as in `git-hints explain -- git status`;
+    report an error if the command does not begin with `git`. (sbe80)
 
 Testing
 -------
@@ -566,9 +579,12 @@ The test tool contains:
     so no test waits for a password or an editor.
   * Set `LC_ALL=C`, so Git's messages are in English.
 
-A typical test would make temporary directories, then use these to make repos.
-After changing to the local repo temp dir, it runs `git-hints --ids-only <other
-parameters>` and checks that the output is correct.
+A typical test calls `git_setup()` (provided as an autouse fixture), creates
+temporary directories with `make_temps()`, and uses `make_repo()` to set up
+repositories. Run `git-hints --all` when checking hint content, commands, and
+documentation links. Use `git-hints --ids-only` when checking whether a hint ID
+is present or absent. Both modes must run with the repository under test as the
+current working directory.
 
 All Git commands executed as part of a test, including those that `git-hints`
 runs, shall use the isolated test environment established by `git_setup()`. This
@@ -591,7 +607,7 @@ applies to all tests.
 6. In `repo2`, call `config_user("user2", "user2@foo.com")`. Append `z` to
    `foo.txt`, stage it with `git add foo.txt`, and commit it with `git commit -m
    "Append z."`.
-7. In `repo2`, run `git-hints explain pull --no-rebase` and capture its exit
+7. In `repo2`, run `git-hints explain -- git pull --no-rebase` and capture its exit
    code and output.
 8. Verify that the Git command exits non-zero and leaves an unresolved merge
    conflict. Verify with `git diff --name-only --diff-filter=U` that `foo.txt`
@@ -679,18 +695,18 @@ For Requirement Proactive 14, written by jit45.
 3. Call `config_user("user1", "user1@example.com")`.
 4. Create `foo.txt` containing `xxx`, stage it, and commit it. Run Git commands
    as argument lists with `shell=False`.
-5. Run `git-hints all`. Verify that the detached-HEAD hint is absent while HEAD
+5. Run `git-hints --all`. Verify that the detached-HEAD hint is absent while HEAD
    is attached to `main`.
 6. Run `git switch --detach HEAD`.
 7. Run `git symbolic-ref --quiet --short HEAD`. Verify exit code 1, indicating
    that HEAD is detached. Confirm that no rebase or bisect is in progress.
-8. Run `git-hints all`. Verify that the detached-HEAD hint appears, explains
+8. Run `git-hints --all`. Verify that the detached-HEAD hint appears, explains
    that HEAD points to a commit instead of a named branch, and suggests `git
    switch -c <name>` to preserve future commits. Verify that it includes a link
    to the official Git documentation. Identify the hint by its permanent ID
    rather than exact wording.
 9. Run `git switch -c saved-work`.
-10. Run `git-hints all` again. Verify that the detached-HEAD hint is absent
+10. Run `git-hints --all` again. Verify that the detached-HEAD hint is absent
     because HEAD is now attached to `saved-work`.
 
 ### Test case 11: Repository has no commits. (Written by drj228)
@@ -703,18 +719,18 @@ For Requirement Proactive 15, written by jit45.
    argument lists with `shell=False`.
 4. Run `git rev-parse --verify HEAD`. Verify that it fails because the
    repository has no commits.
-5. Run `git-hints all`. Verify that the no-commits hint appears and explains
+5. Run `git-hints --all`. Verify that the no-commits hint appears and explains
    that the repository has no saved commit yet. Since no files are staged, it
    should not suggest committing yet.
 6. Create `foo.txt` containing `xxx` and run `git add foo.txt`.
-7. Run `git-hints all` again. Verify that the no-commits hint now suggests `git
+7. Run `git-hints --all` again. Verify that the no-commits hint now suggests `git
    commit -m "Initial commit"` and includes a link to the official Git commit
    documentation. Identify the hint by its permanent ID rather than exact
    wording.
 8. Run `git commit -m "Initial commit"`.
 9. Run `git rev-parse --verify HEAD`. Verify exit code 0 and a commit hash in
    the output.
-10. Run `git-hints all` again. Verify that the no-commits hint is absent now
+10. Run `git-hints --all` again. Verify that the no-commits hint is absent now
     that the repository contains a commit.
 
 ### Test case 12: Commit repo? (Written by jit45) -- Requirement Proactive 13
@@ -730,14 +746,14 @@ For Requirement Proactive 15, written by jit45.
 8. Create an untracked file named `untracked.txt`.
 9. Run `git status --porcelain` and verify that exactly two of the four tracked
    files are changed and that `untracked.txt` appears as untracked.
-10. Run `git-hints all`.
+10. Run `git-hints --all`.
 11. Verify that the **Commit repo?** hint is absent because exactly 50% of the
     tracked files are changed. The untracked file must not count toward the
     percentage.
 12. Modify `three.txt`, leaving the change unstaged.
 13. Run `git status --porcelain` again and verify that three of the four tracked
     files are now changed.
-14. Run `git-hints all`.
+14. Run `git-hints --all`.
 15. Verify that the **Commit repo?** hint appears because more than 50% of the
     tracked files have staged, unstaged, or deleted changes relative to HEAD.
 16. Verify that the hint suggests reviewing and committing the changes.
@@ -763,7 +779,7 @@ For Requirement Proactive 15, written by jit45.
 13. In `other`, run `git push`.
 14. In `local`, run `git status --porcelain` and verify that `foo.txt` has an
     uncommitted local modification.
-15. In `local`, run `git-hints explain pull`.
+15. In `local`, run `git-hints explain -- git pull`.
 16. Verify that the pull fails because the incoming remote change would
     overwrite the uncommitted local change to `foo.txt`.
 17. Verify that the **Resolve pull conflicts?** reactive hint appears.
