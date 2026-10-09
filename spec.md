@@ -82,6 +82,14 @@ CLI commands
 
 <h2 id="cc-SbouyCXTsP">Hint structure</h2>
 
+### Repository context
+
+On each run inside a Git working tree, display the current branch name as a
+context line outside the hint list. Detect it with `git branch --show-current`.
+If the command returns an empty value because HEAD is detached, display
+`detached HEAD`. This context line is not a hint and does not count toward the
+three-hint limit. (sbe80)
+
 1. Each actionable hint must show the terminal command and explain its expected
    result. The initial implementation will support the CLI. If a GUI is added
    later, show the equivalent GUI action alongside the terminal command. (ewj55;
@@ -207,28 +215,29 @@ runs. (jit45)
      5. Check the staged-only state:
         1. Append `y` to `foo.txt` and run `git add foo.txt`.
         2. Run `git-hints --all`.
-        3. Verify that the Proactive 2 hint is absent, because there are no
-           unstaged changes.
-        4. Verify that the Proactive 10 hint appears, identified by its own
-           permanent hint ID. Verify that it recommends reviewing staged
-           changes with `git diff --cached` and explains how to commit the
+        3. Verify that the `staged-and-unstaged-changes` hint is absent,
+           because there are no unstaged changes.
+        4. Verify that the `staged-changes` hint appears. Verify that it
+           recommends reviewing staged changes with `git diff --cached` and
+           explains how to commit the
            selected changes with `git commit -m "message"`. Check the
            corresponding official Git documentation links.
      6. Check the unstaged-only state:
         1. Commit the staged change with `git commit -m "Append y."`.
         2. Append `z` to `foo.txt` without staging it.
-        3. Run `git-hints --all` and verify both the Proactive 2 and Proactive
-           10 hints are absent: the file has unstaged changes, but nothing is
-           staged for the next commit.
+        3. Run `git-hints --all` and verify that both the
+           `staged-and-unstaged-changes` and `staged-changes` hints are absent:
+           the file has unstaged changes, but nothing is staged for the next
+           commit.
      7. Check the staged-plus-unstaged state:
         1. Run `git add foo.txt` to stage the `z` change.
         2. Append `w` to `foo.txt` and leave this change unstaged.
         3. Run `git-hints --all`.
-        4. Verify that both Proactive 2 and Proactive 10 appear, each
-           identified by its own permanent hint ID. Verify that Proactive 2
-           explains a plain `git commit` records staged changes only and
-           suggests `git diff --cached`.
-        5. Verify that Proactive 10 recommends reviewing the staged changes
+        4. Verify that both the `staged-and-unstaged-changes` and
+           `staged-changes` hints appear. Verify that the
+           `staged-and-unstaged-changes` hint explains that a plain `git commit`
+           records staged changes only and suggests `git diff --cached`.
+        5. Verify that `staged-changes` recommends reviewing the staged changes
            with `git diff --cached` and committing the selected changes with
            `git commit -m "message"`. Confirm the two hints are distinct and
            include the corresponding official Git documentation links,
@@ -262,10 +271,6 @@ runs. (jit45)
    pull` before beginning new work. Make clear that this status is only as
    current as the most recent fetch. (jhg246; adapted from jit45 personal
    experience) **jhg246 and raf322 will test**
-
-8. Current branch? Condition: three other hints are not in use. Detect the
-   current branch using `git branch --show-current`. Display the current branch
-   to the user as a hint until overwritten. (sbe80).
 
 **ams2083**
 * Hint: Do you want to configure an [upstream branch](https://git-scm.com/docs/git-branch "A remote branch that your local branch tracks") before pushing?
@@ -428,7 +433,7 @@ Reactive hints are triggered by the result of a Git command executed through
    to push again. (jhg246)
 
 4. Explain
-   [stashes](https://www.geeksforgeeks.org/git/git-stash/ "Stores the present state of the local repo")
+   [stashes](https://git-scm.com/docs/git-stash "Save changes temporarily in the stash")
    including: what they are, how to make one, and how to see old ones.
    Condition: a command executed through `git-hints explain` reports a conflict
    where temporarily setting aside local changes would help. (sbe80)
