@@ -71,6 +71,11 @@ CLI commands
    the generated help is useful. Examples should use the complete command names,
    such as `git-hints def status` and `git-hints howto commit`. (jit45)
 
+Future Work
+-----------
+
+1. CodeChat Editor automatically displays a hyperlink and a summarized definition whenever specific commands such as "repo" or "pull" are typed out. Purpose of this feature is to serve an inline reminder of command functions, giving users immediate context while they work directly within the IDE. (ewj55)
+
 <h2 id="cc-SbouyCXTsP">Hint structure</h2>
 
 1. Each actionable hint must show the terminal command and explain its expected
@@ -85,8 +90,7 @@ CLI commands
 3. Every hint about a specific task and command links to the official docs for
    more information (ewj55)
 
-4. Maybe highlight sections from the docs to show where that specific hint came
-   from (ewj55) **TODO: ewj55 will clarify.**
+4. Highlight sections from the docs to show where that specific hint came from (ewj55) **Example: When you see the definition for a push command that might have been simplified to "It sends your updated files from your local personal computer to a shared central computer, making them public" you can click on the link to the documentation and it will highlight the section where that summarized definition came from, which was from the quote "Updates one or more branches, tags, or other references in one or more remote repositories from your local repository, and sends all necessary data that isn’t already on the remote." Its similar to how search engines use Scroll to Text Fragment(STTF) and Featured Snippets to highlight the specifc information you are most likely looking for.**
 
 5. Hints must consist of Markdown text. Each documentation link must include a
    title summarizing the linked term or command, limited to 160 characters. Put
@@ -111,9 +115,9 @@ CLI commands
       untracked files, local commits, or remote commits. Name what is at risk.
       Prefix the suggested command with `Caution:` when committed work may be
       changed but is usually recoverable through the reflog. Prefix it with
-      `Warning:` when uncommitted or untracked work, or commits on a remote,
-      may be permanently lost; explain what could be lost and tell the user to
-      back it up first. Read-only actions need no safety prefix.
+      `Warning:` when uncommitted or untracked work, or commits on a remote, may
+      be permanently lost; explain what could be lost and tell the user to back
+      it up first. Read-only actions need no safety prefix.
 
    3. Workflow: actionable next-step suggestions based on repository state.
 
@@ -170,6 +174,58 @@ runs. (jit45)
      9. Run `git-hints --all` in the temp dir. Hint ID: `unstaged-changes` must
         not appear.
 
+### Push (ewj55)
+
+* Hint: Do you want to [push](https://git-scm.com/docs/git-push "Uploads the latest changes of your local repository (repo) to a remote repository, this allows other collaborators to download your work.")?
+
+  Git Stage: You are working in the local repo. You have commits that have not been pushed to the remote branch.
+
+  Command: `git push <remote> <name of local branch>:<name of remote branch>`; afterward, displays push output (most likely in tabular format) output: stderr progress report followed by: `<flag> <summary> <from> -> <to> (<reason>)`
+
+  * ID: `push-ahead`, priority class: workflow, safety: safe.
+
+  * Conditions: local repository was changed and looks different from remote repository. Run `git status -sb`. If the branch status shows that the local branch is ahead of its upstream branch by one or more commits, then the local commits exist that are not yet public. Label results "as of last fetch".
+
+  * Test case:
+   1. **Setup** Call `git_setup()`. Create two temporary directories: `remote` and `local`.
+   2. Call `config_user("user1", "user1@foo.com")`.
+   3. In `remote`, run `git init --bare -b main`.
+   4. Clone `remote` into `local` using `git clone <remote> <local>`.
+   5. In `local`, create `foo.txt` containing `xxx`, run `git add foo.txt`,
+      `git commit -m "Add foo."`, then `git push -u origin main`.
+   6. Run `git-hints all` in `local`. Verify the  `push-ahead` hint is absent.
+   7. Append `y` to `foo.txt` and run `git commit -am "Change foo."`.
+   8. Run `git log origin/main..HEAD` and verify it lists exactly one commit.
+   9. Run `git-hints all` in `local`. 
+      Expected hint: **Push?** (ID `push-ahead`),
+      labeled "as of last fetch" and suggesting `git push`. Verify that the
+      `behind` and `diverged` hints are absent.
+
+### Clone a Repository
+
+* Hint: Would you like to clone
+  [repo](https://git-scm.com/book/en/v2/GitHub-Maintaining-a-Project.html#_creating_a_new_repository "A collection of snapshots tracking a project's history, where people can download a local copy to modify.")?
+
+  Git stage: You are not inside a Git repository, you need to either clone or initialize a repository before you can begin tracking files.
+
+  Command: `git clone <repository-url>`
+
+* ID: `not-a-repo`, priority class: Informational, safety: safe.
+
+* Conditions: Determine if current directory is inside a Git working tree by running `git rev-parse --is-inside-work-tree` using `subprocess`. Exit code 0 with output `true` means it is inside a working tree. Exit code 128 means its outside a Git repository, which triggers this hint." Avoid suggesting cloning hint for other unexpected Git errors.
+
+* Test case:
+
+   1. Call `git_setup()` and `make_temps(1)`. Set `GIT_CEILING_DIRECTORIES` to
+      the temporary directory's parent so Git cannot discover an enclosing repo.
+   2. In the temporary directory, run `git rev-parse --is-inside-work-tree` and
+      verify exit code 128.
+   3. Run `git-hints all`. Expected hint: **Clone a repo?**, identified by its
+      permanent ID, suggesting `git clone <repository-url>` with a link to the
+      official documentation. Verify that `git-hints` exits normally.
+   4. Run `git init -b main`, then `git-hints all` again. Verify the clone hint is absent.
+
+
 #### <mark>TODO: each of the following hints should be rewritten to follow the above hints.</mark>
 
 2. Keep unstaged changes out of this commit? Conditions: both staged and
@@ -179,8 +235,6 @@ runs. (jit45)
    [git diff --cached](https://git-scm.com/docs/git-diff "Shows the staged changes selected for the next commit.")
    to review the staging area before committing. (drj228) **sbe80 will test**
 
-3. Push? Conditions: the local branch has commits that have not been pushed to
-   the remote branch. **test ewj55**
 
 4. Pull needed, your branch is behind! Conditions: the local branch is one or
    more commits behind its upstream branch. (jhg246) **raf322 will test**
@@ -189,14 +243,6 @@ runs. (jit45)
    output build directories, etc. should be flagged. Suggest that the user
    create a .gitignore file and slate those files for entry. Suggest `git rm
    --cached` if user wants to unstage a file from the commit. (raf322)
-
-6. Clone a repo? Conditions: the current directory is not inside a Git
-   repository. Use `git rev-parse --is-inside-work-tree` to determine whether
-   the current directory is inside a Git working tree. If the command exits with
-   code 0 and prints `true`, the directory is inside a Git working tree. If it
-   exits with code 128, it is not inside a Git repository. If it is not inside a
-   repository, suggest using `git clone <repository-url>` to create a local copy
-   of an existing remote repository. **test ewj55**
 
 7. Is my branch up to date before I start editing? Conditions: the current
    branch has an upstream branch and is behind it by one or more commits while
@@ -295,7 +341,7 @@ Reactive hints are triggered by the result of a Git command executed through
    again. (jhg246)
 
 4. Explain
-   [stashes](https://www.geeksforgeeks.org/git/git-stash/ "Stores the present state of the local repo")
+   [stashes](https://git-scm.com/docs/git-stash "Allows you to modify a working directory while saving your current state of your local directory.")
    including: what they are, how to make one, and how to see old ones.
    Condition: a command executed through `git-hints explain` reports a conflict
    where temporarily setting aside local changes would help. (sbe80)
@@ -447,19 +493,18 @@ based on the Git configuration of the machine running the tests.
 5. Check the staged-only state:
    1. Append `y` to `foo.txt` and run `git add foo.txt`.
    2. Run `git-hints --all`.
-   3. Verify that the Proactive 2 hint is absent, because there are no
-      unstaged changes.
-   4. Verify that the Proactive 10 hint appears, identified by its own
-      permanent hint ID. Verify that it recommends reviewing staged changes
-      with `git diff --cached` and explains how to commit the selected changes
-      with `git commit -m "message"`. Check the corresponding official Git
-      documentation links.
+   3. Verify that the Proactive 2 hint is absent, because there are no unstaged
+      changes.
+   4. Verify that the Proactive 10 hint appears, identified by its own permanent
+      hint ID. Verify that it recommends reviewing staged changes with `git diff
+      --cached` and explains how to commit the selected changes with `git commit
+      -m "message"`. Check the corresponding official Git documentation links.
 6. Check the unstaged-only state:
    1. Commit the staged change with `git commit -m "Append y."`.
    2. Append `z` to `foo.txt` without staging it.
    3. Run `git-hints --all` and verify both the Proactive 2 and Proactive 10
-      hints are absent: the file has unstaged changes, but nothing is staged
-      for the next commit.
+      hints are absent: the file has unstaged changes, but nothing is staged for
+      the next commit.
 7. Check the staged-plus-unstaged state:
    1. Run `git add foo.txt` to stage the `z` change.
    2. Append `w` to `foo.txt` and leave this change unstaged.
@@ -467,9 +512,9 @@ based on the Git configuration of the machine running the tests.
    4. Verify that both Proactive 2 and Proactive 10 appear, each identified by
       its own permanent hint ID. Verify that Proactive 2 explains a plain `git
       commit` records staged changes only and suggests `git diff --cached`.
-   5. Verify that Proactive 10 recommends reviewing the staged changes with
-      `git diff --cached` and committing the selected changes with `git commit
-      -m "message"`. Confirm the two hints are distinct and include the
+   5. Verify that Proactive 10 recommends reviewing the staged changes with `git
+      diff --cached` and committing the selected changes with `git commit -m
+      "message"`. Confirm the two hints are distinct and include the
       corresponding official Git documentation links, including
       `https://git-scm.com/docs/git-diff` and
       `https://git-scm.com/docs/git-commit`.
@@ -500,36 +545,7 @@ based on the Git configuration of the machine running the tests.
    4. Includes a link to the official Git documentation for merging, such as
       `https://git-scm.com/docs/git-merge`.
 
-### Test Case 4: Push (ewj55)
 
-1. Initialize `Test4_condition == 0` by default
-2. use the termnial to navigate to the local repo directory tracking a remote
-   branch ('origin/main')<br>
-3. Execute command (`git fetch origin`) and ensure local track references are up
-   to date <br>
-4. Make a minor edit to the file, stage the change (`git add .`), then commit
-   locally ('git commit -m "Test commit"') **Condition Checks:** 4. run `git log
-   origin/main..HEAD` into terminal 5. If command returns one or more comit
-   SHAs, set `Test4_condition == 1`. **Output/Expected Execution** 6. If
-   `Test4_condition == 1`, execute `git-hints` CLI tool on terminal 7. Confirm
-   proactive hint 'Push?' is displayed in terminal output. 8. If `git-hints`
-   output contains `"Push?"` string AND `'git push'` command, then Test 4 has
-   passed.
-
-### Test Case 5: Repo Test (ewj55)
-
-**Setup (Arrange):**
-
-1. Create isolated tmp dir in system tmp space (outside any existing Git repo
-   tree)
-2. Using terminal, navigate into isolatd tmp dir without running the `git init`
-   command:
-   * `mkdir test_folder && cd test_folder` **Executions and Assertions** 3.
-     Execute `git status` and verify terminal output contains `"fatal: not a git
-     repository"`. 4. Execute the `git-hints` CLI tool inside `test_folder`.
-     **Assertion**
-3. If `git-hints` output contains the proactive hint string `"clone"` AND the
-   suggested command `'git clone'`, then Test 5 has passed
 
 ### Test Case 6: Pull needed, Branch is behind (jhg246) For Requirement Proactive 7
 
