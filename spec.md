@@ -47,6 +47,12 @@ CLI commands
       (ewj55; clarified by drj228, sbe80, and jit45)
 
    4. `--ids-only` outputs only the IDs of hints; typically used for testing.
+
+   5. `--fetch`: run `git fetch` before inspecting the repository, with
+      `GIT_TERMINAL_PROMPT=0` and a timeout, so that ahead/behind hints use
+      current remote information. Without this option, never fetch (a fetch is
+      slow, needs the network, and can hang on a credential prompt) and label
+      the ahead/behind hints "as of last fetch". (jhg246)
 2. `git-hints def <command>`: display a short definition of the requested Git
    command, explain what it does, and provide a link to the official Git
    documentation. If the command is unknown, report that it is unsupported.
@@ -304,22 +310,109 @@ runs. (jit45)
            `https://git-scm.com/docs/git-commit`.
 
 
-4. Pull needed, your branch is behind! Conditions: the local branch is one or
-   more commits behind its upstream branch. (jhg246) **raf322 will test**
+#### Branch is behind upstream (jhg246)
+
+* Hint: Do you want to
+  [pull](https://git-scm.com/docs/git-pull "Fetches commits from the remote and integrates them into your current branch")
+  the newest remote commits before you start editing? Your branch does not
+  contain remote commits that were known at the last fetch.
+
+* Git stage: You are working in the local repo, which is missing commits that
+  the remote repo already has.
+
+* Command: `git pull`; afterward, `git status` reports that your branch is up
+  to date with its upstream. To preview first, run `git diff --name-only
+  HEAD...@{upstream}`, which lists the files the pull would bring in.
+
+* ID: `behind`, priority class: workflow, safety: safe.
+
+* Conditions: The current branch has an upstream and is behind it by one or
+  more commits but not ahead of it. Run `git status --porcelain=v2 --branch` and
+  read `# branch.ab +<ahead> -<behind>`; the line is absent when there is no
+  upstream. The hint applies when `<behind>` is above 0 and `<ahead>` is 0. If
+  the branch is also ahead, the `diverged` hint applies instead. These counts
+  use the last-fetched remote-tracking branch, so label the hint "as of last
+  fetch" (see `git-hints --fetch`). (jhg246; adapted from jit45's personal
+  experience; jhg246 and raf322 will test)
+
+* Test case:
+
+  1. Call `git_setup()` and create two temporary directories, `repo1` and
+     `repo2`. Run every `git-hints` command in `repo2`.
+  2. In `repo1`, initialize a repository with `git init -b main` and call
+     `config_user("user1", "user1@foo.com")`.
+  3. Create `foo.txt` containing `xxx`, stage it with `git add foo.txt`, and
+     commit it with `git commit -m "Add foo."`.
+  4. Clone `repo1` into `repo2` with `git clone <repo1> <repo2>`.
+  5. In `repo1`, append `y` to `foo.txt` and run `git commit -am "Change foo."`.
+     `repo1` acts as the remote. Nothing is pushed, because `repo2` only
+     fetches from it, so it does not need to be bare.
+  6. In `repo2`, run `git status --porcelain=v2 --branch` and verify that it
+     reports `# branch.ab +0 -0`. Run `git-hints --ids-only` and verify that
+     `behind` is absent, because `repo2` has not fetched.
+  7. In `repo2`, run `git fetch` and verify that the status now reports
+     `# branch.ab +0 -1`.
+  8. Run `git-hints --all`. Verify that the `behind` hint appears, is labeled
+     "as of last fetch", recommends `git pull`, and links to the official
+     `git pull` documentation. Verify that `diverged` and `push-ahead` are
+     absent.
+  9. In `repo1`, append `z` and run `git commit -am "Change foo again."`. In
+     `repo2`, run `git fetch` and verify `# branch.ab +0 -2`. Run
+     `git-hints --ids-only` and verify that `behind` still appears.
+  10. In `repo2`, run `git pull` and verify `# branch.ab +0 -0`. Run
+      `git-hints --ids-only` and verify that `behind` is absent.
+  11. In `repo1`, append `w` and run `git commit -am "Change foo once more."`.
+      In `repo2`, run `git-hints --ids-only` and verify that `behind` is
+      absent, then run `git-hints --ids-only --fetch` and verify that `behind`
+      appears even though `repo2` never ran `git fetch` itself.
+
+#### Branch has diverged from upstream (sbe80; edited by jhg246)
+
+* Hint: Your branch has diverged from its upstream. Do you want to integrate
+  the remote commits with
+  [git pull](https://git-scm.com/docs/git-pull "Fetches and integrates remote commits; --rebase replays yours on top of them.")
+  and then share yours with
+  [git push](https://git-scm.com/docs/git-push "Uploads local commits to the remote branch.")?
+
+* Git stage: You are working in the local repo, which has commits that the
+  remote lacks while the remote has commits that your local repo lacks.
+
+* Command: `git pull`, resolve any conflicts, then `git push`; afterward,
+  `git status` reports that your branch is up to date with its upstream. If you
+  prefer a linear history, Caution: `git pull --rebase` replays your local
+  commits on top of the remote ones, which changes them; they remain
+  recoverable through the reflog.
+
+* ID: `diverged`, priority class: workflow, safety: safe.
+
+* Conditions: The current branch has an upstream and is both ahead of and
+  behind it, as of the last fetch. Run `git status --porcelain=v2 --branch` and
+  read `# branch.ab +<ahead> -<behind>`; the hint applies when both numbers are
+  above 0. When it applies, do not show the `behind` or `push-ahead` hints,
+  because this hint replaces them. Label the hint "as of last fetch" (see
+  `git-hints --fetch`). (sbe80; edited by jhg246; jhg246 will test)
+
+* Test case:
+
+  1. Do steps 1-5 of the `behind` hint's test case. This leaves `repo1` with a
+     commit that `repo2` has not fetched.
+  2. In `repo2`, create `bar.txt` containing `zzz`, stage it with
+     `git add bar.txt`, and commit it with `git commit -m "Add bar."`.
+  3. Run `git status --porcelain=v2 --branch` and verify `# branch.ab +1 -0`.
+     Run `git-hints --ids-only` and verify that `push-ahead` appears and
+     `diverged` is absent, because `repo2` has not fetched the new remote
+     commit.
+  4. Run `git fetch` and verify that the status now reports `# branch.ab +1 -1`.
+  5. Run `git-hints --all`. Verify that the `diverged` hint appears, is labeled
+     "as of last fetch", suggests `git pull` or `git pull --rebase` and then
+     `git push`, and links to the official `git pull` and `git push`
+     documentation. Verify that `behind` and `push-ahead` are absent.
 
 5. Place these files in gitignore? Conditions: Files such as \_\_pycache\_\_/,
    output build directories, etc. should be flagged. Suggest that the user
    create a .gitignore file and slate those files for entry. Suggest `git rm
    --cached` if user wants to unstage a file from the commit. (raf322)
 
-7. Is my branch up to date before I start editing? Conditions: the current
-   branch has an upstream branch and is behind it by one or more commits while
-   not being ahead of it. Detect the state with `git status -sb` using the
-   latest locally known remote-tracking information. Explain that the local
-   branch does not contain the newest known remote commits and suggest `git
-   pull` before beginning new work. Make clear that this status is only as
-   current as the most recent fetch. (jhg246; adapted from jit45 personal
-   experience) **jhg246 and raf322 will test**
 
 **ams2083**
 * Hint: Do you want to configure an [upstream branch](https://git-scm.com/docs/git-branch "A remote branch that your local branch tracks") before pushing?
@@ -449,13 +542,6 @@ runs. (jit45)
     `git    commit -m "Initial commit"` to create the first commit. (jit45)
     **drj228 will test**
 
-14. Branch has diverged from upstream? Conditions: the local branch is both
-    ahead and behind its upstream branch. Suggest
-    [git pull](https://git-scm.com/docs/git-pull "Fetches and integrates remote commits; --rebase replays yours on top of them.")
-    or `git pull --rebase`, then
-    [git push](https://git-scm.com/docs/git-push "Uploads local commits to the remote branch.").
-    (sbe80; edited by jhg246) **jhg246 will test.**
-
 15. Committing to protected/main branch? Conditions: the current branch is
     master/main and there are changes. If other branches exist, suggest other
     branches. If no other branches exist, suggest creating a new branch with
@@ -577,12 +663,6 @@ Reactive hints are triggered by the result of a Git command executed through
    Do not treat every failure as a reason to suggest cloning. (sbe80; clarified
    by drj228)
 
-5. Incoming changes: `git diff --name-only HEAD...@{upstream}` lists the files a
-   pull would bring in (needs an upstream). Conflicting files, once a merge has
-   stopped: `git diff --name-only --diff-filter=U`. Fetch policy (ahead/behind
-   checks): never fetch by default; label results "as of last fetch". `git-hints
-   --fetch` runs `git fetch` first, with `GIT_TERMINAL_PROMPT=0` and a timeout.
-   (jhg246
 
 6. Staged changes are ready to commit: run `git diff --cached --quiet`. Exit
    code 1 means staged differences exist; exit code 0 means there are none.
@@ -615,8 +695,6 @@ Reactive hints are triggered by the result of a Git command executed through
     the protected branch(es), suggest the creation of a new branch. Otherwise,
     suggest other branches on the list. (raf322)
 
-10. Run `git status -sb`. If the status reports that the local branch is ahead
-    *and* behind its upstream branch, the branches have diverged. (sbe80)
 
 11. The `git-hints explain` command must pass Git arguments through without
     Typer attempting to parse them as options. Configure the command to allow
@@ -787,40 +865,52 @@ applies to all tests.
 
 
 
-### Test Case 6: Pull needed, Branch is behind (jhg246) For Requirement Proactive 7
+### Test Case 6: Pull needed, Branch is behind (jhg246)
 
-Run in one PowerShell terminal (`$t` and the helpers must persist). Setup, steps
-1-5:
-
-```powershell
-$env:GIT_CONFIG_GLOBAL=(New-TemporaryFile).FullName; $env:GIT_CONFIG_NOSYSTEM=1   # git_setup()
-$env:GIT_AUTHOR_NAME=$env:GIT_COMMITTER_NAME="user1"; $env:GIT_AUTHOR_EMAIL=$env:GIT_COMMITTER_EMAIL="user1@foo.com"   # config_user()
-$t=(New-Item -ItemType Directory (Join-Path ([IO.Path]::GetTempPath()) "t-$(Get-Random)")).FullName
-function g($d) { git -C "$t/$d" @args }; function ab { g local status --porcelain=v2 --branch | Select-String branch.ab }; function hints { Push-Location "$t/local"; git-hints; Pop-Location }
-New-Item -ItemType Directory "$t/remote","$t/local","$t/other" | Out-Null; g remote init --bare -b main
-git clone "$t/remote" "$t/other"; Set-Content "$t/other/foo.txt" xxx; g other add foo.txt; g other commit -m "Add foo."; g other push -u origin main
-git clone "$t/remote" "$t/local"; Add-Content "$t/other/foo.txt" y; g other commit -am "Change foo."; g other push
-```
-
-Checks. Step 6: `ab; hints`: `+0 -0`, no `behind` hint (no fetch yet). Step 7:
-`g local fetch; ab; hints`: `+0 -1`; **Is my branch up to date before I start
-editing?** (ID `behind`), labeled "as of last fetch"; no `diverged` or **Push?**
-hint.
+1. Call `git_setup()` and create two temporary directories, `repo1` and
+     `repo2`. Run every `git-hints` command in `repo2`.
+  2. In `repo1`, initialize a repository with `git init -b main` and call
+     `config_user("user1", "user1@foo.com")`.
+  3. Create `foo.txt` containing `xxx`, stage it with `git add foo.txt`, and
+     commit it with `git commit -m "Add foo."`.
+  4. Clone `repo1` into `repo2` with `git clone <repo1> <repo2>`.
+  5. In `repo1`, append `y` to `foo.txt` and run `git commit -am "Change foo."`.
+     `repo1` acts as the remote. Nothing is pushed, because `repo2` only
+     fetches from it, so it does not need to be bare.
+  6. In `repo2`, run `git status --porcelain=v2 --branch` and verify that it
+     reports `# branch.ab +0 -0`. Run `git-hints --ids-only` and verify that
+     `behind` is absent, because `repo2` has not fetched.
+  7. In `repo2`, run `git fetch` and verify that the status now reports
+     `# branch.ab +0 -1`.
+  8. Run `git-hints --all`. Verify that the `behind` hint appears, is labeled
+     "as of last fetch", recommends `git pull`, and links to the official
+     `git pull` documentation. Verify that `diverged` and `push-ahead` are
+     absent.
+  9. In `repo1`, append `z` and run `git commit -am "Change foo again."`. In
+     `repo2`, run `git fetch` and verify `# branch.ab +0 -2`. Run
+     `git-hints --ids-only` and verify that `behind` still appears.
+  10. In `repo2`, run `git pull` and verify `# branch.ab +0 -0`. Run
+      `git-hints --ids-only` and verify that `behind` is absent.
+  11. In `repo1`, append `w` and run `git commit -am "Change foo once more."`.
+      In `repo2`, run `git-hints --ids-only` and verify that `behind` is
+      absent, then run `git-hints --ids-only --fetch` and verify that `behind`
+      appears even though `repo2` never ran `git fetch` itself.
 
 ### Test case 7: Branch has diverged. (jhg246) -- For Requirement Proactive 16
 
-Run Test 6's setup block only (a fetch beforehand would change step 3), then:
-
-```powershell
-Set-Content "$t/local/bar.txt" zzz; g local add bar.txt; g local commit -m "Add bar."   # 2
-ab; hints   # 3: +1 -0, Push? shown, diverged not shown
-g local fetch; ab; hints   # 4: +1 -1
-```
-
-Step 4 expected: **Your branch has diverged from upstream.** (ID `diverged`),
-suggesting `git pull` or `git pull --rebase`, then `git push`, with a
-[git pull](https://git-scm.com/docs/git-pull "Fetches and integrates remote commits; --rebase replays yours on top of them.")
-link. No `behind` or **Push?** hint.
+1. Do steps 1-5 of the `behind` hint's test case. This leaves `repo1` with a
+     commit that `repo2` has not fetched.
+  2. In `repo2`, create `bar.txt` containing `zzz`, stage it with
+     `git add bar.txt`, and commit it with `git commit -m "Add bar."`.
+  3. Run `git status --porcelain=v2 --branch` and verify `# branch.ab +1 -0`.
+     Run `git-hints --ids-only` and verify that `push-ahead` appears and
+     `diverged` is absent, because `repo2` has not fetched the new remote
+     commit.
+  4. Run `git fetch` and verify that the status now reports `# branch.ab +1 -1`.
+  5. Run `git-hints --all`. Verify that the `diverged` hint appears, is labeled
+     "as of last fetch", suggests `git pull` or `git pull --rebase` and then
+     `git push`, and links to the official `git pull` and `git push`
+     documentation. Verify that `behind` and `push-ahead` are absent.
 
 ### Test case 10: Detached HEAD state. (Written by drj228)
 
