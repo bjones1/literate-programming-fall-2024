@@ -417,10 +417,53 @@ runs. (jit45)
 Reactive hints are triggered by the result of a Git command executed through
 `git-hints explain`. (jit45)
 
-1. Resolve merge conflicts? Conditions: a Git command executed through
-   `git-hints explain` leaves the repository with unresolved merge conflicts.
-   Identify the conflicting files and explain how to resolve them. **sbe80 will
-   test**
+1. Resolve merge conflicts? **sbe80**
+
+   * Hint: Git left [merge conflicts](https://git-scm.com/docs/git-merge
+     "Join two or more development histories together") that need to be resolved
+     before the merge can finish. Conflicted files: `<files>`.
+
+   * Git stage: The merge is in progress in the working directory; edit each
+     conflicted file to choose or combine the changes, then stage the resolved
+     files.
+
+   * Command: Run `git diff --name-only --diff-filter=U` to list the conflicted
+     files. Edit each file to resolve its conflict markers, then run `git add
+     <file>` for each resolved file and `git status` to confirm no conflicts
+     remain. Complete the merge with `git commit` when Git requests a merge
+     commit.
+
+   * ID: `merge-conflicts`, priority class: error/blocked, safety: safe.
+
+   * Conditions: A Git command executed through `git-hints explain` leaves the
+     repository with one or more unresolved merge conflicts. Detect them with
+     `git diff --name-only --diff-filter=U`; include the returned paths in the
+     hint. Do not display this hint when the command failed without leaving
+     unresolved conflicts.
+
+   * Test case: Resolving merge conflicts (written by sbe80).
+
+     1. Call `git_setup()` and create two temporary directories, `repo1` and
+        `repo2`.
+     2. In `repo1`, initialize a repository with `git init -b main` and call
+        `config_user("user1", "user1@foo.com")`.
+     3. Create `foo.txt` containing `xxx`, stage it with `git add foo.txt`, and
+        commit it with `git commit -m "Add foo."`.
+     4. Clone `repo1` into `repo2` with `git clone <repo1> <repo2>`.
+     5. In `repo1`, append `y` to `foo.txt`, stage it with `git add foo.txt`,
+        and commit it with `git commit -m "Append y."`.
+     6. In `repo2`, call `config_user("user2", "user2@foo.com")`. Append `z` to
+        `foo.txt`, stage it with `git add foo.txt`, and commit it with `git
+        commit -m "Append z."`.
+     7. In `repo2`, run `git-hints explain -- git pull --no-rebase` and capture
+        its exit code and output.
+     8. Verify that the Git command exits non-zero and leaves an unresolved
+        merge conflict. Verify with `git diff --name-only --diff-filter=U`
+        that `foo.txt` is conflicted.
+     9. Verify that the hint with ID `merge-conflicts` appears, names `foo.txt`,
+        has error/blocked priority, explains how to resolve the conflict, and
+        links to official merge documentation such as
+        `https://git-scm.com/docs/git-merge`.
 
 2. Resolve pull conflicts? Conditions: `git-hints explain -- git pull` fails
    because local uncommitted changes would be overwritten. Identify the affected
@@ -598,32 +641,6 @@ running the tests. This should be implemented as a PyTest autouse fixture which
 applies to all tests.
 
 ### <mark>TODO: move test cases to follow the implementation of each hint.</mark>
-
-### Test case 3: Resolving merge conflicts. (Written by sbe80) -- Requirement Reactive 1
-
-1. Call `git_setup()` and create two temporary directories, `repo1` and `repo2`.
-2. In `repo1`, initialize a repository with `git init -b main` and call
-   `config_user("user1", "user1@foo.com")`.
-3. Create `foo.txt` containing `xxx`, stage it with `git add foo.txt`, and
-   commit it with `git commit -m "Add foo."`.
-4. Clone `repo1` into `repo2` with `git clone <repo1> <repo2>`.
-5. In `repo1`, append `y` to `foo.txt`, stage it with `git add foo.txt`, and
-   commit it with `git commit -m "Append y."`.
-6. In `repo2`, call `config_user("user2", "user2@foo.com")`. Append `z` to
-   `foo.txt`, stage it with `git add foo.txt`, and commit it with `git commit -m
-   "Append z."`.
-7. In `repo2`, run `git-hints explain -- git pull --no-rebase` and capture its exit
-   code and output.
-8. Verify that the Git command exits non-zero and leaves an unresolved merge
-   conflict. Verify with `git diff --name-only --diff-filter=U` that `foo.txt`
-   is conflicted.
-9. Verify that the reactive merge-conflict hint appears, identified by its
-   permanent hint ID. Verify that it:
-   1. Names `foo.txt` as a conflicted file.
-   2. Has the Error/blocked priority class.
-   3. Explains how to resolve the conflict.
-   4. Includes a link to the official Git documentation for merging, such as
-      `https://git-scm.com/docs/git-merge`.
 
 ### Test Case 4: Push (ewj55)
 
