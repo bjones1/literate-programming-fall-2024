@@ -220,7 +220,7 @@ runs. (jit45)
       labeled "as of last fetch" and suggesting `git push`. Verify that the
       `behind` and `diverged` hints are absent.
 
-### Clone a Repository
+### Clone a Repository (ewj55)
 
 * Hint: Would you like to clone
   [repo](https://git-scm.com/book/en/v2/GitHub-Maintaining-a-Project.html#_creating_a_new_repository "A collection of snapshots tracking a project's history, where people can download a local copy to modify.")?
