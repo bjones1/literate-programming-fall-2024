@@ -49,7 +49,7 @@ CLI commands
    4. `--ids-only` outputs only the IDs of hints; typically used for testing.
 
    5. `--fetch`: run `git fetch` before inspecting the repository, with
-      `GIT_TERMINAL_PROMPT=0` and a timeout, so that ahead/behind hints use
+      `GIT_TERMINAL_PROMPT=0` and a 10 second timeout, so that ahead/behind hints use
       current remote information. Without this option, never fetch (a fetch is
       slow, needs the network, and can hang on a credential prompt) and label
       the ahead/behind hints "as of last fetch". (jhg246)
@@ -142,9 +142,6 @@ three-hint limit. (sbe80)
       `Warning:` when uncommitted or untracked work, or commits on a remote, may
       be permanently lost; explain what could be lost and tell the user to back
       it up first. Read-only actions need no safety prefix.
-      `Warning:` when uncommitted or untracked work, or commits on a remote, may
-      be permanently lost; explain what could be lost and tell the user to back
-      it up first. Read-only actions need no safety prefix.
 
    3. Workflow: actionable next-step suggestions based on repository state.
 
@@ -219,10 +216,10 @@ runs. (jit45)
    4. Clone `remote` into `local` using `git clone <remote> <local>`.
    5. In `local`, create `foo.txt` containing `xxx`, run `git add foo.txt`,
       `git commit -m "Add foo."`, then `git push -u origin main`.
-   6. Run `git-hints all` in `local`. Verify the  `push-ahead` hint is absent.
+   6. Run `git-hints --all` in `local`. Verify the  `push-ahead` hint is absent.
    7. Append `y` to `foo.txt` and run `git commit -am "Change foo."`.
    8. Run `git log origin/main..HEAD` and verify it lists exactly one commit.
-   9. Run `git-hints all` in `local`. 
+   9. Run `git-hints --all` in `local`. 
       Expected hint: **Push?** (ID `push-ahead`),
       labeled "as of last fetch" and suggesting `git push`. Verify that the
       `behind` and `diverged` hints are absent.
@@ -246,10 +243,10 @@ runs. (jit45)
       the temporary directory's parent so Git cannot discover an enclosing repo.
    2. In the temporary directory, run `git rev-parse --is-inside-work-tree` and
       verify exit code 128.
-   3. Run `git-hints all`. Expected hint: **Clone a repo?**, identified by its
+   3. Run `git-hints --all`. Expected hint: **Clone a repo?**, identified by its
       permanent ID, suggesting `git clone <repository-url>` with a link to the
       official documentation. Verify that `git-hints` exits normally.
-   4. Run `git init -b main`, then `git-hints all` again. Verify the clone hint is absent.
+   4. Run `git init -b main`, then `git-hints --all` again. Verify the clone hint is absent.
 
 
 #### <mark>TODO: each of the following hints should be rewritten to follow the above hints.</mark>
@@ -590,7 +587,7 @@ runs. (jit45)
 Reactive hints are triggered by the result of a Git command executed through
 `git-hints explain`. (jit45)
 
-1. Resolve merge conflicts? **sbe80**
+### Resolve merge conflicts? **sbe80**
 
    * Hint: Git left [merge conflicts](https://git-scm.com/docs/git-merge
      "Join two or more development histories together") that need to be resolved
@@ -689,19 +686,118 @@ Reactive hints are triggered by the result of a Git command executed through
    Explain that the user should integrate the remote changes before attempting
    to push again. (jhg246)
 
-4. Explain
-   [stashes](https://git-scm.com/docs/git-stash "Save changes temporarily in the stash")
-   [stashes](https://git-scm.com/docs/git-stash "Allows you to modify a working directory while saving your current state of your local directory.")
-   including: what they are, how to make one, and how to see old ones.
-   Condition: a command executed through `git-hints explain` reports a conflict
-   where temporarily setting aside local changes would help. (sbe80)
+#### Stash local changes? (sbe80)
 
-5. Suggest and explain
-   [git pull --rebase](https://git-scm.com/book/en/v2/Git-Branching-Rebasing) if
-   five failed `git pull` or `git push` commands have been executed through
-   `git-hints explain` in a row. Explain that rebasing may cause merge conflicts
-   and that the user should ensure their local work is committed or otherwise
-   backed up before proceeding. (sbe80).
+   * Hint: The attempted operation was blocked because it would overwrite
+     tracked local changes. Explain that a stash temporarily saves tracked
+     changes in the working tree and index so the operation can be retried.
+
+   * Git stage: The working tree or index contains tracked changes, and a
+     `git merge` or `git switch` was blocked before it changed the repository
+     state.
+
+   * Command: Show `git status` so the user can review their changes, then
+     suggest `git stash push -m "Save work before retrying"` followed by the
+     original Git command. After it succeeds, suggest `git stash apply` and
+     `git stash list` so the user can restore and verify the saved work without
+     deleting the stash. Explain that the default stash does not include
+     untracked files; the user should save any needed untracked files
+     separately. Expected result: the blocked operation can proceed while the
+     tracked changes remain saved for restoration.
+
+   * ID: `stash-local-changes`, priority class: error/blocked, safety: safe.
+
+   * Conditions: Trigger when a `git merge` or `git switch` command executed
+     through `git-hints explain` fails because tracked local changes would be
+     overwritten, and no unmerged paths have been created. Do not trigger for a
+     failed `git pull`; the pull-specific hint covers that case. Do not trigger
+     when the command fails for another reason.
+
+   * Test case: Stashing changes that block a merge (written by sbe80).
+
+     1. Call `git_setup()` and create a temporary directory named `repo`.
+     2. In `repo`, run `git init -b main` and call
+        `config_user("user1", "user1@foo.com")`.
+     3. Create `foo.txt` containing `base`, stage it, and commit it with
+        `git commit -m "Add foo."`.
+     4. Create a branch named `topic` with `git switch -c topic`, replace the
+        contents of `foo.txt` with `topic change`, and commit the change.
+     5. Switch back to `main` and replace the contents of `foo.txt` with
+        `local change`, leaving the file uncommitted.
+     6. Run `git-hints explain -- git merge topic` and capture its exit code
+        and output.
+     7. Verify that the merge fails with a nonzero exit code because it would
+        overwrite the tracked local change, and that `git-hints explain`
+        returns the Git command's nonzero exit code.
+     8. Verify that `foo.txt` still contains `local change`, no unmerged paths
+        exist, and the hint with ID `stash-local-changes` appears with
+        error/blocked priority. Verify that the hint explains how to stash,
+        retry the merge, and restore the saved changes, and notes that default
+        stashes do not include untracked files.
+     9. Run `git restore foo.txt` and then `git-hints explain -- git merge
+        topic` again. Verify that the merge succeeds and the
+        `stash-local-changes` hint is absent.
+
+#### Suggest `git pull --rebase`? (sbe80)
+
+   * Hint: Five repeated failures to pull or push may be resolved by replaying the
+     local commits on top of the upstream branch. Explain that rebase changes the
+     local commit IDs, may cause conflicts, and should only be attempted after
+     the user has verified that their local work is committed or otherwise
+     backed up.
+
+   * Git stage: The local branch and its upstream branch have diverged, or a
+     push has been rejected because the upstream branch contains commits
+     missing from the local branch.
+
+   * Command: `Caution: git pull --rebase`. Explain that it fetches the
+     upstream changes and replays local commits on top of them, producing a
+     linear history. If conflicts occur, explain how to resolve them and
+     continue with `git rebase --continue`, or abandon the operation with `git
+     rebase --abort`. Expected result: the local branch contains the upstream
+     commits followed by the replayed local commits and can be pushed if no
+     other errors remain. Link to the official [`git pull` documentation](https://git-scm.com/docs/git-pull)
+     and [`git rebase` documentation](https://git-scm.com/docs/git-rebase).
+
+   * ID: `rebase-after-repeated-integration-failures`, priority class:
+     data-loss risk, safety: caution.
+
+   * Conditions: Count consecutive failed `git pull` or `git push` commands
+     executed through `git-hints explain` for the current repository and
+     branch. Show this hint after five failures. A successful pull or push, or
+     any intervening command executed through `git-hints explain`, resets the
+     count. Reset the count after showing the hint so it is not repeated on
+     every subsequent failure.
+
+   * Test case: Suggesting rebase after repeated failures (written by sbe80).
+
+     1. Call `git_setup()` and create three temporary directories named
+        `remote`, `local`, and `other` using `make_temps(3)`.
+     2. In `remote`, run `git init --bare -b main`. Clone it into `local` and
+        call `config_user("user1", "user1@foo.com")` there.
+     3. In `local`, create and commit `foo.txt`, then run
+        `git push -u origin main`.
+     4. Clone `remote` into `other` and call
+        `config_user("user2", "user2@foo.com")` there.
+     5. In `local`, make and commit a local change to `foo.txt`. In `other`,
+        make and commit a different change to `foo.txt`, then run `git push`.
+        The local and upstream branches now have different commits.
+     6. In `local`, run `git-hints explain -- git push` four times. Capture
+        each exit code and output; verify that each push fails and the hint
+        with ID `rebase-after-repeated-integration-failures` is absent.
+     7. Run `git-hints explain -- git push` a fifth time. Verify that it fails
+        and the hint appears with data-loss risk priority. Verify that the
+        hint includes the `Caution:` command, explains rebase conflicts and
+        backing up local work, and links to the official `git pull` and
+        `git rebase` documentation.
+     8. Run `git-hints explain -- git push` once more. Verify that it fails
+        without showing the hint, confirming that the count was reset after
+        the hint appeared.
+     9. In `local`, run `git-hints explain -- git pull --rebase`. Verify that
+        it succeeds, the local commit is replayed on top of the upstream
+        commit, and no rebase is left in progress.
+     10. Run `git-hints explain -- git push`. Verify that it succeeds and the
+         rebase hint is absent.
 
 ### Language and libraries
 
@@ -879,69 +975,6 @@ applies to all tests.
      **Assertion**
 3. If `git-hints` output contains the proactive hint string `"clone"` AND the
    suggested command `'git clone'`, then Test 5 has passed
-### Test case 2: Staged and unstaged changes. (Written by sbe80) -- Requirements Proactive 2 and 10
-
-1. Call `git_setup()` and create one temporary directory.
-2. In the temporary directory, initialize a repository with `git init -b main`.
-3. Call `config_user("user1", "user1@foo.com")` after initializing the
-   repository.
-4. Create `foo.txt` containing `xxx`, stage it with `git add foo.txt`, and
-   commit it with `git commit -m "Add foo."`.
-5. Check the staged-only state:
-   1. Append `y` to `foo.txt` and run `git add foo.txt`.
-   2. Run `git-hints --all`.
-   3. Verify that the Proactive 2 hint is absent, because there are no unstaged
-      changes.
-   4. Verify that the Proactive 10 hint appears, identified by its own permanent
-      hint ID. Verify that it recommends reviewing staged changes with `git diff
-      --cached` and explains how to commit the selected changes with `git commit
-      -m "message"`. Check the corresponding official Git documentation links.
-6. Check the unstaged-only state:
-   1. Commit the staged change with `git commit -m "Append y."`.
-   2. Append `z` to `foo.txt` without staging it.
-   3. Run `git-hints --all` and verify both the Proactive 2 and Proactive 10
-      hints are absent: the file has unstaged changes, but nothing is staged for
-      the next commit.
-7. Check the staged-plus-unstaged state:
-   1. Run `git add foo.txt` to stage the `z` change.
-   2. Append `w` to `foo.txt` and leave this change unstaged.
-   3. Run `git-hints --all`.
-   4. Verify that both Proactive 2 and Proactive 10 appear, each identified by
-      its own permanent hint ID. Verify that Proactive 2 explains a plain `git
-      commit` records staged changes only and suggests `git diff --cached`.
-   5. Verify that Proactive 10 recommends reviewing the staged changes with `git
-      diff --cached` and committing the selected changes with `git commit -m
-      "message"`. Confirm the two hints are distinct and include the
-      corresponding official Git documentation links, including
-      `https://git-scm.com/docs/git-diff` and
-      `https://git-scm.com/docs/git-commit`.
-
-### Test case 3: Resolving merge conflicts. (Written by sbe80) -- Requirement Reactive 1
-
-1. Call `git_setup()` and create two temporary directories, `repo1` and `repo2`.
-2. In `repo1`, initialize a repository with `git init -b main` and call
-   `config_user("user1", "user1@foo.com")`.
-3. Create `foo.txt` containing `xxx`, stage it with `git add foo.txt`, and
-   commit it with `git commit -m "Add foo."`.
-4. Clone `repo1` into `repo2` with `git clone <repo1> <repo2>`.
-5. In `repo1`, append `y` to `foo.txt`, stage it with `git add foo.txt`, and
-   commit it with `git commit -m "Append y."`.
-6. In `repo2`, call `config_user("user2", "user2@foo.com")`. Append `z` to
-   `foo.txt`, stage it with `git add foo.txt`, and commit it with `git commit -m
-   "Append z."`.
-7. In `repo2`, run `git-hints explain pull --no-rebase` and capture its exit
-   code and output.
-8. Verify that the Git command exits non-zero and leaves an unresolved merge
-   conflict. Verify with `git diff --name-only --diff-filter=U` that `foo.txt`
-   is conflicted.
-9. Verify that the reactive merge-conflict hint appears, identified by its
-   permanent hint ID. Verify that it:
-   1. Names `foo.txt` as a conflicted file.
-   2. Has the Error/blocked priority class.
-   3. Explains how to resolve the conflict.
-   4. Includes a link to the official Git documentation for merging, such as
-      `https://git-scm.com/docs/git-merge`.
-
 
 ### Test case 10: Detached HEAD state. (Written by drj228)
 
