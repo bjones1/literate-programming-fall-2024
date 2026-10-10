@@ -520,13 +520,48 @@ runs. (jit45)
        3. Run `git-hints --all`.
        4. Verify that the hint with ID `untracked-files` is absent because no untracked files remain.
 
-11. Commit repo? Conditions: More than 50% of the repository's tracked files
-    have staged, unstaged, or deleted changes relative to HEAD. Use
-    `git    status --porcelain` to identify changed tracked files and compare
-    that number to the total number of tracked files. Untracked files should be
-    handled separately and should not count toward this percentage. If more than
-    half of the tracked files have changes, suggest reviewing and committing the
-    changes. (jit45) **jit45 will test**
+
+#### Review and commit widespread changes? (jit45)
+
+   * Hint: More than half of the tracked files in this repository have changes. Would you like to review the changes and [commit](https://git-scm.com/docs/git-commit "Records staged changes as a new commit in the local repository") the work you want to save?
+
+   * Git stage: Changes may exist in the working directory, staging area, or both. A commit records staged changes in the local repository; unstaged edits are not included unless they are staged first.
+
+   * Command: Run `git status` to review changed files and `git diff HEAD` to inspect the changes relative to the last commit. Run `git add <files>` to stage the changes you want to save, then `git diff --cached` to review what will be committed. When ready, run `git commit -m "Describe your changes"`; afterward, Git creates a new local commit containing the staged changes. Verify the result with `git status`.
+
+   * ID: `many-changed-files`, priority class: workflow, safety: safe.
+
+   * Conditions: Display this hint only when more than 50% of files tracked in HEAD have staged, unstaged, or deleted changes relative to HEAD. The repository must have at least one commit and at least one tracked file in HEAD.
+
+   Run `git rev-parse --verify HEAD` to verify that HEAD resolves to a commit. If HEAD does not resolve, do not trigger this hint.
+
+   Run `git ls-tree -r --name-only -z HEAD` to enumerate files tracked in HEAD. Let T be the number of distinct paths returned.
+
+   Run `git diff HEAD --name-only --no-renames -z` to identify paths changed relative to HEAD, including staged and unstaged modifications and deletions. Count only distinct changed paths that belong to the original tracked-file set. Let C be this count. Newly added files and untracked files do not increase C or T. Disabling rename detection treats a renamed file's original path as changed while avoiding double-counting the destination.
+
+   Trigger the hint exactly when T > 0 and 2*C > T. At exactly 50%, do not trigger it. A tracked file changed in both the index and working directory counts once. Unexpected Git command failures must be reported separately rather than interpreted as a triggered hint.
+
+   * Test case: Commit repo? (written by jit45; formerly Test Case 12).
+
+      1. Call `git_setup()` and create one temporary directory using `make_temps(1)`.
+      2. Initialize a repository there with `git init -b main`.
+      3. Call `config_user("user1", "user1@example.com")`.
+      4. Create four files, `one.txt`, `two.txt`, `three.txt`, and `four.txt`, each containing initial text.
+      5. Run `git add one.txt two.txt three.txt four.txt` and `git commit -m "Add initial files."`.
+      6. Run `git-hints --ids-only`. Verify `many-changed-files` is absent because no tracked files have changed.
+      7. Modify `one.txt` and `two.txt` without staging them. Create `untracked.txt` without adding it.
+      8. Run `git status --porcelain` and confirm that exactly two of the four tracked files have changes and that `untracked.txt` is untracked.
+      9. Run `git-hints --ids-only`. Verify `many-changed-files` is absent: C = 2 and T = 4, so the percentage is exactly 50%. The untracked file must not count.
+      10. Modify `three.txt` without staging it. Confirm that three of the four tracked files now have changes.
+      11. Run `git-hints --all`. Verify that `many-changed-files` appears because C = 3 and T = 4 (75%). Verify its workflow priority and that it includes the Git stage, commands, expected results, and official documentation link.
+      12. Stage `one.txt` with `git add one.txt`. Run `git-hints --ids-only` and verify the hint remains present; staging the file does not count it a second time.
+      13. Run `git add one.txt two.txt three.txt` and `git commit -m "Save tracked changes."`.
+      14. Run `git-hints --ids-only`. Verify that `many-changed-files` is absent because the changes are now committed. `untracked.txt` remains untracked and must not trigger this hint.
+      15. Verify that the test uses the isolated Git environment and runs the CLI from inside the temporary repository.
+      16. Test tracked-file deletions. In a repository with four committed tracked files and no other changed tracked files, delete three of the files without staging the deletions. Run `git-hints --ids-only` and verify that `many-changed-files` appears because C = 3 and T = 4. Verify that each deleted tracked file is counted once.
+      17. Test a repository without commits. Initialize a separate empty repository with `git init -b main`, create and stage a new file, and run `git-hints --ids-only`. Verify that `many-changed-files` is absent because HEAD does not resolve to a commit. The tool must not treat this condition as an unexpected application failure.
+
+
 
 12. Detached HEAD state? Conditions: the repository exists, HEAD is not attached
     to a local branch, and Git is not currently performing a rebase or bisect
@@ -600,10 +635,51 @@ Reactive hints are triggered by the result of a Git command executed through
         links to official merge documentation such as
         `https://git-scm.com/docs/git-merge`.
 
-2. Resolve pull conflicts? Conditions: `git-hints explain -- git pull` fails
-   because local uncommitted changes would be overwritten. Identify the affected
-   files and explain how to preserve or resolve the local changes. **jit45 will
-   test**
+
+#### Preserve local changes before pulling? (jit45)
+
+   * Hint: The attempted [git pull](https://git-scm.com/docs/git-pull  "Fetches and integrates changes from another repository") was blocked because incoming changes would overwrite uncommitted local changes. Affected files: `<files>`. Preserve your local work before retrying the pull.
+
+   * Git stage: Your working directory or staging area contains uncommitted changes, while the remote branch contains changes Git needs to integrate into the local repository. Git stopped the pull to avoid overwriting local work.
+
+   * Command: Run `git status` to inspect the repository and `git diff` to review unstaged changes. Run `git diff --cached` to review staged changes. To preserve the work as a commit, stage only the files you intend to save using `git add <files>`, then run `git commit -m "Save local changes"`. After verifying that the changes are committed, retry `git pull`. If the pull later produces merge conflicts, resolve those conflicts separately before completing the integration.
+
+    As an alternative when a commit is not appropriate, review the changes and run `git stash push -m "Save work before pull"` to save tracked working-directory and index changes temporarily. Verify the stash using `git stash list`, then retry `git pull`. After a successful pull, run `git stash apply` to reapply the saved changes. Resolve any conflicts before continuing. Keep the stash until you have verified that all desired changes were successfully restored. Warning: `git stash drop` removes the selected stash entry and may permanently discard changes that are not saved elsewhere; back up the work before using it. Untracked files are not saved by the default stash command.
+
+    The commands do not guarantee a conflict-free pull; they preserve the user's work before another integration attempt. Do not suggest `git reset --hard`, `git clean`, or force pushing as a remedy.
+
+   * ID: `pull-blocked-local-changes`, priority class: error/blocked, safety: safe.
+
+   * Conditions: Trigger only for a Git pull command executed through `git-hints explain -- git pull` (including supported pull arguments) that fails because incoming changes would overwrite uncommitted modifications to tracked files.
+
+   Execute the requested Git command using the shared `git-hints explain` execution rules. Inspect its exit code and captured standard error. Require a nonzero exit code and a recognized Git diagnostic indicating that local changes would be overwritten during merge or checkout. The message may vary by Git version, so do not rely on one complete error string.
+
+   Extract affected file paths from the diagnostic's file list when available. Display those paths in the hint. Do not invent filenames. If affected paths cannot be identified reliably, explain the problem without listing specific files and recommend `git status` to inspect the changes.
+
+   Do not trigger this hint for a successful pull, a network or authentication failure, an unrelated Git error, or an actual unresolved merge conflict. If unresolved merge entries exist, the `merge-conflicts` hint handles that separate state.
+
+   This hint must not discard, stage, commit, or stash the user's changes automatically. The failed pull's actual exit code must be preserved by `git-hints explain`. Unexpected inspection failures must be reported separately.
+
+   * Test case: Resolve pull conflicts (written by jit45; formerly Test Case 13).
+
+      1. Call `git_setup()` and create three temporary directories named `remote`, `local`, and `other` using `make_temps(3)`.
+      2. In `remote`, run `git init --bare -b main`.
+      3. Clone `remote` into `other` using `git clone <remote> <other>`.
+      4. In `other`, call `config_user("user1", "user1@example.com")`.
+      5. Create `foo.txt` containing `xxx`, then run `git add foo.txt`, `git commit -m "Add foo."`, and `git push -u origin main`.
+      6. Clone `remote` into `local` using `git clone <remote> <local>`.
+      7. In `local`, append `local change` to `foo.txt` without staging or committing it. Save the file's current contents for comparison after the pull attempt.
+      8. In `other`, append `remote change` to `foo.txt`, run `git commit -am "Update foo remotely."`, then run `git push`.
+      9. In `local`, run `git status --porcelain` and verify that `foo.txt` has an unstaged local modification.
+      10. In `local`, run `git-hints explain -- git pull` and capture the exit code and output.
+      11. Verify that the pull fails with a nonzero exit code because the incoming change would overwrite the uncommitted local modification. Verify that `git-hints explain` returns the Git command's nonzero exit code.
+      12. Verify that the hint with ID `pull-blocked-local-changes` appears, names `foo.txt`, and has error/blocked priority.
+      13. Verify that the hint explains the working-directory or staging-area state, provides commands and expected results for preserving the local change, and includes the official `git pull` documentation link.
+      14. Verify that `foo.txt` still contains the user's original uncommitted local change after the failed pull and that the tool did not automatically stage, commit, stash, or discard it.
+      15. Verify with `git diff --name-only --diff-filter=U` that no unresolved merge entries remain from this blocked pull.
+      16. As a negative check, save the local modification outside the repository, then restore `foo.txt` to its committed version using `git restore foo.txt`. Run `git-hints explain -- git pull` again. Verify that the pull succeeds with exit code 0, that `pull-blocked-local-changes` is absent from the output, and that the remote change is present in `foo.txt`. Verify that the previously saved local modification remains available outside the repository.
+      17. Verify that all commands and CLI calls use the isolated test environment and are executed from the correct temporary repository.
+
 
 3. Push failed? Conditions: `git-hints explain -- git push` fails because the
    remote branch contains commits that are not present in the local branch.
@@ -958,63 +1034,6 @@ For Requirement Proactive 15, written by jit45.
    the output.
 10. Run `git-hints --all` again. Verify that the no-commits hint is absent now
     that the repository contains a commit.
-
-### Test case 12: Commit repo? (Written by jit45) -- Requirement Proactive 13
-
-1. Call `git_setup()` and create one temporary directory.
-2. Call `config_user("user1", "user1@example.com")`.
-3. Initialize a repository in the temporary directory with `git init -b main`.
-4. Create four tracked files named `one.txt`, `two.txt`, `three.txt`, and
-   `four.txt`, each containing initial text.
-5. Run `git add one.txt two.txt three.txt four.txt`.
-6. Run `git commit -m "Add initial files."`.
-7. Modify `one.txt` and `two.txt`, leaving both changes unstaged.
-8. Create an untracked file named `untracked.txt`.
-9. Run `git status --porcelain` and verify that exactly two of the four tracked
-   files are changed and that `untracked.txt` appears as untracked.
-10. Run `git-hints --all`.
-11. Verify that the **Commit repo?** hint is absent because exactly 50% of the
-    tracked files are changed. The untracked file must not count toward the
-    percentage.
-12. Modify `three.txt`, leaving the change unstaged.
-13. Run `git status --porcelain` again and verify that three of the four tracked
-    files are now changed.
-14. Run `git-hints --all`.
-15. Verify that the **Commit repo?** hint appears because more than 50% of the
-    tracked files have staged, unstaged, or deleted changes relative to HEAD.
-16. Verify that the hint suggests reviewing and committing the changes.
-17. Identify the hint by its permanent hint ID rather than relying on exact
-    displayed wording once the permanent ID is assigned.
-
-### Test case 13: Resolve pull conflicts. (Written by jit45) -- Requirement Reactive 2
-
-1. Call `git_setup()` and create three temporary directories named `remote`,
-   `local`, and `other`.
-2. Call `config_user("user1", "user1@example.com")`.
-3. In `remote`, create a bare repository with `git init --bare -b main`.
-4. In `other`, clone the remote repository using `git clone <remote> <other>`.
-5. In `other`, create `foo.txt` containing `xxx`.
-6. Run `git add foo.txt`.
-7. Run `git commit -m "Add foo."`.
-8. Run `git push -u origin main`.
-9. Clone the remote repository into `local` using `git clone <remote> <local>`.
-10. In `local`, modify `foo.txt` by appending `local change`, but do not stage
-    or commit the change.
-11. In `other`, modify `foo.txt` by appending `remote change`.
-12. In `other`, run `git commit -am "Update foo remotely."`.
-13. In `other`, run `git push`.
-14. In `local`, run `git status --porcelain` and verify that `foo.txt` has an
-    uncommitted local modification.
-15. In `local`, run `git-hints explain -- git pull`.
-16. Verify that the pull fails because the incoming remote change would
-    overwrite the uncommitted local change to `foo.txt`.
-17. Verify that the **Resolve pull conflicts?** reactive hint appears.
-18. Verify that the hint identifies `foo.txt` as an affected file and explains
-    how the user can preserve or resolve the local change before pulling again.
-19. Verify that the repository still contains the user's uncommitted local
-    change after the failed pull.
-20. Identify the hint by its permanent hint ID rather than relying on exact
-    displayed wording once the permanent ID is assigned.
 
 ### Test Case 14: Pull Test (raf322) -- Requirement Proactive 7
 
