@@ -14,6 +14,31 @@ the user is working in (working directory, staging area, local repository, or
 remote) and links to the official documentation, so users learn Git's mental
 model as they work.
 
+Review assignments
+------------------
+
+<mark>Each student reviews one of the seven sections below. A "Review section"
+note marks where each section begins; the section continues until the next such
+note. Sections are roughly equal in length (about 200 lines) and difficulty, and
+no student reviews material they wrote or revised.</mark>
+
+1. (ams2083): the overview at the top of this document, CLI commands, Future
+   Work, Hint structure, and the introduction to Implementation.
+2. (jit45): `unstaged-changes`, `push-ahead`, `not-a-repo`, and
+   `staged-and-unstaged-changes`, including its conflict suppression test.
+3. (ewj55): `behind`, `diverged`, the gitignore item, `no-upstream-branch`,
+   `staged-changes`, and the commit-identity item.
+4. (raf322): `untracked-files`, `many-changed-files`, and, among the reactive
+   hints, `rebase-after-repeated-integration-failures`.
+5. (jhg246): `detached-head`, `no-commits`, and the protected/main branch item.
+6. (drj228): the `git-hints explain` introduction, `merge-conflicts`,
+   `pull-blocked-local-changes`, the push-failed item, and
+   `stash-local-changes`.
+7. (sbe80): Pull remote changes, `pull-before`, Language and libraries, Testing,
+   and Test Cases 14 and 15.
+
+<mark>Review section 1 (ams2083) begins here; see Review assignments.</mark>
+
 CLI commands
 ------------
 
@@ -207,6 +232,8 @@ Implementation
 Proactive hints are triggered by observable repository state when `git-hints`
 runs. (jit45)
 
+<mark>Review section 2 (jit45) begins here; see Review assignments.</mark>
+
 #### Stage files
 
 * Hint: Do you want to
@@ -396,6 +423,8 @@ runs. (jit45)
      `staged-and-unstaged-changes` and `unstaged-changes` are absent while the
      conflict exists.
   9. Run `git merge --abort` as cleanup, including if an assertion fails.
+
+<mark>Review section 3 (ewj55) begins here; see Review assignments.</mark>
 
 #### Branch is behind upstream (jhg246)
 
@@ -602,6 +631,8 @@ runs. (jit45)
     local override should be corrected locally. These settings identify commit
     authors; they do not sign the user into GitHub. (drj228)
 
+<mark>Review section 4 (raf322) begins here; see Review assignments.</mark>
+
 #### Stage or ignore untracked files (ams2083)
 
 * Hint: Do you need to
@@ -768,6 +799,8 @@ interpreted as a triggered hint.
       --ids-only`. Verify that `many-changed-files` is absent because HEAD does
       not resolve to a commit. The tool must not treat this condition as an
       unexpected application failure.
+
+<mark>Review section 5 (jhg246) begins here; see Review assignments.</mark>
 
 #### Detached HEAD state (jit45; revised by drj228)
 
@@ -990,6 +1023,8 @@ interpreted as a triggered hint.
     If other branches exist, suggest switching to one of them. If no other
     branches exist, suggest creating one with `git switch -c <name>`. (raf322)
 
+<mark>Review section 6 (drj228) begins here; see Review assignments.</mark>
+
 ### `git-hints explain -- git <command> [<args>...]`
 
 Reactive hints are triggered by the result of a Git command executed through
@@ -1193,6 +1228,8 @@ automatically. The failed pull's actual exit code must be preserved by
      again. Verify that the merge succeeds and the `stash-local-changes` hint is
      absent.
 
+<mark>Review section 4 (raf322) continues here; see Review assignments.</mark>
+
 #### Suggest `git pull --rebase`? (sbe80)
 
 * Hint: Five repeated failures to pull or push may be resolved by replaying the
@@ -1252,6 +1289,8 @@ automatically. The failed pull's actual exit code must be preserved by
      no rebase is left in progress.
   10. Run `git-hints explain -- git push`. Verify that it succeeds and the
       rebase hint is absent.
+
+<mark>Review section 7 (sbe80) begins here; see Review assignments.</mark>
 
 ### Pull remote changes? (raf322)
 
