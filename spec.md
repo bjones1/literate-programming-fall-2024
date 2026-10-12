@@ -47,13 +47,14 @@ CLI commands
       (ewj55; clarified by drj228, sbe80, and jit45)
 
    4. `--ids-only` outputs only the IDs of hints; typically used for testing.
+      <mark>TODO: this is mentioned in several places throughout the spec.
+      Consolidate it here.</mark>
 
    5. `--fetch`: run `git fetch` before inspecting the repository, with
-      `GIT_TERMINAL_PROMPT=0` and a 10 second timeout, so that ahead/behind hints use
-      current remote information. Without this option, never fetch (a fetch is
-      slow, needs the network, and can hang on a credential prompt) and label
-      the ahead/behind hints "as of last fetch". (jhg246)
-      
+      `GIT_TERMINAL_PROMPT=0` and a 10 second timeout, so that ahead/behind
+      hints use current remote information. Without this option, never fetch (a
+      fetch is slow, needs the network, and can hang on a credential prompt) and
+      label the ahead/behind hints "as of last fetch". (jhg246)
 2. `git-hints def <command>`: display a short definition of the requested Git
    command, explain what it does, and provide a link to the official Git
    documentation. If the command is unknown, report that it is unsupported.
@@ -79,9 +80,9 @@ CLI commands
 
    Configure the Typer command to allow extra arguments and ignore unknown
    options (for example, with `allow_extra_args=True` and
-   `ignore_unknown_options=True`) so Git options are passed through rather
-   than parsed by Typer. For example, `git-hints explain -- git pull --rebase`
-   and `git-hints explain -- git reset --hard HEAD~1` must reach Git with their
+   `ignore_unknown_options=True`) so Git options are passed through rather than
+   parsed by Typer. For example, `git-hints explain -- git pull --rebase` and
+   `git-hints explain -- git reset --hard HEAD~1` must reach Git with their
    arguments intact. (sbe80)
 
 5. `git-hints --bug <user comments explaining why the hint was wrong>
@@ -89,7 +90,7 @@ CLI commands
    command output then post an issue in the GitHub repo. **Future work. Do not
    implement.**
 
-6. Typer automatically generates `--help` for commands and subcommands. Each
+6. Typer automatically generates `--help` for commands and subcommands. Each
    command and subcommand docstring must include at least one usage example so
    the generated help is useful. Examples should use the complete command names,
    such as `git-hints def status` and `git-hints howto commit`. (jit45)
@@ -97,24 +98,30 @@ CLI commands
 Future Work
 -----------
 
-1. CodeChat Editor automatically displays a hyperlink and a summarized definition whenever specific commands such as "repo" or "pull" are typed out. Purpose of this feature is to serve an inline reminder of command functions, giving users immediate context while they work directly within the IDE. (ewj55)
+1. CodeChat Editor automatically displays a hyperlink and a summarized
+   definition whenever specific commands such as "repo" or "pull" are typed out.
+   Purpose of this feature is to serve an inline reminder of command functions,
+   giving users immediate context while they work directly within the IDE.
+   (ewj55) <mark>TODO: is this part of git howto? Move it to the appropriate
+   section.</mark>
 
 <h2 id="cc-SbouyCXTsP">Hint structure</h2>
 
+<mark>Remove the heading then rewrite the following two paragraphs as a numbered
+item, following the format of the rest of the section</mark>
+
 ### Repository context
 
-In normal output and `--all` inside a Git working tree, print the context
-line first, before any hint, as `Branch: <name>` or `Branch: detached HEAD`.
-Detect the branch name with `git branch --show-current`. If it returns an
-empty value because HEAD is detached, use `Branch: detached HEAD`.
-This context line is not a hint and does not count toward the three-hint
-limit.
+In normal output and `--all` inside a Git working tree, print the context line
+first, before any hint, as `Branch: <name>` or `Branch: detached HEAD`. Detect
+the branch name with `git branch --show-current`. If it returns an empty value
+because HEAD is detached, use `Branch: detached HEAD`. This context line is not
+a hint and does not count toward the three-hint limit.
 
-Omit the context line with `--ids-only`, which prints one hint ID per line
-in display order and nothing else, including no additional-hints notice.
-Without `--all`, the three-hint limit still applies; combine
-`--all --ids-only` to list every triggered hint ID.
-(sbe80; clarified by drj228)
+Omit the context line with `--ids-only`, which prints one hint ID per line in
+display order and nothing else, including no additional-hints notice. Without
+`--all`, the three-hint limit still applies; combine `--all --ids-only` to list
+every triggered hint ID. (sbe80; clarified by drj228)
 
 1. Each actionable hint must show the terminal command and explain its expected
    result. The initial implementation will support the CLI. If a GUI is added
@@ -128,7 +135,19 @@ Without `--all`, the three-hint limit still applies; combine
 3. Every hint about a specific task and command links to the official docs for
    more information (ewj55).
 
-4. Highlight sections from the docs to show where that specific hint came from (ewj55) **Example: When you see the definition for a push command that might have been simplified to "It sends your updated files from your local personal computer to a shared central computer, making them public" you can click on the link to the documentation and it will highlight the section where that summarized definition came from, which was from the quote "Updates one or more branches, tags, or other references in one or more remote repositories from your local repository, and sends all necessary data that isn’t already on the remote." Its similar to how search engines use Scroll to Text Fragment(STTF) and Featured Snippets to highlight the specifc information you are most likely looking for.**
+4. Highlight sections from the docs to show where that specific hint came from
+   (ewj55) **Example: When you see the definition for a push command that might
+   have been simplified to "It sends your updated files from your local personal
+   computer to a shared central computer, making them public" you can click on
+   the link to the documentation and it will highlight the section where that
+   summarized definition came from, which was from the quote "Updates one or
+   more branches, tags, or other references in one or more remote repositories
+   from your local repository, and sends all necessary data that isn’t already
+   on the remote." Its similar to how search engines use Scroll to Text
+   Fragment(STTF) and Featured Snippets to highlight the specifc information you
+   are most likely looking for.** <mark>TODO: Rewrite -- simply specify that
+   links to Git manual pages must use
+   [text fragments](https://developer.mozilla.org/en-US/docs/Web/URI/Reference/Fragment/Text_fragments).</mark>
 
 5. Hints must consist of Markdown text. Each documentation link must include a
    title summarizing the linked term or command, limited to 160 characters. Put
@@ -169,12 +188,16 @@ Without `--all`, the three-hint limit still applies; combine
    displayed wording. Display the ID with each hint and use it for `--exclude`
    or `--dismiss` switches and test assertions. (sbe80; clarified by drj228)
 
-   In normal output and `--all`, print each hint as a block beginning with
-   a line exactly formatted as `ID: <id>`. The block ends immediately before
-   the next `ID:` line or at the end of output. Place any additional-hints
-   notice before the first hint block so it is not included in a hint's text.
-   With `--ids-only`, print only the IDs as specified under Repository context.
+   In normal output and `--all`, print each hint as a block beginning with a
+   line exactly formatted as `ID: <id>`. The block ends immediately before the
+   next `ID:` line or at the end of output. Place any additional-hints notice
+   before the first hint block so it is not included in a hint's text. With
+   `--ids-only`, print only the IDs as specified under Repository context.
    (drj228)
+
+8. <mark>TODO: Add an template/example of how hints are formatted, showing the
+   location/format of the branch name, hint, Git stage, command and results, and
+   ID.</mark>
 
 Implementation
 --------------
@@ -198,12 +221,12 @@ runs. (jit45)
 
 * ID: `unstaged-changes`, priority class: workflow, safety: safe.
 
-* Conditions: Do not display this hint while the index contains unresolved
-  merge entries; check with `git diff --name-only --diff-filter=U` and suppress
-  the hint if it returns any paths. Otherwise, display the hint when unstaged
-  edits to tracked files exist in the repository. Run `git diff --quiet`; an
-  exit code of 0 means no unstaged edits; 1 means there are unstaged edits;
-  other return codes indicate an error.
+* Conditions: Do not display this hint while the index contains unresolved merge
+  entries; check with `git diff --name-only --diff-filter=U` and suppress the
+  hint if it returns any paths. Otherwise, display the hint when unstaged edits
+  to tracked files exist in the repository. Run `git diff --quiet`; an exit code
+  of 0 means no unstaged edits; 1 means there are unstaged edits; other return
+  codes indicate an error.
 
 * Test case:
 
@@ -223,136 +246,156 @@ runs. (jit45)
 
 ### Push (ewj55)
 
-* Hint: Do you want to [push](https://git-scm.com/docs/git-push "Uploads the latest changes of your local repository (repo) to a remote repository, this allows other collaborators to download your work.")?
+* Hint: Do you want to
+  [push](https://git-scm.com/docs/git-push "Uploads the latest changes of your local repository (repo) to a remote repository, this allows other collaborators to download your work.")?
 
-  Git Stage: You are working in the local repo. You have commits that have not been pushed to the remote branch.
+  Git Stage: You are working in the local repo. You have commits that have not
+  been pushed to the remote branch.
 
-  Command: `git push <remote> <name of local branch>:<name of remote branch>`; afterward, displays push output (most likely in tabular format) output: stderr progress report followed by: `<flag> <summary> <from> -> <to> (<reason>)`
+  Command: `git push <remote> <name of local branch>:<name of remote branch>`;
+  afterward, displays push output (most likely in tabular format) output: stderr
+  progress report followed by: `<flag> <summary> <from> -> <to> (<reason>)`
 
   * ID: `push-ahead`, priority class: workflow, safety: safe.
 
-  * Conditions: local repository was changed and looks different from remote repository. Run `git status -sb`. If the branch status shows that the local branch is ahead of its upstream branch by one or more commits, then the local commits exist that are not yet public. Label results "as of last fetch".
+  * Conditions: local repository was changed and looks different from remote
+    repository. Run `git status -sb`. If the branch status shows that the local
+    branch is ahead of its upstream branch by one or more commits, then the
+    local commits exist that are not yet public. Label results "as of last
+    fetch".
 
   * Test case:
-   1. **Setup** Call `git_setup()`. Create two temporary directories: `remote` and `local`.
-   2. Call `config_user("user1", "user1@foo.com")`.
-   3. In `remote`, run `git init --bare -b main`.
-   4. Clone `remote` into `local` using `git clone <remote> <local>`.
-   5. In `local`, create `foo.txt` containing `xxx`, run `git add foo.txt`,
-      `git commit -m "Add foo."`, then `git push -u origin main`.
-   6. Run `git-hints --all` in `local`. Verify the  `push-ahead` hint is absent.
-   7. Append `y` to `foo.txt` and run `git commit -am "Change foo."`.
-   8. Run `git log origin/main..HEAD` and verify it lists exactly one commit.
-   9. Run `git-hints --all` in `local`. 
-      Expected hint: **Push?** (ID `push-ahead`),
-      labeled "as of last fetch" and suggesting `git push`. Verify that the
-      `behind` and `diverged` hints are absent.
+
+  1. **Setup** Call `git_setup()`. Create two temporary directories: `remote`
+     and `local`.
+  2. Call `config_user("user1", "user1@foo.com")`.
+  3. In `remote`, run `git init --bare -b main`.
+  4. Clone `remote` into `local` using `git clone <remote> <local>`.
+  5. In `local`, create `foo.txt` containing `xxx`, run `git add foo.txt`, `git
+     commit -m "Add foo."`, then `git push -u origin main`.
+  6. Run `git-hints --all` in `local`. Verify the `push-ahead` hint is absent.
+  7. Append `y` to `foo.txt` and run `git commit -am "Change foo."`.
+  8. Run `git log origin/main..HEAD` and verify it lists exactly one commit.
+  9. Run `git-hints --all` in `local`. Expected hint: **Push?** (ID
+     `push-ahead`), labeled "as of last fetch" and suggesting `git push`. Verify
+     that the `behind` and `diverged` hints are absent.
 
 ### Clone a Repository (ewj55)
 
 * Hint: Would you like to clone
   [repo](https://git-scm.com/book/en/v2/GitHub-Maintaining-a-Project.html#_creating_a_new_repository "A collection of snapshots tracking a project's history, where people can download a local copy to modify.")?
 
-  Git stage: You are not inside a Git repository, you need to either clone or initialize a repository before you can begin tracking files.
+  Git stage: You are not inside a Git repository, you need to either clone or
+  initialize a repository before you can begin tracking files.
 
   Command: `git clone <repository-url>`
 
 * ID: `not-a-repo`, priority class: Informational, safety: safe.
 
-* Conditions: Determine if current directory is inside a Git working tree by running `git rev-parse --is-inside-work-tree` using `subprocess`. Exit code 0 with output `true` means it is inside a working tree. Exit code 128 means its outside a Git repository, which triggers this hint." Avoid suggesting cloning hint for other unexpected Git errors.
+* Conditions: Determine if current directory is inside a Git working tree by
+  running `git rev-parse --is-inside-work-tree` using `subprocess`. Exit code 0
+  with output `true` means it is inside a working tree. Exit code 128 means its
+  outside a Git repository, which triggers this hint." Avoid suggesting cloning
+  hint for other unexpected Git errors.
 
 * Test case:
 
-   1. Call `git_setup()` and `make_temps(1)`. Set `GIT_CEILING_DIRECTORIES` to
-      the temporary directory's parent so Git cannot discover an enclosing repo.
-   2. In the temporary directory, run `git rev-parse --is-inside-work-tree` and
-      verify exit code 128.
-   3. Run `git-hints --all`. Expected hint: **Clone a repo?**, identified by its
-      permanent ID, suggesting `git clone <repository-url>` with a link to the
-      official documentation. Verify that `git-hints` exits normally.
-   4. Run `git init -b main`, then `git-hints --all` again. Verify the clone hint is absent.
-
-
-#### <mark>TODO: each of the following hints should be rewritten to follow the above hints.</mark>
+  1. Call `git_setup()` and `make_temps(1)`. Set `GIT_CEILING_DIRECTORIES` to
+     the temporary directory's parent so Git cannot discover an enclosing repo.
+  2. In the temporary directory, run `git rev-parse --is-inside-work-tree` and
+     verify exit code 128.
+  3. Run `git-hints --all`. Expected hint: **Clone a repo?**, identified by its
+     permanent ID, suggesting `git clone <repository-url>` with a link to the
+     official documentation. Verify that `git-hints` exits normally.
+  4. Run `git init -b main`, then `git-hints --all` again. Verify the clone hint
+     is absent.
 
 #### Keep [unstaged changes](https://git-scm.com/docs/git-diff "Shows unstaged changes in the working tree.") out of this commit? **Sbe80**
 
-   * Hint: Do you want to keep unstaged changes out of this commit? [git commit](https://git-scm.com/docs/git-commit "Records the staged changes in a new commit.") records staged changes only.
+* Hint: Do you want to keep unstaged changes out of this commit?
+  [git commit](https://git-scm.com/docs/git-commit "Records the staged changes in a new commit.")
+  records staged changes only.
 
-   * Git stage: Some of your edits are in the staging area and will be included
-     in the next commit; other edits remain in the working directory and will
-     not be included.
+* Git stage: Some of your edits are in the staging area and will be included in
+  the next commit; other edits remain in the working directory and will not be
+  included.
 
-   * Command: `git diff --cached`; afterward, the displayed changes are the
-     ones staged for the next commit. When ready, commit those changes with
-     `git commit -m "message"`.
+* Command: `git diff --cached`; afterward, the displayed changes are the ones
+  staged for the next commit. When ready, commit those changes with `git commit
+  -m "message"`.
 
-   * ID: `staged-and-unstaged-changes`, priority class: workflow, safety: safe.
+* ID: `staged-and-unstaged-changes`, priority class: workflow, safety: safe.
 
-   * Conditions: Do not display this hint while the index contains unresolved merge entries; check with `git diff --name-only --diff-filter=U` and suppress the hint if it returns any paths. Otherwise, display the hint when the staging area contains at least one staged change and the working tree contains at least one unstaged change to a tracked file. Run `git diff --cached --quiet` to check for staged changes and `git diff --quiet` to check for unstaged changes to tracked files. For either command, exit code 1 means changes exist, exit code 0 means none exist, and any other exit code indicates an error. Show the hint only when both commands exit with code 1; do not show it when only staged changes or only unstaged changes exist. (drj228; sbe80 will test)
+* Conditions: Do not display this hint while the index contains unresolved merge
+  entries; check with `git diff --name-only --diff-filter=U` and suppress the
+  hint if it returns any paths. Otherwise, display the hint when the staging
+  area contains at least one staged change and the working tree contains at
+  least one unstaged change to a tracked file. Run `git diff --cached --quiet`
+  to check for staged changes and `git diff --quiet` to check for unstaged
+  changes to tracked files. For either command, exit code 1 means changes exist,
+  exit code 0 means none exist, and any other exit code indicates an error. Show
+  the hint only when both commands exit with code 1; do not show it when only
+  staged changes or only unstaged changes exist. (drj228; sbe80 will test)
 
-   * Test case: Staged and unstaged changes.
+* Test case: Staged and unstaged changes.
 
-     1. Call `git_setup()` and create one temporary directory.
-     2. In the temporary directory, initialize a repository with `git init -b main`.
-     3. Call `config_user("user1", "user1@foo.com")` after initializing the
-        repository.
-     4. Create `foo.txt` containing `xxx`, stage it with `git add foo.txt`, and
-        commit it with `git commit -m "Add foo."`.
-     5. Check the staged-only state:
-        1. Append `y` to `foo.txt` and run `git add foo.txt`.
-        2. Run `git-hints --all`.
-        3. Verify that the `staged-and-unstaged-changes` hint is absent,
-           because there are no unstaged changes.
-        4. Verify that the `staged-changes` hint appears. Verify that it
-           recommends reviewing staged changes with `git diff --cached` and
-           explains how to commit the
-           selected changes with `git commit -m "message"`. Check the
-           corresponding official Git documentation links.
-     6. Check the unstaged-only state:
-        1. Commit the staged change with `git commit -m "Append y."`.
-        2. Append `z` to `foo.txt` without staging it.
-        3. Run `git-hints --all` and verify that both the
-           `staged-and-unstaged-changes` and `staged-changes` hints are absent:
-           the file has unstaged changes, but nothing is staged for the next
-           commit.
-     7. Check the staged-plus-unstaged state:
-        1. Run `git add foo.txt` to stage the `z` change.
-        2. Append `w` to `foo.txt` and leave this change unstaged.
-        3. Run `git-hints --all`.
-        4. Verify that both the `staged-and-unstaged-changes` and
-           `staged-changes` hints appear. Verify that the
-           `staged-and-unstaged-changes` hint explains that a plain `git commit`
-           records staged changes only and suggests `git diff --cached`.
-        5. Verify that `staged-changes` recommends reviewing the staged changes
-           with `git diff --cached` and committing the selected changes with
-           `git commit -m "message"`. Confirm the two hints are distinct and
-           include the corresponding official Git documentation links,
-           including `https://git-scm.com/docs/git-diff` and
-           `https://git-scm.com/docs/git-commit`.
+  1. Call `git_setup()` and create one temporary directory.
+  2. In the temporary directory, initialize a repository with `git init -b
+     main`.
+  3. Call `config_user("user1", "user1@foo.com")` after initializing the
+     repository.
+  4. Create `foo.txt` containing `xxx`, stage it with `git add foo.txt`, and
+     commit it with `git commit -m "Add foo."`.
+  5. Check the staged-only state:
+     1. Append `y` to `foo.txt` and run `git add foo.txt`.
+     2. Run `git-hints --all`.
+     3. Verify that the `staged-and-unstaged-changes` hint is absent, because
+        there are no unstaged changes.
+     4. Verify that the `staged-changes` hint appears. Verify that it recommends
+        reviewing staged changes with `git diff --cached` and explains how to
+        commit the selected changes with `git commit -m "message"`. Check the
+        corresponding official Git documentation links.
+  6. Check the unstaged-only state:
+     1. Commit the staged change with `git commit -m "Append y."`.
+     2. Append `z` to `foo.txt` without staging it.
+     3. Run `git-hints --all` and verify that both the
+        `staged-and-unstaged-changes` and `staged-changes` hints are absent: the
+        file has unstaged changes, but nothing is staged for the next commit.
+  7. Check the staged-plus-unstaged state:
+     1. Run `git add foo.txt` to stage the `z` change.
+     2. Append `w` to `foo.txt` and leave this change unstaged.
+     3. Run `git-hints --all`.
+     4. Verify that both the `staged-and-unstaged-changes` and `staged-changes`
+        hints appear. Verify that the `staged-and-unstaged-changes` hint
+        explains that a plain `git commit` records staged changes only and
+        suggests `git diff --cached`.
+     5. Verify that `staged-changes` recommends reviewing the staged changes
+        with `git diff --cached` and committing the selected changes with `git
+        commit -m "message"`. Confirm the two hints are distinct and include the
+        corresponding official Git documentation links, including
+        `https://git-scm.com/docs/git-diff` and
+        `https://git-scm.com/docs/git-commit`.
+* Conflict suppression test:
 
-   * Conflict suppression test:
-
-     1. Call `git_setup()` and create one temporary directory.
-     2. Initialize a repository there with `git init -b main` and call
-        `config_user("user1", "user1@example.com")`.
-     3. Create `conflict.txt` and `other.txt`, each containing `base`.
-        Stage both files and commit them with `git commit -m "Add files."`.
-     4. Create a branch named `topic` with `git switch -c topic`, change
-        `conflict.txt` to `topic change`, and commit it.
-     5. Switch back to `main`, change `conflict.txt` to `main change`, and
-        commit it. The branch histories now conflict on `conflict.txt`.
-     6. Append `staged change` to `other.txt` and run `git add other.txt`.
-        Append `unstaged change` to `other.txt` and leave it unstaged.
-     7. Run `git merge topic` and verify that it exits nonzero and leaves
-        `conflict.txt` unresolved. Verify that `git diff --cached --quiet`
-        and `git diff --quiet` both exit 1, while
-        `git diff --name-only --diff-filter=U` lists `conflict.txt`.
-     8. Run `git-hints --all --ids-only`. Verify that both
-        `staged-and-unstaged-changes` and `unstaged-changes` are absent while
-        the conflict exists.
-     9. Run `git merge --abort` as cleanup, including if an assertion fails.
-
+  1. Call `git_setup()` and create one temporary directory.
+  2. Initialize a repository there with `git init -b main` and call
+     `config_user("user1", "user1@example.com")`.
+  3. Create `conflict.txt` and `other.txt`, each containing `base`. Stage both
+     files and commit them with `git commit -m "Add files."`.
+  4. Create a branch named `topic` with `git switch -c topic`, change
+     `conflict.txt` to `topic change`, and commit it.
+  5. Switch back to `main`, change `conflict.txt` to `main change`, and commit
+     it. The branch histories now conflict on `conflict.txt`.
+  6. Append `staged change` to `other.txt` and run `git add other.txt`. Append
+     `unstaged change` to `other.txt` and leave it unstaged.
+  7. Run `git merge topic` and verify that it exits nonzero and leaves
+     `conflict.txt` unresolved. Verify that `git diff --cached --quiet` and `git
+     diff --quiet` both exit 1, while `git diff --name-only --diff-filter=U`
+     lists `conflict.txt`.
+  8. Run `git-hints --all --ids-only`. Verify that both
+     `staged-and-unstaged-changes` and `unstaged-changes` are absent while the
+     conflict exists.
+  9. Run `git merge --abort` as cleanup, including if an assertion fails.
 
 #### Branch is behind upstream (jhg246)
 
@@ -364,15 +407,15 @@ runs. (jit45)
 * Git stage: You are working in the local repo, which is missing commits that
   the remote repo already has.
 
-* Command: `git pull`; afterward, `git status` reports that your branch is up
-  to date with its upstream. To preview first, run `git diff --name-only
+* Command: `git pull`; afterward, `git status` reports that your branch is up to
+  date with its upstream. To preview first, run `git diff --name-only
   HEAD...@{upstream}`, which lists the files the pull would bring in.
 
 * ID: `behind`, priority class: workflow, safety: safe.
 
-* Conditions: The current branch has an upstream and is behind it by one or
-  more commits but not ahead of it. Run `git status --porcelain=v2 --branch` and
-  read `# branch.ab +<ahead> -<behind>`; the line is absent when there is no
+* Conditions: The current branch has an upstream and is behind it by one or more
+  commits but not ahead of it. Run `git status --porcelain=v2 --branch` and read
+  `# branch.ab +<ahead> -<behind>`; the line is absent when there is no
   upstream. The hint applies when `<behind>` is above 0 and `<ahead>` is 0. If
   the branch is also ahead, the `diverged` hint applies instead. These counts
   use the last-fetched remote-tracking branch, so label the hint "as of last
@@ -389,31 +432,30 @@ runs. (jit45)
      commit it with `git commit -m "Add foo."`.
   4. Clone `repo1` into `repo2` with `git clone <repo1> <repo2>`.
   5. In `repo1`, append `y` to `foo.txt` and run `git commit -am "Change foo."`.
-     `repo1` acts as the remote. Nothing is pushed, because `repo2` only
-     fetches from it, so it does not need to be bare.
+     `repo1` acts as the remote. Nothing is pushed, because `repo2` only fetches
+     from it, so it does not need to be bare.
   6. In `repo2`, run `git status --porcelain=v2 --branch` and verify that it
      reports `# branch.ab +0 -0`. Run `git-hints --ids-only` and verify that
      `behind` is absent, because `repo2` has not fetched.
-  7. In `repo2`, run `git fetch` and verify that the status now reports
-     `# branch.ab +0 -1`.
+  7. In `repo2`, run `git fetch` and verify that the status now reports `#
+     branch.ab +0 -1`.
   8. Run `git-hints --all`. Verify that the `behind` hint appears, is labeled
-     "as of last fetch", recommends `git pull`, and links to the official
-     `git pull` documentation. Verify that `diverged` and `push-ahead` are
-     absent.
+     "as of last fetch", recommends `git pull`, and links to the official `git
+     pull` documentation. Verify that `diverged` and `push-ahead` are absent.
   9. In `repo1`, append `z` and run `git commit -am "Change foo again."`. In
-     `repo2`, run `git fetch` and verify `# branch.ab +0 -2`. Run
-     `git-hints --ids-only` and verify that `behind` still appears.
-  10. In `repo2`, run `git pull` and verify `# branch.ab +0 -0`. Run
-      `git-hints --ids-only` and verify that `behind` is absent.
+     `repo2`, run `git fetch` and verify `# branch.ab +0 -2`. Run `git-hints
+     --ids-only` and verify that `behind` still appears.
+  10. In `repo2`, run `git pull` and verify `# branch.ab +0 -0`. Run `git-hints
+      --ids-only` and verify that `behind` is absent.
   11. In `repo1`, append `w` and run `git commit -am "Change foo once more."`.
-      In `repo2`, run `git-hints --ids-only` and verify that `behind` is
-      absent, then run `git-hints --ids-only --fetch` and verify that `behind`
-      appears even though `repo2` never ran `git fetch` itself.
+      In `repo2`, run `git-hints --ids-only` and verify that `behind` is absent,
+      then run `git-hints --ids-only --fetch` and verify that `behind` appears
+      even though `repo2` never ran `git fetch` itself.
 
 #### Branch has diverged from upstream (sbe80; edited by jhg246)
 
-* Hint: Your branch has diverged from its upstream. Do you want to integrate
-  the remote commits with
+* Hint: Your branch has diverged from its upstream. Do you want to integrate the
+  remote commits with
   [git pull](https://git-scm.com/docs/git-pull "Fetches and integrates remote commits; --rebase replays yours on top of them.")
   and then share yours with
   [git push](https://git-scm.com/docs/git-push "Uploads local commits to the remote branch.")?
@@ -423,27 +465,26 @@ runs. (jit45)
 
 * Command: `git pull --no-rebase`, resolve any conflicts, then `git push`;
   afterward, `git status` reports that your branch is up to date with its
-  upstream. If you prefer a linear history, Caution: `git pull --rebase`
-  replays your local commits on top of the remote ones, which changes them;
-  they remain recoverable through the reflog. A plain `git pull` fails on
-  diverged branches unless `pull.rebase` or `pull.ff` is configured.
-
+  upstream. If you prefer a linear history, Caution: `git pull --rebase` replays
+  your local commits on top of the remote ones, which changes them; they remain
+  recoverable through the reflog. A plain `git pull` fails on diverged branches
+  unless `pull.rebase` or `pull.ff` is configured.
 
 * ID: `diverged`, priority class: workflow, safety: safe.
 
-* Conditions: The current branch has an upstream and is both ahead of and
-  behind it, as of the last fetch. Run `git status --porcelain=v2 --branch` and
-  read `# branch.ab +<ahead> -<behind>`; the hint applies when both numbers are
-  above 0. When it applies, do not show the `behind` or `push-ahead` hints,
-  because this hint replaces them. Label the hint "as of last fetch" (see
-  `git-hints --fetch`). (sbe80; edited by jhg246; jhg246 will test)
+* Conditions: The current branch has an upstream and is both ahead of and behind
+  it, as of the last fetch. Run `git status --porcelain=v2 --branch` and read `#
+  branch.ab +<ahead> -<behind>`; the hint applies when both numbers are above 0.
+  When it applies, do not show the `behind` or `push-ahead` hints, because this
+  hint replaces them. Label the hint "as of last fetch" (see `git-hints
+  --fetch`). (sbe80; edited by jhg246; jhg246 will test)
 
 * Test case:
 
   1. Do steps 1-5 of the `behind` hint's test case. This leaves `repo1` with a
      commit that `repo2` has not fetched.
-  2. In `repo2`, create `bar.txt` containing `zzz`, stage it with
-     `git add bar.txt`, and commit it with `git commit -m "Add bar."`.
+  2. In `repo2`, create `bar.txt` containing `zzz`, stage it with `git add
+     bar.txt`, and commit it with `git commit -m "Add bar."`.
   3. Run `git status --porcelain=v2 --branch` and verify `# branch.ab +1 -0`.
      Run `git-hints --ids-only` and verify that `push-ahead` appears and
      `diverged` is absent, because `repo2` has not fetched the new remote
@@ -459,17 +500,29 @@ runs. (jit45)
    create a .gitignore file and slate those files for entry. Suggest `git rm
    --cached` if user wants to unstage a file from the commit. (raf322)
 
+#### Configure an upstream branch? (ams2083)
 
-**ams2083**
-* Hint: Do you want to configure an [upstream branch](https://git-scm.com/docs/git-branch "A remote branch that your local branch tracks") before pushing?
+* Hint: Do you want to configure an
+  [upstream branch](https://git-scm.com/docs/git-branch "A remote branch that your local branch tracks")
+  before pushing?
 
-* Git stage: Your current branch has no upstream branch configured. An upstream allows Git to identify which remote branch your local branch tracks, simplifying future pushes and pulls.
+* Git stage: Your current branch has no upstream branch configured. An upstream
+  allows Git to identify which remote branch your local branch tracks,
+  simplifying future pushes and pulls.
 
-* Command: `git push -u origin <branch-name>` pushes the current branch to `origin` and configures its upstream for future pushes and pulls.
+* Command: `git push -u origin <branch-name>` pushes the current branch to
+  `origin` and configures its upstream for future pushes and pulls.
 
 * ID: `no-upstream-branch`, priority class: workflow, safety: safe.
 
-* Conditions: The current branch has no upstream branch configured. Confirm that the repository is on a local branch, rather than in a detached HEAD state, using `git symbolic-ref --quiet --short HEAD`. Check for an upstream using `git rev-parse --abbrev-ref --symbolic-full-name "@{upstream}"`. Confirm that the `origin` remote exists using `git remote`. Suggest configuring an upstream only when the current branch has no resolvable upstream and `origin` exists. Do not display the hint in detached HEAD state or when a valid upstream is configured.
+* Conditions: The current branch has no upstream branch configured. Confirm that
+  the repository is on a local branch, rather than in a detached HEAD state,
+  using `git symbolic-ref --quiet --short HEAD`. Check for an upstream using
+  `git rev-parse --abbrev-ref --symbolic-full-name "@{upstream}"`. Confirm that
+  the `origin` remote exists using `git remote`. Suggest configuring an upstream
+  only when the current branch has no resolvable upstream and `origin` exists.
+  Do not display the hint in detached HEAD state or when a valid upstream is
+  configured.
 
 * Test case:
 
@@ -481,44 +534,67 @@ runs. (jit45)
    4. Stage it with `git add foo.txt`.
    5. Commit it with `git commit -m "Add foo."`.
    6. Create and switch to a new branch with `git switch -c feature-test`.
-3. In the second directory, initialize a bare remote repository with `git init --bare`.
-4. In the first directory, add the second repository as the `origin` remote using `git remote add origin <path-to-second-directory>`.
-5. Run `git rev-parse --abbrev-ref --symbolic-full-name @{upstream}` and verify that it fails because no upstream is configured.
-6. Run `git-hints --all`. Verify that the hint with ID `no-upstream-branch` appears and recommends `git push -u origin feature-test`.
-7. Run `git push -u origin feature-test` to push the branch and configure its upstream.
-8. Run `git rev-parse --abbrev-ref --symbolic-full-name "@{upstream}"` and verify that it returns `origin/feature-test`.
-9. Run `git-hints --all` and verify that the hint with ID `no-upstream-branch` is absent.
+3. In the second directory, initialize a bare remote repository with `git init
+   --bare`.
+4. In the first directory, add the second repository as the `origin` remote
+   using `git remote add origin <path-to-second-directory>`.
+5. Run `git rev-parse --abbrev-ref --symbolic-full-name @{upstream}` and verify
+   that it fails because no upstream is configured.
+6. Run `git-hints --all`. Verify that the hint with ID `no-upstream-branch`
+   appears and recommends `git push -u origin feature-test`.
+7. Run `git push -u origin feature-test` to push the branch and configure its
+   upstream.
+8. Run `git rev-parse --abbrev-ref --symbolic-full-name "@{upstream}"` and
+   verify that it returns `origin/feature-test`.
+9. Run `git-hints --all` and verify that the hint with ID `no-upstream-branch`
+   is absent.
 
 #### Review staged changes before committing? **sbe80**
 
-   * Hint: Would you like to review your [staged changes](https://git-scm.com/docs/git-diff "Show changes staged for the next commit") before committing? Use [git commit](https://git-scm.com/docs/git-commit "Record the staged changes in a new commit") when they are ready.
+* Hint: Would you like to review your
+  [staged changes](https://git-scm.com/docs/git-diff "Show changes staged for the next commit")
+  before committing? Use
+  [git commit](https://git-scm.com/docs/git-commit "Record the staged changes in a new commit")
+  when they are ready.
 
-   * Git stage: You have changes in the staging area that will be included in the next commit. Unstaged edits remain in the working directory and will not be included.
+* Git stage: You have changes in the staging area that will be included in the
+  next commit. Unstaged edits remain in the working directory and will not be
+  included.
 
-   * Command: Run `git diff --cached` to review the staged changes. When they are ready, run `git commit -m "message"` to create a commit containing those staged changes.
+* Command: Run `git diff --cached` to review the staged changes. When they are
+  ready, run `git commit -m "message"` to create a commit containing those
+  staged changes.
 
-   * ID: `staged-changes`, priority class: workflow, safety: safe.
+* ID: `staged-changes`, priority class: workflow, safety: safe.
 
-   * Conditions: Display this hint when the staging area contains at least one change to be committed. Run `git diff --cached --quiet`; exit code 1 means staged changes exist, exit code 0 means none exist, and any other exit code indicates an error. Do not display the hint when the staging area is empty. This includes staged files in a repository with no commits yet. (drj228; sbe80 will test)
+* Conditions: Display this hint when the staging area contains at least one
+  change to be committed. Run `git diff --cached --quiet`; exit code 1 means
+  staged changes exist, exit code 0 means none exist, and any other exit code
+  indicates an error. Do not display the hint when the staging area is empty.
+  This includes staged files in a repository with no commits yet. (drj228; sbe80
+  will test)
 
-   * Test case:
+* Test case:
 
-     1. Call `git_setup()` and create one temporary directory.
-     2. Initialize a repository in that directory with `git init -b main`.
-     3. Call `config_user("user1", "user1@example.com")`.
-     4. Run `git-hints --all` and verify that the `staged-changes` hint is absent.
-     5. Create `foo.txt` containing `xxx` and stage it with `git add foo.txt`.
-     6. Run `git-hints --all` and verify that the `staged-changes` hint appears. Verify that it recommends `git diff --cached` and `git commit -m "message"`, and includes links to the official `git diff` and `git commit` documentation.
-     7. Commit the file with `git commit -m "Add foo."` and run `git-hints --all` again. Verify that the `staged-changes` hint is absent.
+  1. Call `git_setup()` and create one temporary directory.
+  2. Initialize a repository in that directory with `git init -b main`.
+  3. Call `config_user("user1", "user1@example.com")`.
+  4. Run `git-hints --all` and verify that the `staged-changes` hint is absent.
+  5. Create `foo.txt` containing `xxx` and stage it with `git add foo.txt`.
+  6. Run `git-hints --all` and verify that the `staged-changes` hint appears.
+     Verify that it recommends `git diff --cached` and `git commit -m
+     "message"`, and includes links to the official `git diff` and `git commit`
+     documentation.
+  7. Commit the file with `git commit -m "Add foo."` and run `git-hints --all`
+     again. Verify that the `staged-changes` hint is absent.
 
 10. Configure your commit identity? Conditions: Check the effective Git
-    configuration by running `git config --get user.name` and
-    `git config --get user.email`. An exit code of 1 or an empty returned value
-    means that setting is missing; other nonzero exit codes are inspection
-    errors and must not trigger this hint. Trigger the hint when either setting
-    is missing or empty. Explain how to set the missing value using
-    `git config --global user.name "Your Name"` or
-    `git config --global user.email "you@example.com"`.
+    configuration by running `git config --get user.name` and `git config --get
+    user.email`. An exit code of 1 or an empty returned value means that setting
+    is missing; other nonzero exit codes are inspection errors and must not
+    trigger this hint. Trigger the hint when either setting is missing or empty.
+    Explain how to set the missing value using `git config --global user.name
+    "Your Name"` or `git config --global user.email "you@example.com"`.
 
     The `--global` option sets the default for all repositories belonging to the
     current user. Use `--local` inside a repository to configure an identity for
@@ -526,98 +602,179 @@ runs. (jit45)
     local override should be corrected locally. These settings identify commit
     authors; they do not sign the user into GitHub. (drj228)
 
-**ams2083**
-* Hint: Do you need to [stage](https://git-scm.com/docs/git-add "Add files to the staging area") or [ignore](https://git-scm.com/docs/gitignore "Specify intentionally untracked files that Git should ignore") untracked files?
-  
-  * Git stage: Your working directory contains files that Git is not currently tracking. Ordinary project files should be staged if you want to include them in a future commit. Files containing secrets, temporary files, caches, and generated build outputs should generally be ignored.
+#### Stage or ignore untracked files (ams2083)
 
-  * Command: Run `git status --porcelain=v1` to identify untracked files, indicated by lines beginning with `??`. Use `git add <filename>` to stage files you want to track, or add appropriate patterns to `.gitignore` for files that should remain untracked. Run `git status` afterward to verify the changes.
+* Hint: Do you need to
+  [stage](https://git-scm.com/docs/git-add "Add files to the staging area") or
+  [ignore](https://git-scm.com/docs/gitignore "Specify intentionally untracked files that Git should ignore")
+  untracked files?
+
+  * Git stage: Your working directory contains files that Git is not currently
+    tracking. Ordinary project files should be staged if you want to include
+    them in a future commit. Files containing secrets, temporary files, caches,
+    and generated build outputs should generally be ignored.
+
+  * Command: Run `git status --porcelain=v1` to identify untracked files,
+    indicated by lines beginning with `??`. Use `git add <filename>` to stage
+    files you want to track, or add appropriate patterns to `.gitignore` for
+    files that should remain untracked. Run `git status` afterward to verify the
+    changes.
 
   * ID: `untracked-files`, priority class: workflow, safety: safe.
 
-  * Conditions: One or more untracked files exist in the working directory. Run `git status --porcelain=v1` and check for lines beginning with `??`. If ordinary untracked files exist, suggest staging them with `git add <filename>`. If files commonly excluded from version control are detected, such as `.env`, `__pycache__/`, `*.pyc`, or generated build outputs, suggest adding appropriate patterns to `.gitignore`. Display the hint when at least one untracked file or directory exists. Do not display the hint when no untracked files remain.
+  * Conditions: One or more untracked files exist in the working directory. Run
+    `git status --porcelain=v1` and check for lines beginning with `??`. If
+    ordinary untracked files exist, suggest staging them with `git add
+    <filename>`. If files commonly excluded from version control are detected,
+    such as `.env`, `__pycache__/`, `*.pyc`, or generated build outputs, suggest
+    adding appropriate patterns to `.gitignore`. Display the hint when at least
+    one untracked file or directory exists. Do not display the hint when no
+    untracked files remain.
 
   * Test case:
 
     1. Call `git_setup()`. Create one temporary directory.
-    2. In the temporary directory, initialize a repository with `git init -b main`.
+    2. In the temporary directory, initialize a repository with `git init -b
+       main`.
     3. Call `config_user("user1", "user1@foo.com")`.
-    4. Create `foo.txt` containing `xxx`, stage it with `git add foo.txt`, and commit it with `git commit -m "Add foo."`.
+    4. Create `foo.txt` containing `xxx`, stage it with `git add foo.txt`, and
+       commit it with `git commit -m "Add foo."`.
     5. Check the ordinary untracked file state:
        1. Create `notes.txt` containing `Hello world` without staging it.
-       2. Run `git status --porcelain=v1` and verify that `?? notes.txt` appears.
+       2. Run `git status --porcelain=v1` and verify that `?? notes.txt`
+          appears.
        3. Run `git-hints --all`.
-       4. Verify that the hint with ID `untracked-files` appears and recommends `git add notes.txt`.
-       5. Verify that the hint includes the appropriate official Git documentation links.
+       4. Verify that the hint with ID `untracked-files` appears and recommends
+          `git add notes.txt`.
+       5. Verify that the hint includes the appropriate official Git
+          documentation links.
     6. Check the staged file state:
        1. Run `git add notes.txt` to stage the untracked file.
-       2. Run `git status --porcelain=v1` and verify that `notes.txt` is now staged rather than untracked.
+       2. Run `git status --porcelain=v1` and verify that `notes.txt` is now
+          staged rather than untracked.
        3. Run `git-hints --all`.
-       4. Verify that the hint with ID `untracked-files` is absent because no untracked files remain.
+       4. Verify that the hint with ID `untracked-files` is absent because no
+          untracked files remain.
     7. Check the untracked file that should be ignored:
        1. Create a file named `.env` containing `TEST_VARIABLE=example`.
-       2. Create a directory named `__pycache__` containing a file called `example.pyc`.
-       3. Run `git status --porcelain=v1` and verify that `.env` and `__pycache__/` appear as untracked.
+       2. Create a directory named `__pycache__` containing a file called
+          `example.pyc`.
+       3. Run `git status --porcelain=v1` and verify that `.env` and
+          `__pycache__/` appear as untracked.
        4. Run `git-hints --all`.
        5. Verify that the hint with ID `untracked-files` appears.
-       6. Verify that the hint recommends adding appropriate patterns to `.gitignore` instead of staging these files. Check the corresponding official Git documentation links.
+       6. Verify that the hint recommends adding appropriate patterns to
+          `.gitignore` instead of staging these files. Check the corresponding
+          official Git documentation links.
     8. Check the ignored file state:
-       1. Create a `.gitignore` file containing patterns for `.env`, `__pycache__/`, and `*.pyc`.
+       1. Create a `.gitignore` file containing patterns for `.env`,
+          `__pycache__/`, and `*.pyc`.
        2. Stage `.gitignore` with `git add .gitignore`.
-       3. Run `git status --porcelain` and verify that `.env` and `__pycache__/` no longer appear as untracked.
+       3. Run `git status --porcelain` and verify that `.env` and `__pycache__/`
+          no longer appear as untracked.
        4. Run `git-hints --all`.
-       5. Verify that the hint with ID `untracked-files` is absent because all remaining files are either tracked or ignored.
-       3. Run `git-hints --all`.
-       4. Verify that the hint with ID `untracked-files` is absent because no untracked files remain.
-
+       5. Verify that the hint with ID `untracked-files` is absent because all
+          remaining files are either tracked or ignored.
+       6. Run `git-hints --all`.
+       7. Verify that the hint with ID `untracked-files` is absent because no
+          untracked files remain.
 
 #### Review and commit widespread changes? (jit45)
 
-   * Hint: More than half of the tracked files in this repository have changes. Would you like to review the changes and [commit](https://git-scm.com/docs/git-commit "Records staged changes as a new commit in the local repository") the work you want to save?
+* Hint: More than half of the tracked files in this repository have changes.
+  Would you like to review the changes and
+  [commit](https://git-scm.com/docs/git-commit "Records staged changes as a new commit in the local repository")
+  the work you want to save?
 
-   * Git stage: Changes may exist in the working directory, staging area, or both. A commit records staged changes in the local repository; unstaged edits are not included unless they are staged first.
+* Git stage: Changes may exist in the working directory, staging area, or both.
+  A commit records staged changes in the local repository; unstaged edits are
+  not included unless they are staged first.
 
-   * Command: Run `git status` to review changed files and `git diff HEAD` to inspect the changes relative to the last commit. Run `git add <files>` to stage the changes you want to save, then `git diff --cached` to review what will be committed. When ready, run `git commit -m "Describe your changes"`; afterward, Git creates a new local commit containing the staged changes. Verify the result with `git status`.
+* Command: Run `git status` to review changed files and `git diff HEAD` to
+  inspect the changes relative to the last commit. Run `git add <files>` to
+  stage the changes you want to save, then `git diff --cached` to review what
+  will be committed. When ready, run `git commit -m "Describe your changes"`;
+  afterward, Git creates a new local commit containing the staged changes.
+  Verify the result with `git status`.
 
-   * ID: `many-changed-files`, priority class: workflow, safety: safe.
+* ID: `many-changed-files`, priority class: workflow, safety: safe.
 
-   * Conditions: Display this hint only when more than 50% of files tracked in HEAD have staged, unstaged, or deleted changes relative to HEAD. The repository must have at least one commit and at least one tracked file in HEAD.
+* Conditions: Display this hint only when more than 50% of files tracked in HEAD
+  have staged, unstaged, or deleted changes relative to HEAD. The repository
+  must have at least one commit and at least one tracked file in HEAD.
 
-   Run `git rev-parse --verify HEAD` to verify that HEAD resolves to a commit. If HEAD does not resolve, do not trigger this hint.
+Run `git rev-parse --verify HEAD` to verify that HEAD resolves to a commit. If
+HEAD does not resolve, do not trigger this hint.
 
-   Run `git ls-tree -r --name-only -z HEAD` to enumerate files tracked in HEAD. Let T be the number of distinct paths returned.
+Run `git ls-tree -r --name-only -z HEAD` to enumerate files tracked in HEAD. Let
+T be the number of distinct paths returned.
 
-   Run `git diff HEAD --name-only --no-renames -z` to identify paths changed relative to HEAD, including staged and unstaged modifications and deletions. Count only distinct changed paths that belong to the original tracked-file set. Let C be this count. Newly added files and untracked files do not increase C or T. Disabling rename detection treats a renamed file's original path as changed while avoiding double-counting the destination.
+Run `git diff HEAD --name-only --no-renames -z` to identify paths changed
+relative to HEAD, including staged and unstaged modifications and deletions.
+Count only distinct changed paths that belong to the original tracked-file set.
+Let C be this count. Newly added files and untracked files do not increase C or
+T. Disabling rename detection treats a renamed file's original path as changed
+while avoiding double-counting the destination.
 
-   Trigger the hint exactly when T > 0 and 2*C > T. At exactly 50%, do not trigger it. A tracked file changed in both the index and working directory counts once. Unexpected Git command failures must be reported separately rather than interpreted as a triggered hint.
+Trigger the hint exactly when T > 0 and 2\*C > T. At exactly 50%, do not trigger
+it. A tracked file changed in both the index and working directory counts once.
+Unexpected Git command failures must be reported separately rather than
+interpreted as a triggered hint.
 
-   * Test case: Commit repo? (written by jit45; formerly Test Case 12).
+* Test case: Commit repo? (written by jit45; formerly Test Case 12).
 
-      1. Call `git_setup()` and create one temporary directory using `make_temps(1)`.
-      2. Initialize a repository there with `git init -b main`.
-      3. Call `config_user("user1", "user1@example.com")`.
-      4. Create four files, `one.txt`, `two.txt`, `three.txt`, and `four.txt`, each containing initial text.
-      5. Run `git add one.txt two.txt three.txt four.txt` and `git commit -m "Add initial files."`.
-      6. Run `git-hints --ids-only`. Verify `many-changed-files` is absent because no tracked files have changed.
-      7. Modify `one.txt` and `two.txt` without staging them. Create `untracked.txt` without adding it.
-      8. Run `git status --porcelain` and confirm that exactly two of the four tracked files have changes and that `untracked.txt` is untracked.
-      9. Run `git-hints --ids-only`. Verify `many-changed-files` is absent: C = 2 and T = 4, so the percentage is exactly 50%. The untracked file must not count.
-      10. Modify `three.txt` without staging it. Confirm that three of the four tracked files now have changes.
-      11. Run `git-hints --all`. Verify that `many-changed-files` appears because C = 3 and T = 4 (75%). Verify its workflow priority and that it includes the Git stage, commands, expected results, and official documentation link.
-      12. Stage `one.txt` with `git add one.txt`. Run `git-hints --ids-only` and verify the hint remains present; staging the file does not count it a second time.
-      13. Run `git add one.txt two.txt three.txt` and `git commit -m "Save tracked changes."`.
-      14. Run `git-hints --ids-only`. Verify that `many-changed-files` is absent because the changes are now committed. `untracked.txt` remains untracked and must not trigger this hint.
-      15. Verify that the test uses the isolated Git environment and runs the CLI from inside the temporary repository.
-      16. Test tracked-file deletions. Create a fresh, isolated temporary repository using make_temps(1) and initialize it with git init -b main. Configure the test Git user, create four files, stage them, and commit them. Delete three of the four tracked files without staging the deletions. Run git-hints --ids-only and verify that many-changed-files appears because C = 3 and T = 4 (75%). Verify that each deleted tracked file counts exactly once. Run all commands inside the isolated temporary repository.
-      17. Test a repository without commits. Initialize a separate empty repository with `git init -b main`, create and stage a new file, and run `git-hints --ids-only`. Verify that `many-changed-files` is absent because HEAD does not resolve to a commit. The tool must not treat this condition as an unexpected application failure.
-
-
+  1. Call `git_setup()` and create one temporary directory using
+     `make_temps(1)`.
+  2. Initialize a repository there with `git init -b main`.
+  3. Call `config_user("user1", "user1@example.com")`.
+  4. Create four files, `one.txt`, `two.txt`, `three.txt`, and `four.txt`, each
+     containing initial text.
+  5. Run `git add one.txt two.txt three.txt four.txt` and `git commit -m "Add
+     initial files."`.
+  6. Run `git-hints --ids-only`. Verify `many-changed-files` is absent because
+     no tracked files have changed.
+  7. Modify `one.txt` and `two.txt` without staging them. Create `untracked.txt`
+     without adding it.
+  8. Run `git status --porcelain` and confirm that exactly two of the four
+     tracked files have changes and that `untracked.txt` is untracked.
+  9. Run `git-hints --ids-only`. Verify `many-changed-files` is absent: C = 2
+     and T = 4, so the percentage is exactly 50%. The untracked file must not
+     count.
+  10. Modify `three.txt` without staging it. Confirm that three of the four
+      tracked files now have changes.
+  11. Run `git-hints --all`. Verify that `many-changed-files` appears because
+      C = 3 and T = 4 (75%). Verify its workflow priority and that it includes
+      the Git stage, commands, expected results, and official documentation
+      link.
+  12. Stage `one.txt` with `git add one.txt`. Run `git-hints --ids-only` and
+      verify the hint remains present; staging the file does not count it a
+      second time.
+  13. Run `git add one.txt two.txt three.txt` and `git commit -m "Save tracked
+      changes."`.
+  14. Run `git-hints --ids-only`. Verify that `many-changed-files` is absent
+      because the changes are now committed. `untracked.txt` remains untracked
+      and must not trigger this hint.
+  15. Verify that the test uses the isolated Git environment and runs the CLI
+      from inside the temporary repository.
+  16. Test tracked-file deletions. Create a fresh, isolated temporary repository
+      using make\_temps(1) and initialize it with git init -b main. Configure
+      the test Git user, create four files, stage them, and commit them. Delete
+      three of the four tracked files without staging the deletions. Run
+      git-hints --ids-only and verify that many-changed-files appears because
+      C = 3 and T = 4 (75%). Verify that each deleted tracked file counts
+      exactly once. Run all commands inside the isolated temporary repository.
+  17. Test a repository without commits. Initialize a separate empty repository
+      with `git init -b main`, create and stage a new file, and run `git-hints
+      --ids-only`. Verify that `many-changed-files` is absent because HEAD does
+      not resolve to a commit. The tool must not treat this condition as an
+      unexpected application failure.
 
 #### Detached HEAD state (jit45; revised by drj228)
 
-* Hint: You are in [detached HEAD](https://git-scm.com/docs/git-switch "Switch branches or create a branch at the current commit").
-  Create a branch if you want to keep working here and give your commits
-  a branch name.
+* Hint: You are in
+  [detached HEAD](https://git-scm.com/docs/git-switch "Switch branches or create a branch at the current commit").
+  Create a branch if you want to keep working here and give your commits a
+  branch name.
 
 * Git stage: You are working in the local repository at a specific commit
   instead of on a named local branch.
@@ -631,121 +788,119 @@ runs. (jit45)
 
 * Conditions:
 
-  1. Confirm that the current directory is inside a Git working tree using
-     `git rev-parse --is-inside-work-tree`; require exit code 0 and output
-     `true`. Handle a directory outside a working tree through the existing
-     `not-a-repo` behavior. Report unexpected Git errors separately.
+  1. Confirm that the current directory is inside a Git working tree using `git
+     rev-parse --is-inside-work-tree`; require exit code 0 and output `true`.
+     Handle a directory outside a working tree through the existing `not-a-repo`
+     behavior. Report unexpected Git errors separately.
   2. Run `git symbolic-ref --quiet --short HEAD`. Exit code 0 means HEAD is
-     attached to a branch, including a branch without its first commit;
-     do not display `detached-head`. Exit code 1 means HEAD is not symbolic;
-     continue the checks. Other exit codes indicate errors, not this hint.
+     attached to a branch, including a branch without its first commit; do not
+     display `detached-head`. Exit code 1 means HEAD is not symbolic; continue
+     the checks. Other exit codes indicate errors, not this hint.
   3. Require `git rev-parse --verify --quiet "HEAD^{commit}"` to succeed before
      treating the nonsymbolic HEAD as a usable detached commit. Report an
      invalid or unreadable HEAD separately.
-  4. Obtain the operation-state paths with
-     `git rev-parse --git-path rebase-merge`,
-     `git rev-parse --git-path rebase-apply`, and
-     `git rev-parse --git-path BISECT_START`. Resolve relative paths against
-     the working directory used for these Git commands. Suppress this hint
-     if any of the returned paths exists. If a path lookup fails, report
-     the inspection error rather than assuming no operation is in progress.
-  5. Display `detached-head` only when HEAD is detached at a valid commit
-     and neither a rebase nor a bisect is in progress.
-
-* Related output: In normal output and `--all`, the repository context line
-  must show `detached HEAD`, even when this hint is suppressed during an
-  operation. The context line is not a hint. The existing
-  `no-upstream-branch` hint must remain absent while HEAD is detached.
+  4. Obtain the operation-state paths with `git rev-parse --git-path
+     rebase-merge`, `git rev-parse --git-path rebase-apply`, and `git rev-parse
+     --git-path BISECT_START`. Resolve relative paths against the working
+     directory used for these Git commands. Suppress this hint if any of the
+     returned paths exists. If a path lookup fails, report the inspection error
+     rather than assuming no operation is in progress.
+  5. Display `detached-head` only when HEAD is detached at a valid commit and
+     neither a rebase nor a bisect is in progress.
+* Related output: In normal output and `--all`, the repository context line must
+  show `detached HEAD`, even when this hint is suppressed during an operation.
+  The context line is not a hint. The existing `no-upstream-branch` hint must
+  remain absent while HEAD is detached.
 
 * Test case 10: Detached HEAD state (written and revised by drj228).
 
-  All commands run in the repository under test unless a different directory
-  is specified. Use the isolated environment from the autouse `git_setup()`
-  fixture and the command-list behavior defined by `make_repo()`.
+  All commands run in the repository under test unless a different directory is
+  specified. Use the isolated environment from the autouse `git_setup()` fixture
+  and the command-list behavior defined by `make_repo()`.
 
   1. Create two temporary directories with `make_temps(2)`: `local` and
      `remote`. Call `config_user("user1", "user1@example.com")` before
      initializing the repositories.
-  2. In `remote`, run `git init --bare -b main`. In `local`, run
-     `git init -b main` and `git remote add origin <absolute-path-to-remote>`.
-     No fetch or push is needed for this test.
-  3. In `local`, create `foo.txt` containing `xxx`, stage it with
-     `git add foo.txt`, and commit it with `git commit -m "Add foo."`.
-     Change the content to `xxxy` and commit with
-     `git commit -am "Append y."`. Change it to `xxxyz` and commit with
-     `git commit -am "Append z."`. The history now has three linear commits.
-  4. Precondition: `git symbolic-ref --quiet --short HEAD` exits 0 and
-     prints `main`. Run `git-hints --all`; require exit code 0 and the first
-     output line exactly equal to `Branch: main`.
-     Run `git-hints --all --ids-only` and verify that `detached-head` is absent.
-     Verify that `no-upstream-branch` is present, establishing that this
-     related hint can trigger before detaching HEAD.
+  2. In `remote`, run `git init --bare -b main`. In `local`, run `git init -b
+     main` and `git remote add origin <absolute-path-to-remote>`. No fetch or
+     push is needed for this test.
+  3. In `local`, create `foo.txt` containing `xxx`, stage it with `git add
+     foo.txt`, and commit it with `git commit -m "Add foo."`. Change the content
+     to `xxxy` and commit with `git commit -am "Append y."`. Change it to
+     `xxxyz` and commit with `git commit -am "Append z."`. The history now has
+     three linear commits.
+  4. Precondition: `git symbolic-ref --quiet --short HEAD` exits 0 and prints
+     `main`. Run `git-hints --all`; require exit code 0 and the first output
+     line exactly equal to `Branch: main`. Run `git-hints --all --ids-only` and
+     verify that `detached-head` is absent. Verify that `no-upstream-branch` is
+     present, establishing that this related hint can trigger before detaching
+     HEAD.
   5. Run `git switch --detach HEAD`.
-  6. Preconditions: `git symbolic-ref --quiet --short HEAD` exits 1, and
-     `git rev-parse --verify --quiet "HEAD^{commit}"` exits 0. Obtain the
-     three operation-state paths specified in Conditions and verify that
-     none exists.
-  7. Run `git-hints --all` and require exit code 0. Check the output block
-     for ID `detached-head`: it contains `git switch -c` and the documentation
-     URL `https://git-scm.com/docs/git-switch`. Verify that the first output
-     line is exactly `Branch: detached HEAD`.
-     Run `git-hints --all --ids-only`; verify that `detached-head` is present
-     and `no-upstream-branch` and `no-commits` are absent. Identify hints by
-     exact ID, without requiring their descriptive wording to match.
-  8. Run `git switch -c saved-work`. Precondition:
-     `git symbolic-ref --quiet --short HEAD` exits 0 and prints `saved-work`.
-     Run `git-hints --all --ids-only` and verify that `detached-head` is absent.
-  9. Run `git bisect start HEAD HEAD~2`. Preconditions:
-     `git symbolic-ref --quiet --short HEAD` exits 1 and the path returned by
-     `git rev-parse --git-path BISECT_START` exists.
-  10. During the bisect, run `git-hints --all` and require exit code 0 and
-      the first output line exactly equal to `Branch: detached HEAD`.
-      Run `git-hints --all --ids-only`; verify that `detached-head` and
-      `no-upstream-branch` are absent. Ensure `git bisect reset` runs in
-      cleanup even if an assertion fails.
-  11. Precondition after cleanup: `git symbolic-ref --quiet --short HEAD`
-      exits 0 and prints `saved-work`; the `BISECT_START` path no longer
-      exists.
-  12. Precondition: `refs/heads/git-hints-test-missing` does not exist.
-      Run `git rebase --exec "git rev-parse --verify refs/heads/git-hints-test-missing" HEAD~1`. Execute this command directly with `subprocess.run()` using an argument list, `shell=False`, and `check=False`, rather than through `make_repo()`. Capture its output and require a nonzero return code. The deliberately failing exec command must stop the rebase with a
-      nonzero exit code, without a prompt. Preconditions after it stops:
-      `git symbolic-ref --quiet --short HEAD` exits 1 and the path returned
-      by `git rev-parse --git-path rebase-merge` exists.
-  13. During the stopped rebase, run `git-hints --all` and require exit code
-      0 and the first output line exactly equal to `Branch: detached HEAD`.
-      Run `git-hints --all --ids-only`; verify that `detached-head` and
+  6. Preconditions: `git symbolic-ref --quiet --short HEAD` exits 1, and `git
+     rev-parse --verify --quiet "HEAD^{commit}"` exits 0. Obtain the three
+     operation-state paths specified in Conditions and verify that none exists.
+  7. Run `git-hints --all` and require exit code 0. Check the output block for
+     ID `detached-head`: it contains `git switch -c` and the documentation URL
+     `https://git-scm.com/docs/git-switch`. Verify that the first output line is
+     exactly `Branch: detached HEAD`. Run `git-hints --all --ids-only`; verify
+     that `detached-head` is present and `no-upstream-branch` and `no-commits`
+     are absent. Identify hints by exact ID, without requiring their descriptive
+     wording to match.
+  8. Run `git switch -c saved-work`. Precondition: `git symbolic-ref --quiet
+     --short HEAD` exits 0 and prints `saved-work`. Run `git-hints --all
+     --ids-only` and verify that `detached-head` is absent.
+  9. Run `git bisect start HEAD HEAD~2`. Preconditions: `git symbolic-ref
+     --quiet --short HEAD` exits 1 and the path returned by `git rev-parse
+     --git-path BISECT_START` exists.
+  10. During the bisect, run `git-hints --all` and require exit code 0 and the
+      first output line exactly equal to `Branch: detached HEAD`. Run `git-hints
+      --all --ids-only`; verify that `detached-head` and `no-upstream-branch`
+      are absent. Ensure `git bisect reset` runs in cleanup even if an assertion
+      fails.
+  11. Precondition after cleanup: `git symbolic-ref --quiet --short HEAD` exits
+      0 and prints `saved-work`; the `BISECT_START` path no longer exists.
+  12. Precondition: `refs/heads/git-hints-test-missing` does not exist. Run `git
+      rebase --exec "git rev-parse --verify refs/heads/git-hints-test-missing"
+      HEAD~1`. Execute this command directly with `subprocess.run()` using an
+      argument list, `shell=False`, and `check=False`, rather than through
+      `make_repo()`. Capture its output and require a nonzero return code. The
+      deliberately failing exec command must stop the rebase with a nonzero exit
+      code, without a prompt. Preconditions after it stops: `git symbolic-ref
+      --quiet --short HEAD` exits 1 and the path returned by `git rev-parse
+      --git-path rebase-merge` exists.
+  13. During the stopped rebase, run `git-hints --all` and require exit code 0
+      and the first output line exactly equal to `Branch: detached HEAD`. Run
+      `git-hints --all --ids-only`; verify that `detached-head` and
       `no-upstream-branch` are absent. Ensure `git rebase --abort` runs in
       cleanup even if an assertion fails.
-  14. Precondition after cleanup: `git symbolic-ref --quiet --short HEAD`
-      exits 0 and prints `saved-work`; neither rebase-state path exists.
-      Run `git switch --detach HEAD`, then `git-hints --all --ids-only`
-      and verify that `detached-head` appears again.
-      Finish with `git switch saved-work`.
+  14. Precondition after cleanup: `git symbolic-ref --quiet --short HEAD` exits
+      0 and prints `saved-work`; neither rebase-state path exists. Run `git
+      switch --detach HEAD`, then `git-hints --all --ids-only` and verify that
+      `detached-head` appears again. Finish with `git switch saved-work`.
 
 #### Current branch has no commits yet (jit45; revised by drj228)
 
-* Hint: Your current branch has no commits yet. Prepare the files you want
-  to save, then create your first
+* Hint: Your current branch has no commits yet. Prepare the files you want to
+  save, then create your first
   [commit](https://git-scm.com/docs/git-commit "Record staged changes as a new commit").
 
 * Git stage: You are preparing the first saved snapshot on the current local
-  branch; edits in the working directory must enter the staging area before
-  a normal commit includes them, and other branches may already have history.
+  branch; edits in the working directory must enter the staging area before a
+  normal commit includes them, and other branches may already have history.
 
 * Command:
 
-  * If nothing is staged, show `git status` to review the working directory
-    and explain that selected files can be staged using
+  * If nothing is staged, show `git status` to review the working directory and
+    explain that selected files can be staged using
     [git add](https://git-scm.com/docs/git-add "Add selected file contents to the staging area"):
-    `git add <files to stage>`. Expected result: selected files are listed
-    under "Changes to be committed" by `git status`. Do not show a
-    `git commit` command until staged changes exist.
-  * If changes are staged, show `git commit -m "Initial commit"`.
-    Expected result on success: Git creates the first commit on the current
-    branch from the staged changes. Commit identity must be configured;
-    the separate commit-identity configuration hint handles missing settings.
-    Do not automatically stage or commit files.
-
+    `git add <files to stage>`. Expected result: selected files are listed under
+    "Changes to be committed" by `git status`. Do not show a `git commit`
+    command until staged changes exist.
+  * If changes are staged, show `git commit -m "Initial commit"`. Expected
+    result on success: Git creates the first commit on the current branch from
+    the staged changes. Commit identity must be configured; the separate
+    commit-identity configuration hint handles missing settings. Do not
+    automatically stage or commit files.
 * ID: `no-commits`, priority class: informational, safety: safe.
 
 * Conditions:
@@ -753,84 +908,80 @@ runs. (jit45)
   1. Confirm a Git working tree with `git rev-parse --is-inside-work-tree`;
      require exit code 0 and output `true`. Do not run the remaining checks
      outside a working tree. Report unexpected Git errors separately.
-  2. Run `git rev-parse --verify --quiet HEAD`. Exit code 0 means HEAD
-     resolves and this hint is absent. Exit code 1 means HEAD did not
-     resolve; continue the checks rather than assuming the branch is empty.
-     Other exit codes indicate errors.
-  3. Confirm an unborn local branch: `git symbolic-ref --quiet HEAD` must
-     exit 0 and return a reference under `refs/heads/`. Then run
-     `git show-ref --verify --quiet <returned-full-branch-reference>`.
-     Exit code 1 confirms that the branch reference does not exist yet.
-     A nonsymbolic HEAD, an existing branch reference with unresolved HEAD,
-     or an unexpected command error must not be classified as `no-commits`;
-     report invalid or unreadable repository state separately.
-  4. Run `git diff --cached --quiet`. Exit code 1 means staged changes exist,
-     so include the initial-commit command. Exit code 0 means none exist,
-     so include status and staging guidance without a commit command.
-     Other exit codes are inspection errors, not evidence of staged changes.
-
+  2. Run `git rev-parse --verify --quiet HEAD`. Exit code 0 means HEAD resolves
+     and this hint is absent. Exit code 1 means HEAD did not resolve; continue
+     the checks rather than assuming the branch is empty. Other exit codes
+     indicate errors.
+  3. Confirm an unborn local branch: `git symbolic-ref --quiet HEAD` must exit 0
+     and return a reference under `refs/heads/`. Then run `git show-ref --verify
+     --quiet <returned-full-branch-reference>`. Exit code 1 confirms that the
+     branch reference does not exist yet. A nonsymbolic HEAD, an existing branch
+     reference with unresolved HEAD, or an unexpected command error must not be
+     classified as `no-commits`; report invalid or unreadable repository state
+     separately.
+  4. Run `git diff --cached --quiet`. Exit code 1 means staged changes exist, so
+     include the initial-commit command. Exit code 0 means none exist, so
+     include status and staging guidance without a commit command. Other exit
+     codes are inspection errors, not evidence of staged changes.
 * Related output: An unborn branch is attached to its branch name, so
   `detached-head` must remain absent and normal repository context must show
-  that name. The existing `many-changed-files` condition requires a commit
-  at HEAD; it must remain absent before the first commit, with or without
-  staged files. An empty file count must not cause division by zero.
+  that name. The existing `many-changed-files` condition requires a commit at
+  HEAD; it must remain absent before the first commit, with or without staged
+  files. An empty file count must not cause division by zero.
 
 * Test case 11: Repository has no commits (written and revised by drj228).
 
   All commands run in the repository under test. Use the isolated environment
-  from the autouse `git_setup()` fixture and the command-list behavior
-  defined by `make_repo()`.
+  from the autouse `git_setup()` fixture and the command-list behavior defined
+  by `make_repo()`.
 
   1. Create one temporary directory with `make_temps(1)`. Call
-     `config_user("user1", "user1@example.com")`, then initialize the
-     repository with `git init -b main`.
+     `config_user("user1", "user1@example.com")`, then initialize the repository
+     with `git init -b main`.
   2. Preconditions: `git rev-parse --verify --quiet HEAD` exits 1 with empty
-     standard output and standard error; `git symbolic-ref --quiet --short
-     HEAD` exits 0 and prints `main`; `git show-ref --verify --quiet
-     refs/heads/main` exits 1; `git diff --cached --quiet` exits 0.
-  3. Run `git-hints --all`. Require exit code 0, the first output line
-     exactly equal to `Branch: main`, and no crash. Verify that the
-     `no-commits` output block contains `git status`, `git add`, and
-     `https://git-scm.com/docs/git-add`. Verify that this block does not
-     contain `git commit`.
-  4. Run `git-hints --all --ids-only`. Verify that `no-commits` is present
-     and `detached-head`, `many-changed-files`, and `staged-changes` are absent.
-  5. Create `foo.txt` containing `xxx` without staging it.
-     Run `git-hints --all` and require exit code 0 and the first output
-     line exactly equal to `Branch: main`. Verify that the `no-commits`
-     output block is present and does not contain `git commit`.
-     Run `git-hints --all --ids-only`; verify that `no-commits` is present
-     and `detached-head`, `many-changed-files`, and `staged-changes`
-     are absent.
-  6. Run `git add foo.txt`. Precondition: `git diff --cached --quiet` exits
-     1, while `git rev-parse --verify --quiet HEAD` still exits 1.
-  7. Run `git-hints --all` and require exit code 0. In the `no-commits`
-     output block, check for `git commit -m "Initial commit"` and
-     `https://git-scm.com/docs/git-commit`.
-     Run `git-hints --all --ids-only`; verify that `no-commits` and
-     `staged-changes` are present, while `detached-head` and
-     `many-changed-files` are absent.
+     standard output and standard error; `git symbolic-ref --quiet --short HEAD`
+     exits 0 and prints `main`; `git show-ref --verify --quiet refs/heads/main`
+     exits 1; `git diff --cached --quiet` exits 0.
+  3. Run `git-hints --all`. Require exit code 0, the first output line exactly
+     equal to `Branch: main`, and no crash. Verify that the `no-commits` output
+     block contains `git status`, `git add`, and
+     `https://git-scm.com/docs/git-add`. Verify that this block does not contain
+     `git commit`.
+  4. Run `git-hints --all --ids-only`. Verify that `no-commits` is present and
+     `detached-head`, `many-changed-files`, and `staged-changes` are absent.
+  5. Create `foo.txt` containing `xxx` without staging it. Run `git-hints --all`
+     and require exit code 0 and the first output line exactly equal to `Branch:
+     main`. Verify that the `no-commits` output block is present and does not
+     contain `git commit`. Run `git-hints --all --ids-only`; verify that
+     `no-commits` is present and `detached-head`, `many-changed-files`, and
+     `staged-changes` are absent.
+  6. Run `git add foo.txt`. Precondition: `git diff --cached --quiet` exits 1,
+     while `git rev-parse --verify --quiet HEAD` still exits 1.
+  7. Run `git-hints --all` and require exit code 0. In the `no-commits` output
+     block, check for `git commit -m "Initial commit"` and
+     `https://git-scm.com/docs/git-commit`. Run `git-hints --all --ids-only`;
+     verify that `no-commits` and `staged-changes` are present, while
+     `detached-head` and `many-changed-files` are absent.
   8. Run `git commit -m "Initial commit"` and require exit code 0.
-  9. Preconditions: `git rev-parse --verify --quiet HEAD` exits 0 and prints
-     a commit object ID; `git symbolic-ref --quiet --short HEAD` exits 0
-     and prints `main`; `git diff --cached --quiet` exits 0.
-  10. Run `git-hints --all` and require exit code 0 and the first output
-      line exactly equal to `Branch: main`.
-      Run `git-hints --all --ids-only`; verify that `no-commits`,
-      `detached-head`, `many-changed-files`, and `staged-changes` are absent.
-  11. Run `git switch --orphan fresh`. Preconditions:
-      `git symbolic-ref --quiet --short HEAD` exits 0 and prints `fresh`;
-      `git rev-parse --verify --quiet HEAD` exits 1;
-      `git show-ref --verify --quiet refs/heads/fresh` exits 1;
-      `git show-ref --verify --quiet refs/heads/main` exits 0; and
-      `git diff --cached --quiet` exits 0.
-  12. Run `git-hints --all` and require exit code 0 and the first output
-      line exactly equal to `Branch: fresh`. Verify that the `no-commits`
-      output block contains `git status` and `git add`, and does not
-      contain `git commit`.
-      Run `git-hints --all --ids-only`; verify that `no-commits` is present
-      and `detached-head`, `many-changed-files`, and `staged-changes` are absent.
-      Ensure `git switch main` runs in cleanup even if an assertion fails.
+  9. Preconditions: `git rev-parse --verify --quiet HEAD` exits 0 and prints a
+     commit object ID; `git symbolic-ref --quiet --short HEAD` exits 0 and
+     prints `main`; `git diff --cached --quiet` exits 0.
+  10. Run `git-hints --all` and require exit code 0 and the first output line
+      exactly equal to `Branch: main`. Run `git-hints --all --ids-only`; verify
+      that `no-commits`, `detached-head`, `many-changed-files`, and
+      `staged-changes` are absent.
+  11. Run `git switch --orphan fresh`. Preconditions: `git symbolic-ref --quiet
+      --short HEAD` exits 0 and prints `fresh`; `git rev-parse --verify --quiet
+      HEAD` exits 1; `git show-ref --verify --quiet refs/heads/fresh` exits 1;
+      `git show-ref --verify --quiet refs/heads/main` exits 0; and `git diff
+      --cached --quiet` exits 0.
+  12. Run `git-hints --all` and require exit code 0 and the first output line
+      exactly equal to `Branch: fresh`. Verify that the `no-commits` output
+      block contains `git status` and `git add`, and does not contain `git
+      commit`. Run `git-hints --all --ids-only`; verify that `no-commits` is
+      present and `detached-head`, `many-changed-files`, and `staged-changes`
+      are absent. Ensure `git switch main` runs in cleanup even if an assertion
+      fails.
 
 15. Committing to protected/main branch? Run `git branch --show-current` to
     identify the current branch. Trigger this hint when the branch is `main` or
@@ -846,97 +997,145 @@ Reactive hints are triggered by the result of a Git command executed through
 
 ### Resolve merge conflicts? **sbe80**
 
-   * Hint: Git left [merge conflicts](https://git-scm.com/docs/git-merge
-     "Join two or more development histories together") that need to be resolved
-     before the merge can finish. Conflicted files: `<files>`.
+* Hint: Git left
+  [merge conflicts](https://git-scm.com/docs/git-merge "Join two or more development histories together")
+  that need to be resolved before the merge can finish. Conflicted files:
+  `<files>`.
 
-   * Git stage: The merge is in progress in the working directory; edit each
-     conflicted file to choose or combine the changes, then stage the resolved
-     files.
+* Git stage: The merge is in progress in the working directory; edit each
+  conflicted file to choose or combine the changes, then stage the resolved
+  files.
 
-   * Command: Run `git diff --name-only --diff-filter=U` to list the conflicted
-     files. Edit each file to resolve its conflict markers, then run `git add
-     <file>` for each resolved file and `git status` to confirm no conflicts
-     remain. Complete the merge with `git commit` when Git requests a merge
-     commit.
+* Command: Run `git diff --name-only --diff-filter=U` to list the conflicted
+  files. Edit each file to resolve its conflict markers, then run `git add
+  <file>` for each resolved file and `git status` to confirm no conflicts
+  remain. Complete the merge with `git commit` when Git requests a merge commit.
 
-   * ID: `merge-conflicts`, priority class: error/blocked, safety: safe.
+* ID: `merge-conflicts`, priority class: error/blocked, safety: safe.
 
-   * Conditions: A Git command executed through `git-hints explain` leaves the
-     repository with one or more unresolved merge conflicts. Detect them with
-     `git diff --name-only --diff-filter=U`; include the returned paths in the
-     hint. Do not display this hint when the command failed without leaving
-     unresolved conflicts.
+* Conditions: A Git command executed through `git-hints explain` leaves the
+  repository with one or more unresolved merge conflicts. Detect them with `git
+  diff --name-only --diff-filter=U`; include the returned paths in the hint. Do
+  not display this hint when the command failed without leaving unresolved
+  conflicts.
 
-   * Test case: Resolving merge conflicts (written by sbe80).
+* Test case: Resolving merge conflicts (written by sbe80).
 
-     1. Call `git_setup()` and create two temporary directories, `repo1` and
-        `repo2`.
-     2. In `repo1`, initialize a repository with `git init -b main` and call
-        `config_user("user1", "user1@foo.com")`.
-     3. Create `foo.txt` containing `xxx`, stage it with `git add foo.txt`, and
-        commit it with `git commit -m "Add foo."`.
-     4. Clone `repo1` into `repo2` with `git clone <repo1> <repo2>`.
-     5. In `repo1`, append `y` to `foo.txt`, stage it with `git add foo.txt`,
-        and commit it with `git commit -m "Append y."`.
-     6. In `repo2`, call `config_user("user2", "user2@foo.com")`. Append `z` to
-        `foo.txt`, stage it with `git add foo.txt`, and commit it with `git
-        commit -m "Append z."`.
-     7. In `repo2`, run `git-hints explain -- git pull --no-rebase` and capture
-        its exit code and output.
-     8. Verify that the Git command exits non-zero and leaves an unresolved
-        merge conflict. Verify with `git diff --name-only --diff-filter=U`
-        that `foo.txt` is conflicted.
-     9. Verify that the hint with ID `merge-conflicts` appears, names `foo.txt`,
-        has error/blocked priority, explains how to resolve the conflict, and
-        links to official merge documentation such as
-        `https://git-scm.com/docs/git-merge`.
-
+  1. Call `git_setup()` and create two temporary directories, `repo1` and
+     `repo2`.
+  2. In `repo1`, initialize a repository with `git init -b main` and call
+     `config_user("user1", "user1@foo.com")`.
+  3. Create `foo.txt` containing `xxx`, stage it with `git add foo.txt`, and
+     commit it with `git commit -m "Add foo."`.
+  4. Clone `repo1` into `repo2` with `git clone <repo1> <repo2>`.
+  5. In `repo1`, append `y` to `foo.txt`, stage it with `git add foo.txt`, and
+     commit it with `git commit -m "Append y."`.
+  6. In `repo2`, call `config_user("user2", "user2@foo.com")`. Append `z` to
+     `foo.txt`, stage it with `git add foo.txt`, and commit it with `git commit
+     -m "Append z."`.
+  7. In `repo2`, run `git-hints explain -- git pull --no-rebase` and capture its
+     exit code and output.
+  8. Verify that the Git command exits non-zero and leaves an unresolved merge
+     conflict. Verify with `git diff --name-only --diff-filter=U` that `foo.txt`
+     is conflicted.
+  9. Verify that the hint with ID `merge-conflicts` appears, names `foo.txt`,
+     has error/blocked priority, explains how to resolve the conflict, and links
+     to official merge documentation such as
+     `https://git-scm.com/docs/git-merge`.
 
 #### Preserve local changes before pulling? (jit45)
 
-   * Hint: The attempted [git pull](https://git-scm.com/docs/git-pull  "Fetches and integrates changes from another repository") was blocked because incoming changes would overwrite uncommitted local changes. Affected files: `<files>`. Preserve your local work before retrying the pull.
+* Hint: The attempted
+  [git pull](https://git-scm.com/docs/git-pull "Fetches and integrates changes from another repository")
+  was blocked because incoming changes would overwrite uncommitted local
+  changes. Affected files: `<files>`. Preserve your local work before retrying
+  the pull.
 
-   * Git stage: Your working directory or staging area contains uncommitted changes, while the remote branch contains changes Git needs to integrate into the local repository. Git stopped the pull to avoid overwriting local work.
+* Git stage: Your working directory or staging area contains uncommitted
+  changes, while the remote branch contains changes Git needs to integrate into
+  the local repository. Git stopped the pull to avoid overwriting local work.
 
-   * Command: Run `git status` to inspect the repository and `git diff` to review unstaged changes. Run `git diff --cached` to review staged changes. To preserve the work as a commit, stage only the files you intend to save using `git add <files>`, then run `git commit -m "Save local changes"`. After verifying that the changes are committed, retry `git pull`. If the pull later produces merge conflicts, resolve those conflicts separately before completing the integration.
+* Command: Run `git status` to inspect the repository and `git diff` to review
+  unstaged changes. Run `git diff --cached` to review staged changes. To
+  preserve the work as a commit, stage only the files you intend to save using
+  `git add <files>`, then run `git commit -m "Save local changes"`. After
+  verifying that the changes are committed, retry `git pull`. If the pull later
+  produces merge conflicts, resolve those conflicts separately before completing
+  the integration.
 
-    As an alternative when a commit is not appropriate, review the changes and run `git stash push -m "Save work before pull"` to save tracked working-directory and index changes temporarily. Verify the stash using `git stash list`, then retry `git pull`. After a successful pull, run `git stash apply` to reapply the saved changes. Resolve any conflicts before continuing. Keep the stash until you have verified that all desired changes were successfully restored. Warning: `git stash drop` is not part of the recommended workflow because it removes the selected stash entry and may permanently discard changes that are not saved elsewhere. Keep the stash until all desired changes have been verified and preserved. Back up the work before considering any stash deletion. Untracked files are not saved by the default stash command.
+```
+As an alternative when a commit is not appropriate, review the changes and run `git stash push -m "Save work before pull"` to save tracked working-directory and index changes temporarily. Verify the stash using `git stash list`, then retry `git pull`. After a successful pull, run `git stash apply` to reapply the saved changes. Resolve any conflicts before continuing. Keep the stash until you have verified that all desired changes were successfully restored. Warning: `git stash drop` is not part of the recommended workflow because it removes the selected stash entry and may permanently discard changes that are not saved elsewhere. Keep the stash until all desired changes have been verified and preserved. Back up the work before considering any stash deletion. Untracked files are not saved by the default stash command.
 
-    The commands do not guarantee a conflict-free pull; they preserve the user's work before another integration attempt. Do not suggest `git reset --hard`, `git clean`, or force pushing as a remedy.
+The commands do not guarantee a conflict-free pull; they preserve the user's work before another integration attempt. Do not suggest `git reset --hard`, `git clean`, or force pushing as a remedy.
+```
 
-   * ID: `pull-blocked-local-changes`, priority class: error/blocked, safety: safe.
+* ID: `pull-blocked-local-changes`, priority class: error/blocked, safety: safe.
 
-   * Conditions: Trigger only for a Git pull command executed through `git-hints explain -- git pull` (including supported pull arguments) that fails because incoming changes would overwrite uncommitted modifications to tracked files.
+* Conditions: Trigger only for a Git pull command executed through `git-hints
+  explain -- git pull` (including supported pull arguments) that fails because
+  incoming changes would overwrite uncommitted modifications to tracked files.
 
-   Execute the requested Git command using the shared `git-hints explain` execution rules. Inspect its exit code and captured standard error. Require a nonzero exit code and a recognized Git diagnostic indicating that local changes would be overwritten during merge or checkout. The message may vary by Git version, so do not rely on one complete error string.
+Execute the requested Git command using the shared `git-hints explain` execution
+rules. Inspect its exit code and captured standard error. Require a nonzero exit
+code and a recognized Git diagnostic indicating that local changes would be
+overwritten during merge or checkout. The message may vary by Git version, so do
+not rely on one complete error string.
 
-   Extract affected file paths from the diagnostic's file list when available. Display those paths in the hint. Do not invent filenames. If affected paths cannot be identified reliably, explain the problem without listing specific files and recommend `git status` to inspect the changes.
+Extract affected file paths from the diagnostic's file list when available.
+Display those paths in the hint. Do not invent filenames. If affected paths
+cannot be identified reliably, explain the problem without listing specific
+files and recommend `git status` to inspect the changes.
 
-   Do not trigger this hint for a successful pull, a network or authentication failure, an unrelated Git error, or an actual unresolved merge conflict. If unresolved merge entries exist, the `merge-conflicts` hint handles that separate state.
+Do not trigger this hint for a successful pull, a network or authentication
+failure, an unrelated Git error, or an actual unresolved merge conflict. If
+unresolved merge entries exist, the `merge-conflicts` hint handles that separate
+state.
 
-   This hint must not discard, stage, commit, or stash the user's changes automatically. The failed pull's actual exit code must be preserved by `git-hints explain`. Unexpected inspection failures must be reported separately.
+This hint must not discard, stage, commit, or stash the user's changes
+automatically. The failed pull's actual exit code must be preserved by
+`git-hints explain`. Unexpected inspection failures must be reported separately.
 
-   * Test case: Resolve pull conflicts (written by jit45; formerly Test Case 13).
+* Test case: Resolve pull conflicts (written by jit45; formerly Test Case 13).
 
-      1. Call `git_setup()` and create three temporary directories named `remote`, `local`, and `other` using `make_temps(3)`.
-      2. In `remote`, run `git init --bare -b main`.
-      3. Clone `remote` into `other` using `git clone <remote> <other>`.
-      4. In `other`, call `config_user("user1", "user1@example.com")`.
-      5. Create `foo.txt` containing `xxx`, then run `git add foo.txt`, `git commit -m "Add foo."`, and `git push -u origin main`.
-      6. Clone `remote` into `local` using `git clone <remote> <local>`.
-      7. In `local`, append `local change` to `foo.txt` without staging or committing it. Save the file's current contents for comparison after the pull attempt.
-      8. In `other`, append `remote change` to `foo.txt`, run `git commit -am "Update foo remotely."`, then run `git push`.
-      9. In `local`, run `git status --porcelain` and verify that `foo.txt` has an unstaged local modification.
-      10. In `local`, run `git-hints explain -- git pull` and capture the exit code and output.
-      11. Verify that the pull fails with a nonzero exit code because the incoming change would overwrite the uncommitted local modification. Verify that `git-hints explain` returns the Git command's nonzero exit code.
-      12. Verify that the hint with ID `pull-blocked-local-changes` appears, names `foo.txt`, and has error/blocked priority.
-      13. Verify that the hint explains the working-directory or staging-area state, provides commands and expected results for preserving the local change, and includes the official `git pull` documentation link.
-      14. Verify that `foo.txt` still contains the user's original uncommitted local change after the failed pull and that the tool did not automatically stage, commit, stash, or discard it.
-      15. Verify with `git diff --name-only --diff-filter=U` that no unresolved merge entries remain from this blocked pull.
-      16. As a negative check, save the local modification outside the repository, then restore `foo.txt` to its committed version using `git restore foo.txt`. Run `git-hints explain -- git pull` again. Verify that the pull succeeds with exit code 0, that `pull-blocked-local-changes` is absent from the output, and that the remote change is present in `foo.txt`. Verify that the previously saved local modification remains available outside the repository.
-      17. Verify that all commands and CLI calls use the isolated test environment and are executed from the correct temporary repository.
-
+  1. Call `git_setup()` and create three temporary directories named `remote`,
+     `local`, and `other` using `make_temps(3)`.
+  2. In `remote`, run `git init --bare -b main`.
+  3. Clone `remote` into `other` using `git clone <remote> <other>`.
+  4. In `other`, call `config_user("user1", "user1@example.com")`.
+  5. Create `foo.txt` containing `xxx`, then run `git add foo.txt`, `git commit
+     -m "Add foo."`, and `git push -u origin main`.
+  6. Clone `remote` into `local` using `git clone <remote> <local>`.
+  7. In `local`, append `local change` to `foo.txt` without staging or
+     committing it. Save the file's current contents for comparison after the
+     pull attempt.
+  8. In `other`, append `remote change` to `foo.txt`, run `git commit -am
+     "Update foo remotely."`, then run `git push`.
+  9. In `local`, run `git status --porcelain` and verify that `foo.txt` has an
+     unstaged local modification.
+  10. In `local`, run `git-hints explain -- git pull` and capture the exit code
+      and output.
+  11. Verify that the pull fails with a nonzero exit code because the incoming
+      change would overwrite the uncommitted local modification. Verify that
+      `git-hints explain` returns the Git command's nonzero exit code.
+  12. Verify that the hint with ID `pull-blocked-local-changes` appears, names
+      `foo.txt`, and has error/blocked priority.
+  13. Verify that the hint explains the working-directory or staging-area state,
+      provides commands and expected results for preserving the local change,
+      and includes the official `git pull` documentation link.
+  14. Verify that `foo.txt` still contains the user's original uncommitted local
+      change after the failed pull and that the tool did not automatically
+      stage, commit, stash, or discard it.
+  15. Verify with `git diff --name-only --diff-filter=U` that no unresolved
+      merge entries remain from this blocked pull.
+  16. As a negative check, save the local modification outside the repository,
+      then restore `foo.txt` to its committed version using `git restore
+      foo.txt`. Run `git-hints explain -- git pull` again. Verify that the pull
+      succeeds with exit code 0, that `pull-blocked-local-changes` is absent
+      from the output, and that the remote change is present in `foo.txt`.
+      Verify that the previously saved local modification remains available
+      outside the repository.
+  17. Verify that all commands and CLI calls use the isolated test environment
+      and are executed from the correct temporary repository.
 
 3. Push failed? Conditions: `git-hints explain -- git push` fails because the
    remote branch contains commits that are not present in the local branch.
@@ -945,120 +1144,118 @@ Reactive hints are triggered by the result of a Git command executed through
 
 #### Stash local changes? (sbe80)
 
-   * Hint: The attempted operation was blocked because it would overwrite
-     tracked local changes. Explain that a stash temporarily saves tracked
-     changes in the working tree and index so the operation can be retried.
+* Hint: The attempted operation was blocked because it would overwrite tracked
+  local changes. Explain that a stash temporarily saves tracked changes in the
+  working tree and index so the operation can be retried.
 
-   * Git stage: The working tree or index contains tracked changes, and a
-     `git merge` or `git switch` was blocked before it changed the repository
-     state.
+* Git stage: The working tree or index contains tracked changes, and a `git
+  merge` or `git switch` was blocked before it changed the repository state.
 
-   * Command: Show `git status` so the user can review their changes, then
-     suggest `git stash push -m "Save work before retrying"` followed by the
-     original Git command. After it succeeds, suggest `git stash apply` and
-     `git stash list` so the user can restore and verify the saved work without
-     deleting the stash. Explain that the default stash does not include
-     untracked files; the user should save any needed untracked files
-     separately. Expected result: the blocked operation can proceed while the
-     tracked changes remain saved for restoration.
+* Command: Show `git status` so the user can review their changes, then suggest
+  `git stash push -m "Save work before retrying"` followed by the original Git
+  command. After it succeeds, suggest `git stash apply` and `git stash list` so
+  the user can restore and verify the saved work without deleting the stash.
+  Explain that the default stash does not include untracked files; the user
+  should save any needed untracked files separately. Expected result: the
+  blocked operation can proceed while the tracked changes remain saved for
+  restoration.
 
-   * ID: `stash-local-changes`, priority class: error/blocked, safety: safe.
+* ID: `stash-local-changes`, priority class: error/blocked, safety: safe.
 
-   * Conditions: Trigger when a `git merge` or `git switch` command executed
-     through `git-hints explain` fails because tracked local changes would be
-     overwritten, and no unmerged paths have been created. Do not trigger for a
-     failed `git pull`; the pull-specific hint covers that case. Do not trigger
-     when the command fails for another reason.
+* Conditions: Trigger when a `git merge` or `git switch` command executed
+  through `git-hints explain` fails because tracked local changes would be
+  overwritten, and no unmerged paths have been created. Do not trigger for a
+  failed `git pull`; the pull-specific hint covers that case. Do not trigger
+  when the command fails for another reason.
 
-   * Test case: Stashing changes that block a merge (written by sbe80).
+* Test case: Stashing changes that block a merge (written by sbe80).
 
-     1. Call `git_setup()` and create a temporary directory named `repo`.
-     2. In `repo`, run `git init -b main` and call
-        `config_user("user1", "user1@foo.com")`.
-     3. Create `foo.txt` containing `base`, stage it, and commit it with
-        `git commit -m "Add foo."`.
-     4. Create a branch named `topic` with `git switch -c topic`, replace the
-        contents of `foo.txt` with `topic change`, and commit the change.
-     5. Switch back to `main` and replace the contents of `foo.txt` with
-        `local change`, leaving the file uncommitted.
-     6. Run `git-hints explain -- git merge topic` and capture its exit code
-        and output.
-     7. Verify that the merge fails with a nonzero exit code because it would
-        overwrite the tracked local change, and that `git-hints explain`
-        returns the Git command's nonzero exit code.
-     8. Verify that `foo.txt` still contains `local change`, no unmerged paths
-        exist, and the hint with ID `stash-local-changes` appears with
-        error/blocked priority. Verify that the hint explains how to stash,
-        retry the merge, and restore the saved changes, and notes that default
-        stashes do not include untracked files.
-     9. Run `git restore foo.txt` and then `git-hints explain -- git merge
-        topic` again. Verify that the merge succeeds and the
-        `stash-local-changes` hint is absent.
+  1. Call `git_setup()` and create a temporary directory named `repo`.
+  2. In `repo`, run `git init -b main` and call `config_user("user1",
+     "user1@foo.com")`.
+  3. Create `foo.txt` containing `base`, stage it, and commit it with `git
+     commit -m "Add foo."`.
+  4. Create a branch named `topic` with `git switch -c topic`, replace the
+     contents of `foo.txt` with `topic change`, and commit the change.
+  5. Switch back to `main` and replace the contents of `foo.txt` with `local
+     change`, leaving the file uncommitted.
+  6. Run `git-hints explain -- git merge topic` and capture its exit code and
+     output.
+  7. Verify that the merge fails with a nonzero exit code because it would
+     overwrite the tracked local change, and that `git-hints explain` returns
+     the Git command's nonzero exit code.
+  8. Verify that `foo.txt` still contains `local change`, no unmerged paths
+     exist, and the hint with ID `stash-local-changes` appears with
+     error/blocked priority. Verify that the hint explains how to stash, retry
+     the merge, and restore the saved changes, and notes that default stashes do
+     not include untracked files.
+  9. Run `git restore foo.txt` and then `git-hints explain -- git merge topic`
+     again. Verify that the merge succeeds and the `stash-local-changes` hint is
+     absent.
 
 #### Suggest `git pull --rebase`? (sbe80)
 
-   * Hint: Five repeated failures to pull or push may be resolved by replaying the
-     local commits on top of the upstream branch. Explain that rebase changes the
-     local commit IDs, may cause conflicts, and should only be attempted after
-     the user has verified that their local work is committed or otherwise
-     backed up.
+* Hint: Five repeated failures to pull or push may be resolved by replaying the
+  local commits on top of the upstream branch. Explain that rebase changes the
+  local commit IDs, may cause conflicts, and should only be attempted after the
+  user has verified that their local work is committed or otherwise backed up.
 
-   * Git stage: The local branch and its upstream branch have diverged, or a
-     push has been rejected because the upstream branch contains commits
-     missing from the local branch.
+* Git stage: The local branch and its upstream branch have diverged, or a push
+  has been rejected because the upstream branch contains commits missing from
+  the local branch.
 
-   * Command: `Caution: git pull --rebase`. Explain that it fetches the
-     upstream changes and replays local commits on top of them, producing a
-     linear history. If conflicts occur, explain how to resolve them and
-     continue with `git rebase --continue`, or abandon the operation with `git
-     rebase --abort`. Expected result: the local branch contains the upstream
-     commits followed by the replayed local commits and can be pushed if no
-     other errors remain. Link to the official [`git pull` documentation](https://git-scm.com/docs/git-pull)
-     and [`git rebase` documentation](https://git-scm.com/docs/git-rebase).
+* Command: `Caution: git pull --rebase`. Explain that it fetches the upstream
+  changes and replays local commits on top of them, producing a linear history.
+  If conflicts occur, explain how to resolve them and continue with `git rebase
+  --continue`, or abandon the operation with `git rebase --abort`. Expected
+  result: the local branch contains the upstream commits followed by the
+  replayed local commits and can be pushed if no other errors remain. Link to
+  the official [`git pull` documentation](https://git-scm.com/docs/git-pull) and
+  [`git rebase` documentation](https://git-scm.com/docs/git-rebase).
 
-   * ID: `rebase-after-repeated-integration-failures`, priority class:
-     data-loss risk, safety: caution.
+* ID: `rebase-after-repeated-integration-failures`, priority class: data-loss
+  risk, safety: caution.
 
-   * Conditions: Count consecutive failed `git pull` or `git push` commands
-     executed through `git-hints explain` for the current repository and
-     branch. Show this hint after five failures. A successful pull or push, or
-     any intervening command executed through `git-hints explain`, resets the
-     count. Reset the count after showing the hint so it is not repeated on
-     every subsequent failure.
+* Conditions: Count consecutive failed `git pull` or `git push` commands
+  executed through `git-hints explain` for the current repository and branch.
+  Show this hint after five failures. A successful pull or push, or any
+  intervening command executed through `git-hints explain`, resets the count.
+  Reset the count after showing the hint so it is not repeated on every
+  subsequent failure.
 
-   * Test case: Suggesting rebase after repeated failures (written by sbe80).
+* Test case: Suggesting rebase after repeated failures (written by sbe80).
 
-     1. Call `git_setup()` and create three temporary directories named
-        `remote`, `local`, and `other` using `make_temps(3)`.
-     2. In `remote`, run `git init --bare -b main`. Clone it into `local` and
-        call `config_user("user1", "user1@foo.com")` there.
-     3. In `local`, create and commit `foo.txt`, then run
-        `git push -u origin main`.
-     4. Clone `remote` into `other` and call
-        `config_user("user2", "user2@foo.com")` there.
-     5. In `local`, make and commit a local change to `foo.txt`. In `other`,
-        make and commit a different change to `foo.txt`, then run `git push`.
-        The local and upstream branches now have different commits.
-     6. In `local`, run `git-hints explain -- git push` four times. Capture
-        each exit code and output; verify that each push fails and the hint
-        with ID `rebase-after-repeated-integration-failures` is absent.
-     7. Run `git-hints explain -- git push` a fifth time. Verify that it fails
-        and the hint appears with data-loss risk priority. Verify that the
-        hint includes the `Caution:` command, explains rebase conflicts and
-        backing up local work, and links to the official `git pull` and
-        `git rebase` documentation.
-     8. Run `git-hints explain -- git push` once more. Verify that it fails
-        without showing the hint, confirming that the count was reset after
-        the hint appeared.
-     9. In `local`, run `git-hints explain -- git pull --rebase`. Verify that
-        it succeeds, the local commit is replayed on top of the upstream
-        commit, and no rebase is left in progress.
-     10. Run `git-hints explain -- git push`. Verify that it succeeds and the
-         rebase hint is absent.
+  1. Call `git_setup()` and create three temporary directories named `remote`,
+     `local`, and `other` using `make_temps(3)`.
+  2. In `remote`, run `git init --bare -b main`. Clone it into `local` and call
+     `config_user("user1", "user1@foo.com")` there.
+  3. In `local`, create and commit `foo.txt`, then run `git push -u origin
+     main`.
+  4. Clone `remote` into `other` and call `config_user("user2",
+     "user2@foo.com")` there.
+  5. In `local`, make and commit a local change to `foo.txt`. In `other`, make
+     and commit a different change to `foo.txt`, then run `git push`. The local
+     and upstream branches now have different commits.
+  6. In `local`, run `git-hints explain -- git push` four times. Capture each
+     exit code and output; verify that each push fails and the hint with ID
+     `rebase-after-repeated-integration-failures` is absent.
+  7. Run `git-hints explain -- git push` a fifth time. Verify that it fails and
+     the hint appears with data-loss risk priority. Verify that the hint
+     includes the `Caution:` command, explains rebase conflicts and backing up
+     local work, and links to the official `git pull` and `git rebase`
+     documentation.
+  8. Run `git-hints explain -- git push` once more. Verify that it fails without
+     showing the hint, confirming that the count was reset after the hint
+     appeared.
+  9. In `local`, run `git-hints explain -- git pull --rebase`. Verify that it
+     succeeds, the local commit is replayed on top of the upstream commit, and
+     no rebase is left in progress.
+  10. Run `git-hints explain -- git push`. Verify that it succeeds and the
+      rebase hint is absent.
 
 ### Pull remote changes? (raf322)
 
-* Hint: 
+* Hint:
 
 * Git stage:
 
@@ -1074,48 +1271,58 @@ Reactive hints are triggered by the result of a Git command executed through
 
 * Hint: Pull needed, your branch is behind!
 
-* Git stage: You are trying to commit and merge but your branch has not been updated with the latest commit.
+* Git stage: You are trying to commit and merge but your branch has not been
+  updated with the latest commit.
 
 * Command: `git pull <name of branch>`
 
-* ID: `pull-before` priority class: error/blocked, safety: safe 
+* ID: `pull-before` priority class: error/blocked, safety: safe
 
-* Conditions: Determine if there are no commits that have not been pulled yet. Run `git fetch` and then run `git rev-list --count HEAD..@{u}`. If 0 is returned, the branch is up to date. Otherwise, there are still new commits that have not been pulled.
+* Conditions: Determine if there are no commits that have not been pulled yet.
+  Run `git fetch` and then run `git rev-list --count HEAD..@{u}`. If 0 is
+  returned, the branch is up to date. Otherwise, there are still new commits
+  that have not been pulled.
 
 * Test case:
 
-   1. Call `git_setup` and then call `make_temps(3)` to create three temp directories: `temp1`, `temp2` and
-   `remote`. `remote` will act as a shared server between the other two.
-   2. In `remote`, run `git init --bare -b main`.
-   3. In `temp1`, execute:
-      1. Create a repo with `git init -b main`.
-      2. Call `config_user("user1", "user1@foo.com")`.
-      3. Create a file called `foo.txt` with the content `xxx`.
-      4. Add and commit it with the message `"Add foo."`.
-      5. Add the `remote` directory as a remote called `origin`.
-      6. Push `main` to `origin` with `git push -u origin main`.
-   4. In `temp2`, execute:
-   1. Clone `remote` into the directory with `git clone <remote> .`.
-   2. Call `config_user("user2", "user2@foo.com")`.
-   3. Change `foo.txt` so that it contains `xxxy`.
-   4. Commit with `git commit -am "Modify foo."` and push with `git push`.
-   5. Change back to `temp1` and run `git fetch`, so that it learns about the new
-   commit on the remote. `temp1` is now 1 commit behind `origin/main`, with no
-   commits of its own that the remote lacks and no uncommitted changes.
-   6. Run `git-hints` in `temp1`. Expected hint: Is my branch up to date before I
-   start editing?
+  1. Call `git_setup` and then call `make_temps(3)` to create three temp
+     directories: `temp1`, `temp2` and `remote`. `remote` will act as a shared
+     server between the other two.
+  2. In `remote`, run `git init --bare -b main`.
+  3. In `temp1`, execute:
+     1. Create a repo with `git init -b main`.
+     2. Call `config_user("user1", "user1@foo.com")`.
+     3. Create a file called `foo.txt` with the content `xxx`.
+     4. Add and commit it with the message `"Add foo."`.
+     5. Add the `remote` directory as a remote called `origin`.
+     6. Push `main` to `origin` with `git push -u origin main`.
+  4. In `temp2`, execute:
+  5. Clone `remote` into the directory with `git clone <remote> .`.
+  6. Call `config_user("user2", "user2@foo.com")`.
+  7. Change `foo.txt` so that it contains `xxxy`.
+  8. Commit with `git commit -am "Modify foo."` and push with `git push`.
+  9. Change back to `temp1` and run `git fetch`, so that it learns about the new
+     commit on the remote. `temp1` is now 1 commit behind `origin/main`, with no
+     commits of its own that the remote lacks and no uncommitted changes.
+  10. Run `git-hints` in `temp1`. Expected hint: Is my branch up to date before
+      I start editing?
 
 ### Language and libraries
 
 1. Language: Python
+
 2. Package manager: uv
+
 3. Formatter/linter: ruff
+
 4. Type checker: ty
+
 5. CLI: Typer
+
 6. Git interface: Python's built-in `subprocess` module. Use it for both
    repository inspection and execution of user-supplied Git commands, with
-   different behavior for each mode. The existing detection conditions use
-   Git's own commands and exit codes, so no additional Git library is required.
+   different behavior for each mode. The existing detection conditions use Git's
+   own commands and exit codes, so no additional Git library is required.
 
    * Plain `git-hints`: run the inspection commands defined by the hint
      conditions and repository-context requirements. Capture standard output,
@@ -1129,10 +1336,10 @@ Reactive hints are triggered by the result of a Git command executed through
      completion; display the exit code and return that same code. Use the
      command, exit code, standard error, and inspected repository state to
      select reactive hints. Captured standard error is displayed after
-     completion rather than live. Do not disable Git's terminal prompting
-     or editor for `git-hints explain`; the `GIT_TERMINAL_PROMPT=0` requirement
-     applies only to the tool's optional fetch and isolated test environment.
-     Do not claim to recover the result of an earlier command run outside
+     completion rather than live. Do not disable Git's terminal prompting or
+     editor for `git-hints explain`; the `GIT_TERMINAL_PROMPT=0` requirement
+     applies only to the tool's optional fetch and isolated test environment. Do
+     not claim to recover the result of an earlier command run outside
      `git-hints explain`.
 
    For both modes, pass arguments separately with `shell=False` and
@@ -1142,11 +1349,12 @@ Reactive hints are triggered by the result of a Git command executed through
    conditions. If Git cannot be launched, report that failure instead of
    inventing a Git exit code or repository condition.
 
-   Plain `git-hints` exits 0 whenever inspection completes, whether or not
-   any hint is triggered. It exits nonzero only when it reports an unexpected
+   Plain `git-hints` exits 0 whenever inspection completes, whether or not any
+   hint is triggered. It exits nonzero only when it reports an unexpected
    inspection failure or that Git cannot be launched. (drj228)
 
 7. Testing: Pytest
+
 8. Git: version 2.32 or later, which added `GIT_CONFIG_GLOBAL`.
 
 Testing
@@ -1200,9 +1408,9 @@ The test tool contains:
 A typical test calls `git_setup()` (provided as an autouse fixture), creates
 temporary directories with `make_temps()`, and uses `make_repo()` to set up
 repositories. Run `git-hints --all` when checking hint content, commands, and
-documentation links. Use `git-hints --all --ids-only` when checking whether a hint ID
-is present or absent. Compare IDs as whole lines, not substrings. Both modes must run with the repository under test as the
-current working directory.
+documentation links. Use `git-hints --all --ids-only` when checking whether a
+hint ID is present or absent. Compare IDs as whole lines, not substrings. Both
+modes must run with the repository under test as the current working directory.
 
 All Git commands executed as part of a test, including those that `git-hints`
 runs, shall use the isolated test environment established by `git_setup()`. This
