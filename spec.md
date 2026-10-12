@@ -1056,6 +1056,55 @@ Reactive hints are triggered by the result of a Git command executed through
      10. Run `git-hints explain -- git push`. Verify that it succeeds and the
          rebase hint is absent.
 
+### Pull remote changes? (raf322)
+
+* Hint: 
+
+* Git stage:
+
+* Command:
+
+* ID:
+
+* Conditions:
+
+* Test case:
+
+### Pull before committing (raf322)
+
+* Hint: Pull needed, your branch is behind!
+
+* Git stage: You are trying to commit and merge but your branch has not been updated with the latest commit.
+
+* Command: `git pull <name of branch>`
+
+* ID: `pull-before` priority class: error/blocked, safety: safe 
+
+* Conditions: Determine if there are no commits that have not been pulled yet. Run `git fetch` and then run `git rev-list --count HEAD..@{u}`. If 0 is returned, the branch is up to date. Otherwise, there are still new commits that have not been pulled.
+
+* Test case:
+
+   1. Call `git_setup` and then call `make_temps(3)` to create three temp directories: `temp1`, `temp2` and
+   `remote`. `remote` will act as a shared server between the other two.
+   2. In `remote`, run `git init --bare -b main`.
+   3. In `temp1`, execute:
+      1. Create a repo with `git init -b main`.
+      2. Call `config_user("user1", "user1@foo.com")`.
+      3. Create a file called `foo.txt` with the content `xxx`.
+      4. Add and commit it with the message `"Add foo."`.
+      5. Add the `remote` directory as a remote called `origin`.
+      6. Push `main` to `origin` with `git push -u origin main`.
+   4. In `temp2`, execute:
+   1. Clone `remote` into the directory with `git clone <remote> .`.
+   2. Call `config_user("user2", "user2@foo.com")`.
+   3. Change `foo.txt` so that it contains `xxxy`.
+   4. Commit with `git commit -am "Modify foo."` and push with `git push`.
+   5. Change back to `temp1` and run `git fetch`, so that it learns about the new
+   commit on the remote. `temp1` is now 1 commit behind `origin/main`, with no
+   commits of its own that the remote lacks and no uncommitted changes.
+   6. Run `git-hints` in `temp1`. Expected hint: Is my branch up to date before I
+   start editing?
+
 ### Language and libraries
 
 1. Language: Python
