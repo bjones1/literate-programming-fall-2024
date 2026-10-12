@@ -77,6 +77,13 @@ CLI commands
    `windows_expand_args=False` since Typer/Click expands wildcards, `~`, and
    environment variables that `git` should instead interpret.
 
+   Configure the Typer command to allow extra arguments and ignore unknown
+   options (for example, with `allow_extra_args=True` and
+   `ignore_unknown_options=True`) so Git options are passed through rather
+   than parsed by Typer. For example, `git-hints explain -- git pull --rebase`
+   and `git-hints explain -- git reset --hard HEAD~1` must reach Git with their
+   arguments intact. (sbe80)
+
 5. `git-hints --bug <user comments explaining why the hint was wrong>
    [explain -- ...]`: Gather the current repo state and (for `explain`) git
    command output then post an issue in the GitHub repo. **Future work. Do not
@@ -191,9 +198,12 @@ runs. (jit45)
 
 * ID: `unstaged-changes`, priority class: workflow, safety: safe.
 
-* Conditions: Unstaged edits to tracked files exist in the repository. Run `git
-  diff --quiet`; an exit code of 0 means no unstaged edits; 1 means there are
-  unstaged edits; other return codes indicate an error.
+* Conditions: Do not display this hint while the index contains unresolved
+  merge entries; check with `git diff --name-only --diff-filter=U` and suppress
+  the hint if it returns any paths. Otherwise, display the hint when unstaged
+  edits to tracked files exist in the repository. Run `git diff --quiet`; an
+  exit code of 0 means no unstaged edits; 1 means there are unstaged edits;
+  other return codes indicate an error.
 
 * Test case:
 
@@ -279,7 +289,7 @@ runs. (jit45)
 
    * ID: `staged-and-unstaged-changes`, priority class: workflow, safety: safe.
 
-   * Conditions: Display this hint when the staging area contains at least one staged change and the working tree contains at least one unstaged change to a tracked file. Run `git diff --cached --quiet` to check for staged changes and `git diff --quiet` to check for unstaged changes to tracked files. For either command, exit code 1 means changes exist, exit code 0 means none exist, and any other exit code indicates an error. Show the hint only when both commands exit with code 1; do not show it when only staged changes or only unstaged changes exist. (drj228; sbe80 will test)
+   * Conditions: Do not display this hint while the index contains unresolved merge entries; check with `git diff --name-only --diff-filter=U` and suppress the hint if it returns any paths. Otherwise, display the hint when the staging area contains at least one staged change and the working tree contains at least one unstaged change to a tracked file. Run `git diff --cached --quiet` to check for staged changes and `git diff --quiet` to check for unstaged changes to tracked files. For either command, exit code 1 means changes exist, exit code 0 means none exist, and any other exit code indicates an error. Show the hint only when both commands exit with code 1; do not show it when only staged changes or only unstaged changes exist. (drj228; sbe80 will test)
 
    * Test case: Staged and unstaged changes.
 
@@ -320,6 +330,28 @@ runs. (jit45)
            include the corresponding official Git documentation links,
            including `https://git-scm.com/docs/git-diff` and
            `https://git-scm.com/docs/git-commit`.
+
+   * Conflict suppression test:
+
+     1. Call `git_setup()` and create one temporary directory.
+     2. Initialize a repository there with `git init -b main` and call
+        `config_user("user1", "user1@example.com")`.
+     3. Create `conflict.txt` and `other.txt`, each containing `base`.
+        Stage both files and commit them with `git commit -m "Add files."`.
+     4. Create a branch named `topic` with `git switch -c topic`, change
+        `conflict.txt` to `topic change`, and commit it.
+     5. Switch back to `main`, change `conflict.txt` to `main change`, and
+        commit it. The branch histories now conflict on `conflict.txt`.
+     6. Append `staged change` to `other.txt` and run `git add other.txt`.
+        Append `unstaged change` to `other.txt` and leave it unstaged.
+     7. Run `git merge topic` and verify that it exits nonzero and leaves
+        `conflict.txt` unresolved. Verify that `git diff --cached --quiet`
+        and `git diff --quiet` both exit 1, while
+        `git diff --name-only --diff-filter=U` lists `conflict.txt`.
+     8. Run `git-hints --all --ids-only`. Verify that both
+        `staged-and-unstaged-changes` and `unstaged-changes` are absent while
+        the conflict exists.
+     9. Run `git merge --abort` as cleanup, including if an assertion fails.
 
 
 #### Branch is behind upstream (jhg246)
@@ -479,10 +511,14 @@ runs. (jit45)
      6. Run `git-hints --all` and verify that the `staged-changes` hint appears. Verify that it recommends `git diff --cached` and `git commit -m "message"`, and includes links to the official `git diff` and `git commit` documentation.
      7. Commit the file with `git commit -m "Add foo."` and run `git-hints --all` again. Verify that the `staged-changes` hint is absent.
 
-10. Configure your commit identity? Conditions: `user.name` or `user.email` is
-    missing or empty in the effective Git configuration. Explain how to set the
-    missing value using `git config --global user.name "Your Name"` or `git
-    config --global user.email "you@example.com"`.
+10. Configure your commit identity? Conditions: Check the effective Git
+    configuration by running `git config --get user.name` and
+    `git config --get user.email`. An exit code of 1 or an empty returned value
+    means that setting is missing; other nonzero exit codes are inspection
+    errors and must not trigger this hint. Trigger the hint when either setting
+    is missing or empty. Explain how to set the missing value using
+    `git config --global user.name "Your Name"` or
+    `git config --global user.email "you@example.com"`.
 
     The `--global` option sets the default for all repositories belonging to the
     current user. Use `--local` inside a repository to configure an identity for
@@ -796,10 +832,12 @@ runs. (jit45)
       and `detached-head`, `many-changed-files`, and `staged-changes` are absent.
       Ensure `git switch main` runs in cleanup even if an assertion fails.
 
-15. Committing to protected/main branch? Conditions: the current branch is
-    master/main and there are changes. If other branches exist, suggest other
-    branches. If no other branches exist, suggest creating a new branch with
-    `git switch -c <name>`. (raf322)
+15. Committing to protected/main branch? Run `git branch --show-current` to
+    identify the current branch. Trigger this hint when the branch is `main` or
+    `master` and there are changes. Check for other local or remote branches
+    with `git for-each-ref --format='%(refname:short)' refs/heads refs/remotes`.
+    If other branches exist, suggest switching to one of them. If no other
+    branches exist, suggest creating one with `git switch -c <name>`. (raf322)
 
 ### `git-hints explain -- git <command> [<args>...]`
 
@@ -1062,59 +1100,6 @@ Reactive hints are triggered by the result of a Git command executed through
 7. Testing: Pytest
 8. Git: version 2.32 or later, which added `GIT_CONFIG_GLOBAL`.
 
-## <mark>TODO -- these should be merged with specific implementations above</mark>
-
-2. A Git command executed through `git-hints explain` failed: run the command
-   using `subprocess.run()` with an argument list, `shell=False`, and
-   `check=False`. Capture standard error and inspect `returncode`. Leave
-   standard input and standard output connected to the terminal so interactive
-   commands can operate normally. Use the command, exit code, and standard error
-   to select an appropriate hint. The tool cannot reliably recover the result of
-   an earlier command run outside the tool. (drj228)
-
-3. The local branch has commits that have not been pushed to the remote branch:
-   run `git status -sb`. If the branch status shows that the local branch is
-   ahead of its upstream branch by one or more commits, then local commits exist
-   that are not yet public.
-
-4. Determine whether the current directory is inside a Git working tree: run
-   `git rev-parse --is-inside-work-tree` using `subprocess`. Exit code 0 with
-   output `true` confirms a working tree. If the command fails, inspect standard
-   error to distinguish a directory outside a repository from other Git errors.
-   Do not treat every failure as a reason to suggest cloning. (sbe80; clarified
-   by drj228)
-
-
-6. Staged changes are ready to commit: run `git diff --cached --quiet`. Exit
-   code 1 means staged differences exist; exit code 0 means there are none.
-   Treat other exit codes as errors instead of triggering the hint. This detects
-   the condition for the staged-review hint. (drj228)
-
-7. Commit identity is not configured: run `git config --get user.name` and `git
-   config --get user.email`. An exit code of 1 indicates that the requested
-   setting is missing. Also check for an empty returned value. Report other
-   command failures separately. These checks use the effective configuration,
-   including repository and global settings. (drj228)
-
-9. Committing to main/master: Run `git branch --show-current` to identify
-    current branch. If the branch is main, check for other remote/active
-    branches with `git for-each-ref --format='%(refname:short)'
-    refs/heads   refs/remotes`. If the list contains no other branches besides
-    the protected branch(es), suggest the creation of a new branch. Otherwise,
-    suggest other branches on the list. (raf322)
-
-
-11. The `git-hints explain` command must pass Git arguments through without
-    Typer attempting to parse them as options. Configure the command to allow
-    extra arguments and ignore unknown options (for example, using
-    allow\_extra\_args=True and ignore\_unknown\_options=True) so commands such
-    as `git-hints explain -- git pull --rebase` and `git-hints explain -- git reset --hard
-    HEAD~1` are passed to Git correctly (sbe80).
-
-12. The `git-hints explain` command requires the command after `explain` to begin
-    with `git`. Use the `--` separator, as in `git-hints explain -- git status`;
-    report an error if the command does not begin with `git`. (sbe80)
-
 Testing
 -------
 
@@ -1177,37 +1162,6 @@ running the tests. This should be implemented as a PyTest autouse fixture which
 applies to all tests.
 
 ### <mark>TODO: move test cases to follow the implementation of each hint.</mark>
-
-### Test Case 4: Push (ewj55)
-
-1. Initialize `Test4_condition == 0` by default
-2. use the termnial to navigate to the local repo directory tracking a remote
-   branch ('origin/main')<br>
-3. Execute command (`git fetch origin`) and ensure local track references are up
-   to date <br>
-4. Make a minor edit to the file, stage the change (`git add .`), then commit
-   locally ('git commit -m "Test commit"') **Condition Checks:** 4. run `git log
-   origin/main..HEAD` into terminal 5. If command returns one or more comit
-   SHAs, set `Test4_condition == 1`. **Output/Expected Execution** 6. If
-   `Test4_condition == 1`, execute `git-hints` CLI tool on terminal 7. Confirm
-   proactive hint 'Push?' is displayed in terminal output. 8. If `git-hints`
-   output contains `"Push?"` string AND `'git push'` command, then Test 4 has
-   passed.
-
-### Test Case 5: Repo Test (ewj55)
-
-**Setup (Arrange):**
-
-1. Create isolated tmp dir in system tmp space (outside any existing Git repo
-   tree)
-2. Using terminal, navigate into isolatd tmp dir without running the `git init`
-   command:
-   * `mkdir test_folder && cd test_folder` **Executions and Assertions** 3.
-     Execute `git status` and verify terminal output contains `"fatal: not a git
-     repository"`. 4. Execute the `git-hints` CLI tool inside `test_folder`.
-     **Assertion**
-3. If `git-hints` output contains the proactive hint string `"clone"` AND the
-   suggested command `'git clone'`, then Test 5 has passed
 
 ### Test Case 14: Pull Test (raf322) -- Requirement Proactive 7
 
