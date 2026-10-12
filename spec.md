@@ -1,5 +1,5 @@
-`git-hints` specification
-=========================
+`mgit-hints` specification
+==========================
 
 `git-hints` is a Python command-line tool that helps Git learners see where they
 are and what to do next. Run with no arguments, it inspects the current
@@ -293,7 +293,7 @@ runs. (jit45)
 
   * Test case:
 
-  1. **Setup** Call `git_setup()`. Create two temporary directories: `remote`
+  1. **Setup** The autouse `git_setup` fixture provides the isolated environment. Create two temporary directories: `remote`
      and `local`.
   2. Call `config_user("user1", "user1@foo.com")`.
   3. In `remote`, run `git init --bare -b main`.
@@ -327,7 +327,7 @@ runs. (jit45)
 
 * Test case:
 
-  1. Call `git_setup()` and `make_temps(1)`. Set `GIT_CEILING_DIRECTORIES` to
+  1. The autouse `git_setup` fixture provides the isolated environment and `make_temps(1)`. Set `GIT_CEILING_DIRECTORIES` to
      the temporary directory's parent so Git cannot discover an enclosing repo.
   2. In the temporary directory, run `git rev-parse --is-inside-work-tree` and
      verify exit code 128.
@@ -366,7 +366,7 @@ runs. (jit45)
 
 * Test case: Staged and unstaged changes.
 
-  1. Call `git_setup()` and create one temporary directory.
+  1. The autouse `git_setup` fixture provides the isolated environment and create one temporary directory.
   2. In the temporary directory, initialize a repository with `git init -b
      main`.
   3. Call `config_user("user1", "user1@foo.com")` after initializing the
@@ -404,7 +404,7 @@ runs. (jit45)
         `https://git-scm.com/docs/git-commit`.
 * Conflict suppression test:
 
-  1. Call `git_setup()` and create one temporary directory.
+  1. The autouse `git_setup` fixture provides the isolated environment and create one temporary directory.
   2. Initialize a repository there with `git init -b main` and call
      `config_user("user1", "user1@example.com")`.
   3. Create `conflict.txt` and `other.txt`, each containing `base`. Stage both
@@ -453,7 +453,7 @@ runs. (jit45)
 
 * Test case:
 
-  1. Call `git_setup()` and create two temporary directories, `repo1` and
+  1. The autouse `git_setup` fixture provides the isolated environment and create two temporary directories, `repo1` and
      `repo2`. Run every `git-hints` command in `repo2`.
   2. In `repo1`, initialize a repository with `git init -b main` and call
      `config_user("user1", "user1@foo.com")`.
@@ -605,7 +605,7 @@ runs. (jit45)
 
 * Test case:
 
-  1. Call `git_setup()` and create one temporary directory.
+  1. The autouse `git_setup` fixture provides the isolated environment and create one temporary directory.
   2. Initialize a repository in that directory with `git init -b main`.
   3. Call `config_user("user1", "user1@example.com")`.
   4. Run `git-hints --all` and verify that the `staged-changes` hint is absent.
@@ -664,7 +664,7 @@ runs. (jit45)
 
   * Test case:
 
-    1. Call `git_setup()`. Create one temporary directory.
+    1. The autouse `git_setup` fixture provides the isolated environment. Create one temporary directory.
     2. In the temporary directory, initialize a repository with `git init -b
        main`.
     3. Call `config_user("user1", "user1@foo.com")`.
@@ -754,7 +754,7 @@ interpreted as a triggered hint.
 
 * Test case: Commit repo? (written by jit45; formerly Test Case 12).
 
-  1. Call `git_setup()` and create one temporary directory using
+  1. The autouse `git_setup` fixture provides the isolated environment and create one temporary directory using
      `make_temps(1)`.
   2. Initialize a repository there with `git init -b main`.
   3. Call `config_user("user1", "user1@example.com")`.
@@ -1056,7 +1056,7 @@ Reactive hints are triggered by the result of a Git command executed through
 
 * Test case: Resolving merge conflicts (written by sbe80).
 
-  1. Call `git_setup()` and create two temporary directories, `repo1` and
+  1. The autouse `git_setup` fixture provides the isolated environment and create two temporary directories, `repo1` and
      `repo2`.
   2. In `repo1`, initialize a repository with `git init -b main` and call
      `config_user("user1", "user1@foo.com")`.
@@ -1132,7 +1132,7 @@ automatically. The failed pull's actual exit code must be preserved by
 
 * Test case: Resolve pull conflicts (written by jit45; formerly Test Case 13).
 
-  1. Call `git_setup()` and create three temporary directories named `remote`,
+  1. The autouse `git_setup` fixture provides the isolated environment and create three temporary directories named `remote`,
      `local`, and `other` using `make_temps(3)`.
   2. In `remote`, run `git init --bare -b main`.
   3. Clone `remote` into `other` using `git clone <remote> <other>`.
@@ -1205,7 +1205,7 @@ automatically. The failed pull's actual exit code must be preserved by
 
 * Test case: Stashing changes that block a merge (written by sbe80).
 
-  1. Call `git_setup()` and create a temporary directory named `repo`.
+  1. The autouse `git_setup` fixture provides the isolated environment and create a temporary directory named `repo`.
   2. In `repo`, run `git init -b main` and call `config_user("user1",
      "user1@foo.com")`.
   3. Create `foo.txt` containing `base`, stage it, and commit it with `git
@@ -1262,7 +1262,7 @@ automatically. The failed pull's actual exit code must be preserved by
 
 * Test case: Suggesting rebase after repeated failures (written by sbe80).
 
-  1. Call `git_setup()` and create three temporary directories named `remote`,
+  1. The autouse `git_setup` fixture provides the isolated environment and create three temporary directories named `remote`,
      `local`, and `other` using `make_temps(3)`.
   2. In `remote`, run `git init --bare -b main`. Clone it into `local` and call
      `config_user("user1", "user1@foo.com")` there.
@@ -1390,18 +1390,19 @@ The test tool contains:
     so no test waits for a password or an editor.
   * Set `LC_ALL=C`, so Git's messages are in English.
 
-A typical test calls `git_setup()` (provided as an autouse fixture), creates
-temporary directories with `make_temps()`, and uses `make_repo()` to set up
-repositories. Run `git-hints --all` when checking hint content, commands, and
-documentation links. Use `git-hints --all --ids-only` when checking whether a
-hint ID is present or absent. Compare IDs as whole lines, not substrings. Both
-modes must run with the repository under test as the current working directory.
+The function-scoped autouse `git_setup()` fixture applies the isolated variables
+to os.environ for each test and restores the prior environment afterward. Tests
+do not call the fixture directly. Create temporary directories
+with `make_temps()`, and use `make_repo()` to set up repositories. Run
+`git-hints --all` when checking hint content, commands, and documentation links.
+Use `git-hints --all --ids-only` when checking whether a hint ID is present or
+absent. Compare IDs as whole lines, not substrings. Both modes must run with the
+repository under test as the current working directory.
 
 All Git commands executed as part of a test, including those that `git-hints`
 runs, shall use the isolated test environment established by `git_setup()`. This
 prevents test results from varying based on the Git configuration of the machine
-running the tests. This should be implemented as a PyTest autouse fixture which
-applies to all tests.
+running the tests.
 
 ### GOING TO DELETE (temporary removal area)
 
@@ -1461,7 +1462,6 @@ temporary area keeps the material available for review before it is removed.
      commits of its own that the remote lacks and no uncommitted changes.
   10. Run `git-hints` in `temp1`. Expected hint: Is my branch up to date before
       I start editing?
-
 
 #### <mark>TODO: move test cases to follow the implementation of each hint.</mark>
 

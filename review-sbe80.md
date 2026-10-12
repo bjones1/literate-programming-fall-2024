@@ -122,7 +122,7 @@ the assignment (`HOME`, `GIT_CONFIG_GLOBAL`, `GIT_CONFIG_NOSYSTEM=1`,
 ### Testing section
 
 6. **The Testing section tells tests to call `git_setup()`, but it is an autouse
-   fixture, and pytest fails any test that calls a fixture directly.**
+   fixture, and pytest fails any test that calls a fixture directly.** (Resolved In all sections)
 
    * Location: Testing, line 1447 ("A typical test calls `git_setup()` (provided
      as an autouse fixture)") and lines 1454 to 1458. Most tests copy this, for
