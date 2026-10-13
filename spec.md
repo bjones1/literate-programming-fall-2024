@@ -1398,17 +1398,58 @@ automatically. The failed pull's actual exit code must be preserved by
       shows its own continue and abort commands.
 
 #### .gitignore not tracking (raf322)
-* Hint:
 
-* Git stage:
+* Hint: Do you want Git to stop tracking some files listed in your [`.gitignore`](https://git-scm.com/docs/gitignore "Lists patterns for files Git should not track; it only affects files that are not already tracked")? To remove them but still keep them on your disk, enter  [`git rm --cached`](https://git-scm.com/docs/git-rm "With --cached, removes a file from the index but leaves it in your working directory"); to remove them from Git's tracker. 
 
-* Command:
+* Git stage: Git already tracks these files in your local staging area even though `.gitignore` says to ignore them.
 
-* ID:
+* Command: For each file, enter `git rm --cached <file>` (`git rm -r --cached <file>` for directories.) `git status` should show `deleted: <file>` under changes to be committed, but the file is still in the working directory. `git ls-files -ci
+  --exclude-standard` prints nothing after the commit and the hint disappears.
 
-* Conditions:
+* ID: `tracked-but-ignored`, priority class: workflow, safety: safe.
+
+* Conditions: Do NOT run outside of a working tree; run `git rev-parse --is-inside-work-tree` to confirm (exit: 0, output: `true`.) Run
+  `git ls-files -ci --exclude-standard -z`. Split the output on NUL characters,
+  which keeps names containing spaces or newlines intact. In this command,
+  `-c` lists files in the index and `-i` keeps only those matching an ignore
+  pattern; `--exclude-standard` applies `.gitignore`, `.git/info/exclude`, and
+  the global excludes file. Show the hint only when at least one path is
+  returned. A nonzero exit code is an inspection error, not evidence of
+  tracked-but-ignored files. List up to five paths (quoted correctly in the
+  suggested command), then "and N more" with the total count.
 
 * Test case:
+
+  1. Call `make_temps(1)`. In the directory: run `git init -b main`; call
+     `config_user("user1", "user1@foo.com")`; create `foo.txt` containing
+     `xxx`, `debug.log` containing `log`, and `my notes.log` containing `notes`.
+     Stage all three and commit with `git commit -m "Add files."`.
+  2. Preconditions: no `.gitignore` exists, and `git ls-files -ci
+     --exclude-standard` prints nothing. Run `git-hints --all --ids-only` and
+     verify that `tracked-but-ignored` is absent.
+  3. Create `.gitignore` containing `*.log` and leave it unstaged. Precondition:
+     `git ls-files -ci --exclude-standard` lists `debug.log` and
+     `my notes.log` but not `foo.txt`.
+  4. Run `git-hints --all` and require exit code 0. In the `tracked-but-ignored`
+     block, verify that both `debug.log` and `my notes.log` appear (the second
+     one quoted correctly in the command), that `foo.txt` does not appear, and
+     that the block contains `git rm --cached`, `git commit`,
+     `https://git-scm.com/docs/git-rm`, and
+     `https://git-scm.com/docs/gitignore`. Run `git-hints --all --ids-only`;
+     verify that `tracked-but-ignored` is present.
+  5. Run `git rm --cached debug.log "my notes.log"` and require exit code 0.
+     Verify that both files still exist on disk. Run
+     `git-hints --all --ids-only`; verify that `tracked-but-ignored` is absent,
+     because the files are now untracked and ignored.
+  6. Negation: change `.gitignore` to contain `*.log` and `!debug.log`. Run
+     `git add -f debug.log`, then `git-hints --all --ids-only`; verify that
+     `tracked-but-ignored` is absent, because `debug.log` is no longer ignored.
+  7. Many files: change `.gitignore` to contain `build/`. Create and stage
+     `build/a.txt` through `build/g.txt` (seven files) with `git add -f build`.
+     Run `git-hints --all`; verify that the block lists five paths and states
+     that two more exist.
+  8. Clean up: run `git rm -r --cached build`, then `git-hints --all --ids-only`;
+     verify that `tracked-but-ignored` is absent.
 
 <mark>Review section 7 (sbe80) begins here; see Review assignments.</mark>
 
