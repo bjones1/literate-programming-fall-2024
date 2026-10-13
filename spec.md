@@ -1290,7 +1290,7 @@ automatically. The failed pull's actual exit code must be preserved by
   10. Run `git-hints explain -- git push`. Verify that it succeeds and the
       rebase hint is absent.
 
-#### Operation in progress (raf322)
+#### Finish or cancel the operation in progress? (raf322)
 
 * Hint: A `<operation>` is in progress. Git paused it and is waiting for you to
   finish or cancel it. The hint has two variants.
@@ -1344,9 +1344,12 @@ automatically. The failed pull's actual exit code must be preserved by
      match, so a rebase that stops on a conflict is not reported as a
      cherry-pick:
      1. Rebase: for each of `rebase-merge` and `rebase-apply`, run
-        `git rev-parse --git-path <name>` and test whether that directory
-        exists. Ignore `rebase-apply` if it contains an `applying` file, since
-        that is `git am`, which is not supported.
+        `git rev-parse --git-path <n>` and test whether that directory
+        exists. Resolve relative paths against the working directory used for
+        these Git commands. Ignore `rebase-apply` if it contains an `applying`
+        file, since that is `git am`, which is not supported. If a path lookup
+        fails, report the inspection error rather than assuming no operation
+        is in progress.
      2. Merge: `git rev-parse --verify --quiet MERGE_HEAD`.
      3. Cherry-pick: `git rev-parse --verify --quiet CHERRY_PICK_HEAD`.
      4. Revert: `git rev-parse --verify --quiet REVERT_HEAD`.
@@ -1356,11 +1359,11 @@ automatically. The failed pull's actual exit code must be preserved by
      inspection error. Use `--git-path` rather than hard-coding `.git/`, so the
      checks work in worktrees and when the Git directory is elsewhere.
   3. Detect unresolved files with `git diff --name-only --diff-filter=U`. If it
-     lists paths, use the "conflicts remain" variant and name up to five files;
-     if there are more, append "and N more", where N is the exact number not
-     listed. If it lists none, use the "no conflicts remain" variant. A merge
-     started with `--no-commit` has `MERGE_HEAD` and no conflicts; the hint
-     still applies.
+     lists paths, use the "conflicts remain" variant. List paths in the order
+     Git returns them (sorted by path) and name up to five; if there are more,
+     append "and N more", where N is the exact number not listed. If it lists
+     none, use the "no conflicts remain" variant. A merge started with
+     `--no-commit` has `MERGE_HEAD` and no conflicts; the hint still applies.
   4. Keep displaying the hint until the state file or directory is gone.
   5. Limitation: a multi-commit cherry-pick or revert that stops partway is
      detected only while `CHERRY_PICK_HEAD` or `REVERT_HEAD` exists.
@@ -1376,7 +1379,8 @@ automatically. The failed pull's actual exit code must be preserved by
 
   All commands run in the repository under test. The autouse `git_setup`
   fixture provides the isolated environment, including `GIT_EDITOR=true`, so no
-  command waits for an editor.
+  command waits for an editor. Collapse whitespace in hint output before
+  searching it for phrases (see Testing).
 
   1. Call `make_temps(1)`. In the directory: run `git init -b main`; call
      `config_user("user1", "user1@foo.com")`; create `foo.txt` containing
@@ -1489,22 +1493,24 @@ automatically. The failed pull's actual exit code must be preserved by
   pattern; `--exclude-standard` applies `.gitignore`, `.git/info/exclude`, and
   the global excludes file. Show the hint only when at least one path is
   returned. A nonzero exit code is an inspection error, not evidence of
-  tracked-but-ignored files. List up to five paths (quoted correctly in the
-  suggested command); if there are more, append "and N more", where N is the
-  exact number not listed.
+  tracked-but-ignored files. List paths in the order `git ls-files` returns them
+  (sorted by path) and name up to five, quoted correctly in the suggested
+  command; if there are more, append "and N more", where N is the exact number
+  not listed.
 
   A file added deliberately with `git add -f` also matches, so keep the wording
   conditional. A file re-included with a negation pattern such as `!debug.log`
   is not ignored and must not appear.
 
-* Related output: `untracked-files` covers files Git is not tracking; this hint
+  Related output: `untracked-files` covers files Git is not tracking; this hint
   covers files Git is tracking. The two must never report the same file. After
   `git rm --cached`, a file is untracked and ignored, so neither hint reports
   it.
 
 * Test case: Tracked but ignored (written by raf322).
 
-  The autouse `git_setup` fixture provides the isolated environment.
+  The autouse `git_setup` fixture provides the isolated environment. Collapse
+  whitespace in hint output before searching it for phrases (see Testing).
 
   1. Call `make_temps(1)`. In the directory: run `git init -b main`; call
      `config_user("user1", "user1@foo.com")`; create `foo.txt` containing
@@ -1532,7 +1538,8 @@ automatically. The failed pull's actual exit code must be preserved by
      `tracked-but-ignored` is absent, because `debug.log` is no longer ignored.
   7. Many files: change `.gitignore` to contain `build/`. Create `build/a.txt`
      through `build/g.txt` (seven files) and stage them with `git add -f build`.
-     Run `git-hints --all`; verify that the block lists five paths and contains
+     Run `git-hints --all`. Verify that the block lists `build/a.txt` through
+     `build/e.txt`, does not list `build/f.txt` or `build/g.txt`, and contains
      `and 2 more`.
   8. Clean up: run `git rm -r --cached build`, then `git-hints --all --ids-only`;
      verify that `tracked-but-ignored` is absent.
