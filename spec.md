@@ -1337,7 +1337,7 @@ automatically. The failed pull's actual exit code must be preserved by
   entire operation completes, this hint disappears and `git status` no longer
   reports an operation in progress.
 
-  The continue command is safe. Prefix the abort command with `Warning:`:
+  The continue command is safe. Prefix the abort command with `Warning:`
   aborting discards the conflict resolutions you have made so far and returns to
   the state before the operation began. Git may be unable to restore uncommitted
   changes that existed before a merge started, so back up any edited files
