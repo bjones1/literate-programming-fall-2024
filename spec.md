@@ -1290,7 +1290,129 @@ automatically. The failed pull's actual exit code must be preserved by
   10. Run `git-hints explain -- git push`. Verify that it succeeds and the
       rebase hint is absent.
 
+ #### Operation in progress (raf322)
+* Hint: An operation* is in progress and you have files in your branch that you have not yet committed. If you wish to complete the operation*, choose whether you want to [stage](https://git-scm.com/docs/git-add "Marks a resolved file so Git knows the conflict is fixed")
+  or remove each file from the operation* and continue. To abort the operation*, enter `--abort`
+
+  (*) (Depending on whether the operation is a merge, rebase, cherry-pick, or revert, the "operation" key word will be replaced by the operation name depending on the context.)
+
+* Git stage: Git pauses the user initiated merge or rebase to alert them of uncommitted files still in the repo directory and need to be resolved.
+
+* Command: Run `git status` to see which files are still in the staging area. Determine which files are needed, run `git add <file>` and run `--continue` for the operation like so:
+
+  | Operation   | Continue                  | Abort                    |
+  | ----------- | ------------------------- | ------------------------ |
+  | merge       | `git merge --continue`    | `git merge --abort`      |
+  | rebase      | `git rebase --continue`   | `git rebase --abort`     | 
+  | cherry-pick | `git cherry-pick --continue` | `git cherry-pick --abort` |
+  | revert      | `git revert --continue`   | `git revert --abort`     |
+
+  Result after continuing: merge, cherry-pick, and revert will record a new commit. Rebase will display a `Successfully rebased and updated
+  refs/heads/<branch>` message. After a continuation is complete, git status will no longer report an operation in progress.
+
+  Prefix the abort command with `Warning:`. Aborting discards the conflict
+  resolutions you have made so far and returns to the state before the
+  operation began. Git may be unable to restore uncommitted changes that
+  existed before a merge started, so back up any edited files first.
+
+
+* ID: `operation-in-progress`, priority class: error/blocked, safety: safe (depending on action, if `-- continue` the safety is safe, `--abort` carries the `Warning:` prefix. )
+
+* Conditions: Display this hint when Git's state files report an operation in progress. Do not run these checks outside a working tree; confirm with
+  `git rev-parse --is-inside-work-tree` (exit 0, output `true`).
+
+  1. Detect the type of operation. This sequence should be run in the order specified below and the first match should be reported as the type (a rebase that stops a conflict is not reported as a cherry-pick, etc.)
+      1. Rebase: for each of `rebase-merge` and `rebase-apply`, run
+        `git rev-parse --git-path <name>` and test whether that directory
+        exists. Ignore `rebase-apply` if it contains an `applying` file, since
+        that is `git am`, which is not supported.
+      2. Merge: `git rev-parse --verify --quiet MERGE_HEAD`.
+      3. Cherry-pick: `git rev-parse --verify --quiet CHERRY_PICK_HEAD`.
+      4. Revert: `git rev-parse --verify --quiet REVERT_HEAD`.
+   For the `rev-parse` checks, exit code 0 means the operation is in
+   progress, exit code 1 means it is not, and any other exit code is an
+   inspection error. Use `--git-path` rather than hard-coding `.git/`, so the
+   checks work in worktrees and when the Git directory is elsewhere.
+
+   2. Detect unresolved files. Run `git diff --name-only --diff-filter=U` and if it lists file paths, tell the user to resolve and stage those files (name up to 5 files, if amount is greater than 5, append "and up to N more" next to the list of files.) If there are no conflicts to resolve, display the `--continue` command to prompt the user to continue.
+
+   3. Keep displaying the hint until the state file is gone.
+
+* Test case:
+
+   1. Call `git_setup()` and then call `make_temps(1)`. In the directory: run `git init -b main`; call
+     `config_user("user1", "user1@foo.com")`; create `foo.txt` containing
+     `base`; stage it and commit with the message `"Add foo."`.
+   2. Run `git-hints --all --ids-only`. Verify that `operation-in-progress` is
+     absent in a clean repository.
+   3. Run `git switch -c topic`. Change `foo.txt` to `topic` and commit it with
+     `git commit -am "Topic change."`.
+   4. Run `git switch main`. Change `foo.txt` to `main` and commit it with
+     `git commit -am "Main change."`.
+   5. Merge conflict:
+     1. Run `git merge topic`. Verify that it exits nonzero, that
+        `git rev-parse --verify --quiet MERGE_HEAD` exits 0, and that
+        `git diff --name-only --diff-filter=U` lists `foo.txt`. Ensure
+        `git merge --abort` runs in cleanup if `MERGE_HEAD` still exists, even
+        if an assertion fails.
+     2. Run `git-hints --all` and require exit code 0 and the first output
+        line exactly equal to `Branch: main`. Verify that the
+        `operation-in-progress` block names a merge, lists `foo.txt`, contains
+        `git add`, `git merge --continue`, `git merge --abort`, and `Warning:`,
+        and links to `https://git-scm.com/docs/git-merge`.
+     3. Run `git-hints --all --ids-only`. Verify that `operation-in-progress`
+        is present and is listed before every hint of a lower priority class.
+   6. Resolved but not yet continued:
+     1. Change `foo.txt` to `resolved` and run `git add foo.txt`.
+     2. Run `git-hints --all`. Verify that `operation-in-progress` is still
+        present (`MERGE_HEAD` still exists), that its block says no conflicts
+        remain and shows `git merge --continue`, and that it does not list
+        `foo.txt` as unresolved.
+   7. Continue: run `git commit --no-edit` and require exit code 0. Verify that
+     `git rev-parse --verify --quiet MERGE_HEAD` exits 1. Run
+     `git-hints --all --ids-only` and verify that `operation-in-progress` is
+     absent.
+   8. Abort path: run `git switch -c topic2`, change `foo.txt` to `topic2`, and
+     commit. Run `git switch main`, change `foo.txt` to `main2`, and commit.
+     Run `git merge topic2` (exits nonzero). Verify that
+     `operation-in-progress` is present, then run `git merge --abort` and
+     verify that it is absent.
+   9. Rebase: run `git switch topic2`, then `git rebase main`.
+     1. Verify that `git rebase main` exits nonzero and that
+        `git rev-parse --git-path rebase-merge` names an existing directory.
+        Ensure `git rebase --abort` runs in cleanup if a rebase is still in
+        progress.
+     2. Run `git-hints --all`. Verify that the `operation-in-progress` block
+        names a rebase, contains `git rebase --continue` and
+        `git rebase --abort`, and links to
+        `https://git-scm.com/docs/git-rebase`.
+     3. Apply the decision recorded under the open question on `detached-head`
+        (for example, verify that `detached-head` is absent).
+     4. Change `foo.txt` to `resolved2`, run `git add foo.txt`, then run
+        `git rebase --continue`. Require exit code 0. Run
+        `git-hints --all --ids-only` and verify that `operation-in-progress`
+        is absent.
+   10. Optional cherry-pick and revert checks: repeat steps 3 to 5 using
+      `git cherry-pick <topic commit>` and `git revert <commit>` to create a
+      conflict, and verify that the block names the correct operation and
+      shows its own continue and abort commands.
+
+#### .gitignore not tracking (raf322)
+* Hint:
+
+* Git stage:
+
+* Command:
+
+* ID:
+
+* Conditions:
+
+* Test case:
+
 <mark>Review section 7 (sbe80) begins here; see Review assignments.</mark>
+
+
 
 ### Language and libraries
 
