@@ -1593,10 +1593,9 @@ automatically. The failed pull's actual exit code must be preserved by
    * `git-hints explain`: validate that the user-supplied argument list starts
      with `git`, then execute it once. Leave standard input and standard output
      connected to the terminal. Capture standard error and display it after
-     completion; display the exit code and return that same code. Use the
+     completion (not live); display the exit code and return that same code. Use the
      command, exit code, standard error, and inspected repository state to
-     select reactive hints. Captured standard error is displayed after
-     completion rather than live. Do not disable Git's terminal prompting or
+     select reactive hints. Do not disable Git's terminal prompting or
      editor for `git-hints explain`; the `GIT_TERMINAL_PROMPT=0` requirement
      applies only to the tool's optional fetch and isolated test environment. Do
      not claim to recover the result of an earlier command run outside
