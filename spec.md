@@ -1568,7 +1568,7 @@ automatically. The failed pull's actual exit code must be preserved by
 
 ### Language and libraries
 
-1. Language: Python
+1. Language: Python (Minimum version of 3.10 for all libraries listed below)
 
 2. Package manager: uv
 
@@ -1581,8 +1581,7 @@ automatically. The failed pull's actual exit code must be preserved by
 6. Git interface: Python's built-in `subprocess` module. Use it for both
    repository inspection and execution of user-supplied Git commands, with
    different behavior for each mode. The existing detection conditions use Git's
-   own commands and exit codes, so no additional Git library is required. Python
-   version 3.5 or later is required to use `subprocess`.
+   own commands and exit codes, so no additional Git library is required.
 
    * Plain `git-hints`: run the inspection commands defined by the hint
      conditions and repository-context requirements. Capture standard output,
@@ -1629,12 +1628,12 @@ The test tool contains:
 * `make_repo(temp_dir, commands)`: runs the list of `commands` in `temp_dir` to
   create and populate the repository. Each command is either an argument list,
   such as `["git", "commit", "-m", "Add foo."]`, executed using
-  `subprocess.run()` with `shell=False`, or a lambda function with no parameters
-  used to create, modify, or delete files. Pass each argument separately and
-  keep messages containing spaces in a single list element. Do not join
-  arguments into a shell string. (drj228) Lambdas run with `temp_dir` as the
-  current working directory, so they can use relative paths; `make_repo`
-  restores the previous working directory before returning.
+  `subprocess.run()` with `cwd=temp_dir` and `shell=False`, or a lambda function
+  with no parameters used to create, modify, or delete files. Pass each argument
+  separately and keep messages containing spaces in a single list element. Do
+  not join arguments into a shell string. (drj228) Lambdas run with `temp_dir`
+  as the current working directory, so they can use relative paths;
+  `make_repo()` restores the previous working directory before returning.
 * `config_user(username, email)`: Set Git's global `user.name` and `user.email` by
    writing to the global `GIT_CONFIG_GLOBAL` file.
 * `git_setup()`: creates an isolated Git configuration for the test environment.
@@ -1675,7 +1674,8 @@ with `make_temps()`, and use `make_repo()` to set up repositories. Run
 `git-hints --all` when checking hint content, commands, and documentation links.
 Use `git-hints --all --ids-only` when checking whether a hint ID is present or
 absent. Compare IDs as whole lines, not substrings. Both modes must run with the
-repository under test as the current working directory.
+repository under test as the current working directory: set `cwd` to the same
+`temp_dir` passed to `make_repo()` for that repository.
 
 All Git commands executed as part of a test, including those that `git-hints`
 runs, shall use the isolated test environment established by `git_setup()`. This

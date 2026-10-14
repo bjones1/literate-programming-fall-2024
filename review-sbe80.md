@@ -306,3 +306,112 @@ the assignment (`HOME`, `GIT_CONFIG_GLOBAL`, `GIT_CONFIG_NOSYSTEM=1`,
 * Line 330 (outside this section): setting `GIT_CEILING_DIRECTORIES` to the
   temporary directory's parent repeats what `git_setup()` already does, because
   that parent is the pytest base temp directory.
+
+### Whole-document scan and current-spec follow-up
+
+I also scanned the full current `spec.md`, including the sections assigned to
+the other reviewers. The following cross-section issues affect the behavior or
+testability of section 7, or are concrete document cleanup recommendations.
+
+12. **`--fetch` failure handling belongs to the CLI review.**
+
+    * Location: CLI commands, item 1.5, and the plain `git-hints` subprocess
+      rules.
+    * This is assigned to ams2083's overview/CLI review, not section 7. Their
+      [review](review-ams2083.md) already examines no-remote, nonzero-exit, and
+      timeout behavior, proposes output and exit-status rules, and notes
+      `--ids-only` and remote freshness labeling. The same concern is also
+      noted in [review-ewj55.md](review-ewj55.md) as a freshness-label
+      consistency issue.
+    * I am leaving the fetch policy to those CLI findings rather than proposing
+      a competing rule here. Section 7 should only be updated after the CLI
+      owner settles the behavior, particularly where the general subprocess
+      exit-code rule applies to an explicitly requested fetch.
+
+13. **The test helper rules leave the working-directory mechanism unclear.**
+
+    * Location: Testing, `make_repo()` and the paragraph beginning "The
+      function-scoped autouse" (current lines 1629 to 1637 and 1671 to 1678).
+    * The helper says file lambdas run with `temp_dir` as the current directory
+      and then restores the previous directory. The tests also say to run
+      `git-hints` in a named temporary repository, but do not specify how the
+      command receives that working directory. A subprocess launched without
+      `cwd=repo_dir` would run from the pytest process's directory instead.
+    * Recommendation: specify that Git and `git-hints` subprocesses receive
+      `cwd=repo_dir` and the isolated environment. Have file lambdas use paths
+      under `temp_dir` rather than changing the process-wide working directory.
+      This gives each helper an explicit repository and avoids ambiguity about
+      which checkout a test command operates on.
+
+14. **A minimum Python version is given, but it is not the version used to
+    validate the specified CLI stack.**
+
+    * Location: Language and libraries, item 6 and item 8 (current lines 1581
+      to 1585 and 1617 to 1619).
+    * Python 3.5 is cited only because `subprocess` is available there, but the
+      spec also requires Typer, pytest, `encoding`/`errors` subprocess behavior,
+      and modern project tooling. The cited Git minimum is explicitly tied to a
+      test-only feature, while the Python minimum is not tied to any supported
+      dependency versions. That makes it unclear what environment implementers
+      must support.
+    * Recommendation: give the intended supported Python version based on the
+      project dependency metadata, or say this item only describes the standard
+      library API and that the project metadata controls the actual minimum.
+
+15. **The specification still contains unresolved editorial TODOs and a
+    temporary deletion area.**
+
+    * Location: Hint structure items 4 and 8 (current lines 163 to 175 and 223
+      to 225), Future Work (lines 126 to 131), the `--ids-only` note (lines 75
+      to 76), and the temporary area beginning at line 1685.
+    * The full-document scan found several open TODOs outside section 7, plus
+      the `GOING TO DELETE` area that explicitly says its contents are
+      temporary. The temporary area still contains the obsolete pull hint and
+      Test Cases 14 and 15 described above. Leaving them in the canonical spec
+      makes it unclear which requirements implementers and reviewers should
+      follow.
+    * Recommendation: resolve or remove the TODOs as part of editorial cleanup,
+      and delete the marked temporary area when the review is complete. At
+      minimum, retain a clear status marker on any unresolved requirement so it
+      cannot be mistaken for normative implementation text.
+
+16. **The specification promises text-fragment documentation links but current
+    hints use ordinary manual-page links.**
+
+    * Location: Hint structure item 4 (current lines 163 to 175) and the hint
+      examples throughout the implementation.
+    * The item says links must highlight the cited manual section through text
+      fragments, but its embedded TODO proposes rewriting that requirement.
+      Existing links such as `https://git-scm.com/docs/git-pull` do not include
+      text fragments, and the review/test examples generally assert only the
+      manual URL. Thus it is uncertain whether text fragments are required for
+      this initial CLI or whether ordinary official documentation links satisfy
+      the requirement.
+    * Recommendation: make the requirement explicit and testable: either require
+      valid text fragments and add them to hint links, or remove the highlight
+      requirement and retain official documentation links with descriptive
+      titles. This affects the section 7 recommendation to remove the obsolete
+      hint's missing-doc-link complaint only if the broader requirement is
+      settled consistently.
+
+### Items in section 7 already corrected in the current spec
+
+The current spec has incorporated several recommendations from the original
+review. These findings should not be repeated as open defects after the
+temporary material is deleted:
+
+* The autouse fixture is now explicitly function-scoped, applies its variables
+  to `os.environ`, restores the prior environment, and must not be called
+  directly (current lines 1671 to 1673).
+* The subprocess output encoding is now specified as UTF-8 with replacement,
+  and parsed path lists must use NUL output or disable `core.quotePath`
+  (current line 1615).
+* The helper descriptions now say that `make_temps()` returns unnamed
+  directories and `config_user()` writes to the isolated global config file
+  (current lines 1626 to 1628 and 1638 to 1639).
+* The test section now gives explicit `--all` and `--all --ids-only` guidance
+  (current lines 1675 to 1678).
+
+The original line numbers at the start of this review refer to an earlier
+version of `spec.md`; use the current line references in this follow-up when
+editing the present copy.
