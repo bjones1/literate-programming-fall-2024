@@ -1591,7 +1591,7 @@ automatically. The failed pull's actual exit code must be preserved by
      supplied; follow that option's environment and timeout requirements.
 
    * `git-hints explain`: validate that the user-supplied argument list starts
-     with `git`, then execute it once. Leave standard input and standard output
+     with `git` exactly, then execute it once. Leave standard input and standard output
      connected to the terminal. Capture standard error and display it after
      completion (not live); display the exit code and return that same code. Use the
      command, exit code, standard error, and inspected repository state to
@@ -1624,7 +1624,8 @@ Testing
 The test tool contains:
 
 * `make_temps(num)`: creates and returns `num` temporary directories using
-  pytest's `tmp_path_factory`.
+  Pytest's `tmp_path_factory`. This only creates directories, but does not name them.
+  Individual tests must name the directories.
 * `make_repo(temp_dir, commands)`: runs the list of `commands` in `temp_dir` to
   create and populate the repository. Each command is either an argument list,
   such as `["git", "commit", "-m", "Add foo."]`, executed using
@@ -1634,12 +1635,13 @@ The test tool contains:
   arguments into a shell string. (drj228) Lambdas run with `temp_dir` as the
   current working directory, so they can use relative paths; `make_repo`
   restores the previous working directory before returning.
-* `config_user(username, email)`: Set Git's global `user.name` and `user.email`.
+* `config_user(username, email)`: Set Git's global `user.name` and `user.email` by
+   writing to the global `GIT_CONFIG_GLOBAL` file.
 * `git_setup()`: creates an isolated Git configuration for the test environment.
   The test environment shall:
   * Remove every inherited environment variable whose name starts with `GIT_`,
     plus `EMAIL` and `XDG_CONFIG_HOME`. Git sets `GIT_DIR`, `GIT_WORK_TREE`, and
-    `GIT_INDEX_FILE` when pytest runs from a Git hook, which would make tests
+    `GIT_INDEX_FILE` when Pytest runs from a Git hook, which would make tests
     act on the outer repository. `GIT_AUTHOR_*`, `GIT_COMMITTER_*`, and `EMAIL`
     override `user.name` and `user.email`. `GIT_CONFIG_PARAMETERS` and
     `GIT_CONFIG_COUNT` add configuration that bypasses the files below.
@@ -1657,7 +1659,7 @@ The test tool contains:
     `core.autocrlf=true`, does not affect test results.
   * Set
     [`GIT_CEILING_DIRECTORIES`](https://git-scm.com/docs/git#Documentation/git.txt-GITCEILINGDIRECTORIES)
-    to pytest's base temporary directory (`tmp_path_factory.getbasetemp()`), so
+    to Pytest's base temporary directory (`tmp_path_factory.getbasetemp()`), so
     Git never finds a repository above a test's temporary directory.
   * Set
     [`GIT_TERMINAL_PROMPT=0`](https://git-scm.com/docs/git#Documentation/git.txt-GITTERMINALPROMPT)
