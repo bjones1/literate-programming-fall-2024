@@ -149,7 +149,7 @@ the assignment (`HOME`, `GIT_CONFIG_GLOBAL`, `GIT_CONFIG_NOSYSTEM=1`,
      already use this wording.
 7. **`git_setup()` isolation works as specified on Windows with Git 2.56.
    However, the `subprocess` rules do not set an output encoding, so Python 3.14
-   on Windows corrupts any non-ASCII path or message that Git prints.**
+   on Windows corrupts any non-ASCII path or message that Git prints.** (Resolved)
 
    * Location: Language and libraries, item 6 (lines 1384 to 1389), and Testing,
      `git_setup()` (line 1445).
@@ -190,7 +190,7 @@ the assignment (`HOME`, `GIT_CONFIG_GLOBAL`, `GIT_CONFIG_NOSYSTEM=1`,
      Python version at item 1.
 8. **The minimum Git version of 2.32 is correct for `GIT_CONFIG_GLOBAL`, but the
    spec does not note that the tests are what require it. The `diverged` hint
-   also assumes newer pull behavior.**
+   also assumes newer pull behavior.** (Resolved)
 
    * Location: Language and libraries, item 8 (line 1397).
    * Checked against the installed release notes (`RelNotes/*.adoc`):
@@ -218,7 +218,7 @@ the assignment (`HOME`, `GIT_CONFIG_GLOBAL`, `GIT_CONFIG_NOSYSTEM=1`,
 
 9. **Leaving stdout connected to the terminal works for today's reactive hints,
    but only because none of them reads Git's stdout. The spec should state that
-   restriction, because some Git failures report only on stdout.**
+   restriction, because some Git failures report only on stdout.** (I do not agree with this one)
 
    * Location: Language and libraries, `git-hints explain` (lines 1372 to 1382).
    * Verified streams (Git 2.56):

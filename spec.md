@@ -501,7 +501,9 @@ runs. (jit45)
   upstream. If you prefer a linear history, Caution: `git pull --rebase` replays
   your local commits on top of the remote ones, which changes them; they remain
   recoverable through the reflog. A plain `git pull` fails on diverged branches
-  unless `pull.rebase` or `pull.ff` is configured.
+  unless `pull.rebase` or `pull.ff` is configured. It is important to note that 
+  git pull only fails on more recent Git versions. The exact release this was
+  implemted is unclear, but using at least Git version 2.34 should suffice.
 
 * ID: `diverged`, priority class: workflow, safety: safe.
 
@@ -1579,7 +1581,8 @@ automatically. The failed pull's actual exit code must be preserved by
 6. Git interface: Python's built-in `subprocess` module. Use it for both
    repository inspection and execution of user-supplied Git commands, with
    different behavior for each mode. The existing detection conditions use Git's
-   own commands and exit codes, so no additional Git library is required.
+   own commands and exit codes, so no additional Git library is required. Python
+   version 3.5 or later is required to use `subprocess`.
 
    * Plain `git-hints`: run the inspection commands defined by the hint
      conditions and repository-context requirements. Capture standard output,
@@ -1610,9 +1613,11 @@ automatically. The failed pull's actual exit code must be preserved by
    hint is triggered. It exits nonzero only when it reports an unexpected
    inspection failure or that Git cannot be launched. (drj228)
 
+   Decode Git output as UTF-8 (`encoding="utf-8", errors="replace"`), not with the locale default. When a path list is parsed, use `-z` or `-c core.quotePath=false`.
+
 7. Testing: Pytest
 
-8. Git: version 2.32 or later, which added `GIT_CONFIG_GLOBAL`.
+8. Git: version 2.32 or later, which added `GIT_CONFIG_GLOBAL` This is necessary specifically for testing.
 
 Testing
 -------
