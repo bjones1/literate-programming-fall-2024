@@ -1,5 +1,5 @@
-`mgit-hints` specification
-==========================
+`git-hints` specification
+=========================
 
 `git-hints` is a Python command-line tool that helps Git learners see where they
 are and what to do next. Run with no arguments, it inspects the current
@@ -293,8 +293,8 @@ runs. (jit45)
 
   * Test case:
 
-  1. **Setup** The autouse `git_setup` fixture provides the isolated
-     environment. Create two temporary directories: `remote` and `local`.
+  1. **Setup** Call `git_setup()`. Create two temporary directories: `remote`
+     and `local`.
   2. Call `config_user("user1", "user1@foo.com")`.
   3. In `remote`, run `git init --bare -b main`.
   4. Clone `remote` into `local` using `git clone <remote> <local>`.
@@ -322,14 +322,13 @@ runs. (jit45)
 * Conditions: Determine if current directory is inside a Git working tree by
   running `git rev-parse --is-inside-work-tree` using `subprocess`. Exit code 0
   with output `true` means it is inside a working tree. Exit code 128 means its
-  outside a Git repository, which triggers this hint." Avoid suggesting cloning
+  outside a Git repository, which triggers this hint. Avoid suggesting cloning
   hint for other unexpected Git errors.
 
 * Test case:
 
-  1. The autouse `git_setup` fixture provides the isolated environment and
-     `make_temps(1)`. Set `GIT_CEILING_DIRECTORIES` to the temporary directory's
-     parent so Git cannot discover an enclosing repo.
+  1. Call `git_setup()` and `make_temps(1)`. Set `GIT_CEILING_DIRECTORIES` to
+     the temporary directory's parent so Git cannot discover an enclosing repo.
   2. In the temporary directory, run `git rev-parse --is-inside-work-tree` and
      verify exit code 128.
   3. Run `git-hints --all`. Expected hint: **Clone a repo?**, identified by its
@@ -367,8 +366,7 @@ runs. (jit45)
 
 * Test case: Staged and unstaged changes.
 
-  1. The autouse `git_setup` fixture provides the isolated environment and
-     create one temporary directory.
+  1. Call `git_setup()` and create one temporary directory.
   2. In the temporary directory, initialize a repository with `git init -b
      main`.
   3. Call `config_user("user1", "user1@foo.com")` after initializing the
@@ -406,8 +404,7 @@ runs. (jit45)
         `https://git-scm.com/docs/git-commit`.
 * Conflict suppression test:
 
-  1. The autouse `git_setup` fixture provides the isolated environment and
-     create one temporary directory.
+  1. Call `git_setup()` and create one temporary directory.
   2. Initialize a repository there with `git init -b main` and call
      `config_user("user1", "user1@example.com")`.
   3. Create `conflict.txt` and `other.txt`, each containing `base`. Stage both
@@ -456,9 +453,8 @@ runs. (jit45)
 
 * Test case:
 
-  1. The autouse `git_setup` fixture provides the isolated environment and
-     create two temporary directories, `repo1` and `repo2`. Run every
-     `git-hints` command in `repo2`.
+  1. Call `git_setup()` and create two temporary directories, `repo1` and
+     `repo2`. Run every `git-hints` command in `repo2`.
   2. In `repo1`, initialize a repository with `git init -b main` and call
      `config_user("user1", "user1@foo.com")`.
   3. Create `foo.txt` containing `xxx`, stage it with `git add foo.txt`, and
@@ -501,9 +497,7 @@ runs. (jit45)
   upstream. If you prefer a linear history, Caution: `git pull --rebase` replays
   your local commits on top of the remote ones, which changes them; they remain
   recoverable through the reflog. A plain `git pull` fails on diverged branches
-  unless `pull.rebase` or `pull.ff` is configured. It is important to note that 
-  git pull only fails on more recent Git versions. The exact release this was
-  implemted is unclear, but using at least Git version 2.34 should suffice.
+  unless `pull.rebase` or `pull.ff` is configured.
 
 * ID: `diverged`, priority class: workflow, safety: safe.
 
@@ -516,6 +510,9 @@ runs. (jit45)
 
 * Test case:
 
+   Do not display this hint while a merge is in progress (`git
+     rev-parse -q --verify MERGE_HEAD` exits 0) or while the index has
+     unresolved entries. 
   1. Do steps 1-5 of the `behind` hint's test case. This leaves `repo1` with a
      commit that `repo2` has not fetched.
   2. In `repo2`, create `bar.txt` containing `zzz`, stage it with `git add
@@ -602,7 +599,9 @@ runs. (jit45)
 
 * ID: `staged-changes`, priority class: workflow, safety: safe.
 
-* Conditions: Display this hint when the staging area contains at least one
+* Conditions: Do not display
+     this hint while the index contains unresolved merge entries; check with
+     `git diff --name-only --diff-filter=U`. Supress command while a rebase is in progress, use the `rebase-merge`/`rebase-apply` path checks from `detached-head`
   change to be committed. Run `git diff --cached --quiet`; exit code 1 means
   staged changes exist, exit code 0 means none exist, and any other exit code
   indicates an error. Do not display the hint when the staging area is empty.
@@ -611,8 +610,7 @@ runs. (jit45)
 
 * Test case:
 
-  1. The autouse `git_setup` fixture provides the isolated environment and
-     create one temporary directory.
+  1. Call `git_setup()` and create one temporary directory.
   2. Initialize a repository in that directory with `git init -b main`.
   3. Call `config_user("user1", "user1@example.com")`.
   4. Run `git-hints --all` and verify that the `staged-changes` hint is absent.
@@ -671,8 +669,7 @@ runs. (jit45)
 
   * Test case:
 
-    1. The autouse `git_setup` fixture provides the isolated environment. Create
-       one temporary directory.
+    1. Call `git_setup()`. Create one temporary directory.
     2. In the temporary directory, initialize a repository with `git init -b
        main`.
     3. Call `config_user("user1", "user1@foo.com")`.
@@ -762,8 +759,8 @@ interpreted as a triggered hint.
 
 * Test case: Commit repo? (written by jit45; formerly Test Case 12).
 
-  1. The autouse `git_setup` fixture provides the isolated environment and
-     create one temporary directory using `make_temps(1)`.
+  1. Call `git_setup()` and create one temporary directory using
+     `make_temps(1)`.
   2. Initialize a repository there with `git init -b main`.
   3. Call `config_user("user1", "user1@example.com")`.
   4. Create four files, `one.txt`, `two.txt`, `three.txt`, and `four.txt`, each
@@ -1064,8 +1061,8 @@ Reactive hints are triggered by the result of a Git command executed through
 
 * Test case: Resolving merge conflicts (written by sbe80).
 
-  1. The autouse `git_setup` fixture provides the isolated environment and
-     create two temporary directories, `repo1` and `repo2`.
+  1. Call `git_setup()` and create two temporary directories, `repo1` and
+     `repo2`.
   2. In `repo1`, initialize a repository with `git init -b main` and call
      `config_user("user1", "user1@foo.com")`.
   3. Create `foo.txt` containing `xxx`, stage it with `git add foo.txt`, and
@@ -1140,9 +1137,8 @@ automatically. The failed pull's actual exit code must be preserved by
 
 * Test case: Resolve pull conflicts (written by jit45; formerly Test Case 13).
 
-  1. The autouse `git_setup` fixture provides the isolated environment and
-     create three temporary directories named `remote`, `local`, and `other`
-     using `make_temps(3)`.
+  1. Call `git_setup()` and create three temporary directories named `remote`,
+     `local`, and `other` using `make_temps(3)`.
   2. In `remote`, run `git init --bare -b main`.
   3. Clone `remote` into `other` using `git clone <remote> <other>`.
   4. In `other`, call `config_user("user1", "user1@example.com")`.
@@ -1214,8 +1210,7 @@ automatically. The failed pull's actual exit code must be preserved by
 
 * Test case: Stashing changes that block a merge (written by sbe80).
 
-  1. The autouse `git_setup` fixture provides the isolated environment and
-     create a temporary directory named `repo`.
+  1. Call `git_setup()` and create a temporary directory named `repo`.
   2. In `repo`, run `git init -b main` and call `config_user("user1",
      "user1@foo.com")`.
   3. Create `foo.txt` containing `base`, stage it, and commit it with `git
@@ -1272,9 +1267,8 @@ automatically. The failed pull's actual exit code must be preserved by
 
 * Test case: Suggesting rebase after repeated failures (written by sbe80).
 
-  1. The autouse `git_setup` fixture provides the isolated environment and
-     create three temporary directories named `remote`, `local`, and `other`
-     using `make_temps(3)`.
+  1. Call `git_setup()` and create three temporary directories named `remote`,
+     `local`, and `other` using `make_temps(3)`.
   2. In `remote`, run `git init --bare -b main`. Clone it into `local` and call
      `config_user("user1", "user1@foo.com")` there.
   3. In `local`, create and commit `foo.txt`, then run `git push -u origin
@@ -1301,393 +1295,9 @@ automatically. The failed pull's actual exit code must be preserved by
   10. Run `git-hints explain -- git push`. Verify that it succeeds and the
       rebase hint is absent.
 
-#### Finish or cancel the operation in progress? (raf322)
+<mark>Review section 7 (sbe80) begins here; see Review assignments.</mark>
 
-* Hint: A `<operation>` is in progress. Git paused it and is waiting for you to
-  finish or cancel it. The hint has two variants.
-
-  * Conflicts remain: "Some files have conflicts. Open each conflicted file,
-    choose the final content, then
-    [stage](https://git-scm.com/docs/git-add "Marks a resolved file so Git knows the conflict is fixed")
-    it. When no conflicts remain, run the continue command. To cancel instead,
-    run the abort command."
-  * No conflicts remain: "No conflicts remain. Run the continue command to
-    finish, or the abort command to cancel."
-
-  `<operation>` is replaced by `merge`, `rebase`, `cherry-pick`, or `revert`.
-  Show only the commands and the documentation link
-  (`https://git-scm.com/docs/git-<operation>`) for the detected operation.
-
-* Git stage: You are working in the local repository: Git has paused an
-  operation that combines commits, and any conflicted files stay in your working
-  directory and staging area until you resolve them.
-
-* Command: Run `git status` to see which files are unmerged. Resolve each one,
-  run `git add <file>`, then run the continue command for the operation:
-
-  | Operation   | Continue                     | Abort                     |
-  | ----------- | ---------------------------- | ------------------------- |
-  | merge       | `git merge --continue`       | `git merge --abort`       |
-  | rebase      | `git rebase --continue`      | `git rebase --abort`      |
-  | cherry-pick | `git cherry-pick --continue` | `git cherry-pick --abort` |
-  | revert      | `git revert --continue`      | `git revert --abort`      |
-
-  The CLI displays only the row for the detected operation. Expected result
-  after continuing: Git resumes the operation. A merge, cherry-pick, or revert
-  may record a new commit, and a completed rebase updates the branch. If another
-  conflict occurs, Git pauses again and this hint remains active. Once the
-  entire operation completes, this hint disappears and `git status` no longer
-  reports an operation in progress.
-
-  The continue command is safe. Prefix the abort command with `Warning:`
-  aborting discards the conflict resolutions you have made so far and returns to
-  the state before the operation began. Git may be unable to restore uncommitted
-  changes that existed before a merge started, so back up any edited files
-  first.
-
-* ID: `operation-in-progress`, priority class: error/blocked, safety: warning.
-
-* Conditions:
-
-  1. Confirm a Git working tree with `git rev-parse --is-inside-work-tree`;
-     require exit code 0 and output `true`. Do not run the remaining checks
-     outside a working tree.
-
-  2. Detect the operation. Check in the order below and report only the first
-     match, so a rebase that stops on a conflict is not reported as a
-     cherry-pick:
-
-     1. Rebase: for each of `rebase-merge` and `rebase-apply`, run `git
-        rev-parse --git-path <n>` and test whether that directory exists.
-        Resolve relative paths against the working directory used for these Git
-        commands. Ignore `rebase-apply` if it contains an `applying` file, since
-        that is `git am`, which is not supported. If a path lookup fails, report
-        the inspection error rather than assuming no operation is in progress.
-     2. Merge: `git rev-parse --verify --quiet MERGE_HEAD`.
-     3. Cherry-pick: `git rev-parse --verify --quiet CHERRY_PICK_HEAD`.
-     4. Revert: `git rev-parse --verify --quiet REVERT_HEAD`.
-
-     For the `rev-parse --verify` checks, exit code 0 means the operation is in
-     progress, exit code 1 means it is not, and any other exit code is an
-     inspection error. Use `--git-path` rather than hard-coding `.git/`, so the
-     checks work in worktrees and when the Git directory is elsewhere.
-
-  3. Detect unresolved files with `git diff --name-only --diff-filter=U`. If it
-     lists paths, use the "conflicts remain" variant. List paths in the order
-     Git returns them (sorted by path) and name up to five; if there are more,
-     append "and N more", where N is the exact number not listed. If it lists
-     none, use the "no conflicts remain" variant. A merge started with
-     `--no-commit` has `MERGE_HEAD` and no conflicts; the hint still applies.
-
-  4. Keep displaying the hint until the state file or directory is gone.
-
-  5. Limitation: a multi-commit cherry-pick or revert that stops partway is
-     detected only while `CHERRY_PICK_HEAD` or `REVERT_HEAD` exists.
-* Related output: This proactive hint complements the reactive `merge-conflicts`
-  hint, which appears only right after a failing command run through `git-hints
-  explain`; this hint persists after the terminal is closed and reopened. During
-  a rebase, HEAD is detached, so the context line shows `Branch: detached HEAD`
-  and `detached-head` is suppressed (see `detached-head`).
-
-* Test case: Operation in progress (written by raf322).
-
-  All commands run in the repository under test. The autouse `git_setup` fixture
-  provides the isolated environment, including `GIT_EDITOR=true`, so no command
-  waits for an editor. Collapse whitespace in hint output before searching it
-  for phrases.
-
-  1. Call `make_temps(1)`. In the directory: run `git init -b main`; call
-     `config_user("user1", "user1@foo.com")`; create `foo.txt` containing
-     `base`; stage it and commit with the message `"Add foo."`.
-  2. Run `git-hints --all --ids-only`. Verify that `operation-in-progress` is
-     absent in a clean repository.
-  3. Run `git switch -c topic`. Change `foo.txt` to `topic` and commit it with
-     `git commit -am "Topic change."`.
-  4. Run `git switch main`. Change `foo.txt` to `main` and commit it with `git
-     commit -am "Main change."`.
-  5. Merge conflict:
-     1. Run `git merge topic`. Verify that it exits nonzero, that `git rev-parse
-        --verify --quiet MERGE_HEAD` exits 0, and that `git diff --name-only
-        --diff-filter=U` lists `foo.txt`. Ensure `git merge --abort` runs in
-        cleanup if `MERGE_HEAD` still exists, even if an assertion fails.
-     2. Run `git-hints --all` and require exit code 0 and the first output line
-        exactly equal to `Branch: main`. Verify that the `operation-in-progress`
-        block names a merge, lists `foo.txt`, contains `git add`, `git merge
-        --continue`, `git merge --abort`, and `Warning:`, and links to
-        `https://git-scm.com/docs/git-merge`. Verify that it does not include
-        continuation or abort commands for other operations.
-     3. Run `git-hints --all --ids-only`. Verify that `operation-in-progress` is
-        present.
-  6. Resolved but not yet continued:
-     1. Change `foo.txt` to `resolved` and run `git add foo.txt`.
-     2. Run `git-hints --all`. Verify that `operation-in-progress` is still
-        present (`MERGE_HEAD` still exists), that its block contains the text
-        `No conflicts remain` and `git merge --continue`, and that it does not
-        list `foo.txt`.
-  7. Continue: run `git merge --continue` and require exit code 0. Verify that
-     `git rev-parse --verify --quiet MERGE_HEAD` exits 1. Run `git-hints --all
-     --ids-only` and verify that `operation-in-progress` is absent.
-  8. Abort path: run `git switch -c topic2`, change `foo.txt` to `topic2`, and
-     commit. Run `git switch main`, change `foo.txt` to `main2`, and commit. Run
-     `git merge topic2` (exits nonzero). Verify that `operation-in-progress` is
-     present, then run `git merge --abort` and verify that it is absent.
-  9. Rebase: run `git switch topic2`, then `git rebase main`.
-     1. Verify that `git rebase main` exits nonzero and that `git rev-parse
-        --git-path rebase-merge` names an existing directory. Ensure `git rebase
-        --abort` runs in cleanup if a rebase is still in progress.
-     2. Run `git-hints --all`. Verify that the `operation-in-progress` block
-        names a rebase (not a cherry-pick), contains `git rebase --continue` and
-        `git rebase --abort`, and links to
-        `https://git-scm.com/docs/git-rebase`. Verify that it does not include
-        continuation or abort commands for other operations.
-     3. Verify that the first output line is exactly `Branch: detached HEAD` and
-        that `detached-head` is absent from `git-hints --all --ids-only`.
-     4. Change `foo.txt` to `resolved2`, run `git add foo.txt`, then run `git
-        rebase --continue`. Require exit code 0. Run `git-hints --all
-        --ids-only` and verify that `operation-in-progress` is absent.
-  10. Cherry-pick:
-      1. Run `git switch main`, then `git switch -c pick-src`. Change `foo.txt`
-         to `pick` and commit with `git commit -am "Pick change."`.
-      2. Run `git switch main`. Change `foo.txt` to `main3` and commit with `git
-         commit -am "Main change 3."`.
-      3. Run `git cherry-pick pick-src`. Verify that it exits nonzero and that
-         `git rev-parse --verify --quiet CHERRY_PICK_HEAD` exits 0. Ensure `git
-         cherry-pick --abort` runs in cleanup if it is still in progress.
-      4. Run `git-hints --all`. Verify that the `operation-in-progress` block
-         names a cherry-pick, contains `git cherry-pick --continue` and `git
-         cherry-pick --abort`, and links to
-         `https://git-scm.com/docs/git-cherry-pick`. Verify that it does not
-         include continuation or abort commands for other operations.
-      5. Run `git cherry-pick --abort`, then `git-hints --all --ids-only`;
-         verify that `operation-in-progress` is absent.
-  11. Revert:
-      1. On `main`, change `foo.txt` to `main4` and commit with `git commit -am
-         "Main change 4."`.
-      2. Run `git revert HEAD~1`, which reverts "Main change 3." and conflicts
-         with the later change. Verify that it exits nonzero and that `git
-         rev-parse --verify --quiet REVERT_HEAD` exits 0. Ensure `git revert
-         --abort` runs in cleanup if it is still in progress.
-      3. Run `git-hints --all`. Verify that the `operation-in-progress` block
-         names a revert, contains `git revert --continue` and `git revert
-         --abort`, and links to `https://git-scm.com/docs/git-revert`. Verify
-         that it does not include continuation or abort commands for other
-         operations.
-      4. Run `git revert --abort`, then `git-hints --all --ids-only`; verify
-         that `operation-in-progress` is absent.
-
-#### Stop tracking ignored files? (raf322)
-
-* Hint: Do you want Git to stop tracking files that match active
-  [ignore rules](https://git-scm.com/docs/gitignore "Lists patterns for files Git should not track; it only affects files that are not already tracked")?
-  These rules may come from `.gitignore`, `.git/info/exclude`, or a global
-  excludes file. Ignoring a file does not affect files Git already tracks. To
-  stop tracking a file but keep it on your disk, use
-  [`git rm --cached`](https://git-scm.com/docs/git-rm "With --cached, removes a file from the index but leaves it in your working directory").
-  Anyone who pulls your commit will have the file deleted, and it remains in
-  earlier commits, so change any password or key it contained.
-
-* Git stage: These files are in Git's index and may also have been saved in
-  previous commits, so Git tracks them even though active ignore rules match
-  their paths.
-
-* Command: For each file, run `git rm --cached <file>` (`git rm -r --cached
-  <directory>` for directories). If a matching rule was newly added or modified
-  in a project `.gitignore`, stage that file with `git add .gitignore`. Review
-  the staged changes with `git diff --cached`, then run `git commit -m "Stop
-  tracking <file>"`. Expected result: after `git rm --cached`, previously
-  committed files show `deleted: <file>` under changes to be committed in `git
-  status`, and the files remain in your working directory. After the commit, the
-  selected files no longer appear in `git ls-files -ci --exclude-standard`.
-  Other tracked files that match active ignore rules may still be listed; this
-  hint disappears only when no matching tracked files remain.
-
-* ID: `tracked-but-ignored`, priority class: workflow, safety: safe.
-
-* Conditions: Do not run outside a working tree; confirm with `git rev-parse
-  --is-inside-work-tree` (exit code 0, output `true`). Run `git ls-files -ci
-  --exclude-standard -z`. Split the output on NUL characters, which keeps names
-  containing spaces or newlines intact. In this command, `-c` lists files in the
-  index and `-i` keeps only those matching an ignore pattern;
-  `--exclude-standard` applies `.gitignore`, `.git/info/exclude`, and the global
-  excludes file. Show the hint only when at least one path is returned. A
-  nonzero exit code is an inspection error, not evidence of tracked-but-ignored
-  files. List paths in the order `git ls-files` returns them (sorted by path)
-  and name up to five, quoted correctly in the suggested command; if there are
-  more, append "and N more", where N is the exact number not listed.
-
-  A file added deliberately with `git add -f` also matches, so keep the wording
-  conditional. A file re-included with a negation pattern such as `!debug.log`
-  is not ignored and must not appear.
-
-  Related output: `untracked-files` covers files Git is not tracking; this hint
-  covers files Git is tracking. The two must never report the same file. After
-  `git rm --cached`, a file is untracked and ignored, so neither hint reports
-  it.
-
-* Test case: Tracked but ignored (written by raf322).
-
-  The autouse `git_setup` fixture provides the isolated environment. Collapse
-  whitespace in hint output before searching it for phrases.
-
-  1. Call `make_temps(1)`. In the directory: run `git init -b main`; call
-     `config_user("user1", "user1@foo.com")`; create `foo.txt` containing `xxx`,
-     `debug.log` containing `log`, and `my notes.log` containing `notes`. Stage
-     all three and commit with `git commit -m "Add files."`.
-  2. Preconditions: no `.gitignore` exists, and `git ls-files -ci
-     --exclude-standard` prints nothing. Run `git-hints --all --ids-only` and
-     verify that `tracked-but-ignored` is absent.
-  3. Create `.gitignore` containing `*.log` and leave it unstaged. Precondition:
-     `git ls-files -ci --exclude-standard` lists `debug.log` and `my notes.log`
-     but not `foo.txt`.
-  4. Run `git-hints --all` and require exit code 0. In the `tracked-but-ignored`
-     block, verify that both `debug.log` and `my notes.log` appear (the second
-     one quoted correctly in the command), that `foo.txt` does not appear, and
-     that the block contains `git rm --cached`, `git add .gitignore`, `git diff
-     --cached`, `git commit`, `earlier commits`,
-     `https://git-scm.com/docs/git-rm`, and
-     `https://git-scm.com/docs/gitignore`. Run `git-hints --all --ids-only`;
-     verify that `tracked-but-ignored` is present.
-  5. Run `git rm --cached debug.log "my notes.log"` and require exit code 0.
-     Verify that both files still exist on disk. Run `git-hints --all
-     --ids-only`; verify that `tracked-but-ignored` is absent, because the files
-     are now untracked and ignored. Run `git add .gitignore` and `git diff
-     --cached`; verify that the ignore rule and both file removals are staged.
-     Run `git commit -m "Stop tracking log files."` and verify that the commit
-     includes `.gitignore` and both removals, that the files still exist
-     locally, and that `tracked-but-ignored` remains absent.
-  6. Negation: change `.gitignore` to contain `*.log` and `!debug.log`. Run `git
-     add debug.log`, then `git-hints --all --ids-only`; verify that
-     `tracked-but-ignored` is absent, because `debug.log` is no longer ignored.
-  7. Many files: change `.gitignore` to contain `build/`. Create `build/a.txt`
-     through `build/g.txt` (seven files) and stage them with `git add -f build`.
-     Run `git-hints --all`. Verify that the block lists `build/a.txt` through
-     `build/e.txt`, does not list `build/f.txt` or `build/g.txt`, and contains
-     `and 2 more`.
-  8. Clean up: run `git rm -r --cached build`, then `git-hints --all
-     --ids-only`; verify that `tracked-but-ignored` is absent.
-
-### Language and libraries
-
-1. Language: Python (Minimum version of 3.10 for all libraries listed below)
-
-2. Package manager: uv
-
-3. Formatter/linter: ruff
-
-4. Type checker: ty
-
-5. CLI: Typer
-
-6. Git interface: Python's built-in `subprocess` module. Use it for both
-   repository inspection and execution of user-supplied Git commands, with
-   different behavior for each mode. The existing detection conditions use Git's
-   own commands and exit codes, so no additional Git library is required.
-
-   * Plain `git-hints`: run the inspection commands defined by the hint
-     conditions and repository-context requirements. Capture standard output,
-     standard error, and exit codes to determine which hints apply. Do not
-     execute commands suggested by hints. Do not fetch unless `--fetch` is
-     supplied; follow that option's environment and timeout requirements.
-
-   * `git-hints explain`: validate that the user-supplied argument list starts
-     with `git` exactly, then execute it once. Leave standard input and standard output
-     connected to the terminal. Capture standard error and display it after
-     completion (not live); display the exit code and return that same code. Use the
-     command, exit code, standard error, and inspected repository state to
-     select reactive hints. Do not disable Git's terminal prompting or
-     editor for `git-hints explain`; the `GIT_TERMINAL_PROMPT=0` requirement
-     applies only to the tool's optional fetch and isolated test environment. Do
-     not claim to recover the result of an earlier command run outside
-     `git-hints explain`.
-
-   For both modes, pass arguments separately with `shell=False` and
-   `check=False`. Interpret `returncode` according to each command's documented
-   meaning; expected nonzero codes are not automatically application errors.
-   Report unexpected failures separately rather than treating them as hint
-   conditions. If Git cannot be launched, report that failure instead of
-   inventing a Git exit code or repository condition.
-
-   Plain `git-hints` exits 0 whenever inspection completes, whether or not any
-   hint is triggered. It exits nonzero only when it reports an unexpected
-   inspection failure or that Git cannot be launched. (drj228)
-
-   Decode Git output as UTF-8 (`encoding="utf-8", errors="replace"`), not with the locale default. When a path list is parsed, use `-z` or `-c core.quotePath=false`.
-
-7. Testing: Pytest
-
-8. Git: version 2.34 or later
-
-Testing
--------
-
-The test tool contains:
-
-* `make_temps(num)`: creates and returns `num` temporary directories using
-  Pytest's `tmp_path_factory`. The helper does not assign names such as local or remote; 
-  each test should assign descriptive variable names to the returned paths.
-* `make_repo(temp_dir, commands)`: runs the list of `commands` in `temp_dir` to
-  create and populate the repository. Each command is either an argument list,
-  such as `["git", "commit", "-m", "Add foo."]`, executed using
-  `subprocess.run()` with `cwd=temp_dir` and `shell=False`, or a lambda function
-  with no parameters used to create, modify, or delete files. Pass each argument
-  separately and keep messages containing spaces in a single list element. Do
-  not join arguments into a shell string. (drj228) Lambdas run with `temp_dir`
-  as the current working directory, so they can use relative paths;
-  `make_repo()` restores the previous working directory before returning.
-* `config_user(username, email)`: Set the isolated testing Git enviornments 
-   global `user.name` and `user.email` by writing to the global `GIT_CONFIG_GLOBAL` file.
-* `git_setup()`: creates an isolated Git configuration for the test environment.
-  The test environment shall:
-  * Remove every inherited environment variable whose name starts with `GIT_`,
-    plus `EMAIL` and `XDG_CONFIG_HOME`. Git sets `GIT_DIR`, `GIT_WORK_TREE`, and
-    `GIT_INDEX_FILE` when Pytest runs from a Git hook, which would make tests
-    act on the outer repository. `GIT_AUTHOR_*`, `GIT_COMMITTER_*`, and `EMAIL`
-    override `user.name` and `user.email`. `GIT_CONFIG_PARAMETERS` and
-    `GIT_CONFIG_COUNT` add configuration that bypasses the files below.
-  * Set `HOME` to an empty temporary directory. Git reads some files from the
-    home directory even when `GIT_CONFIG_GLOBAL` is set, such as the global
-    ignore file `~/.config/git/ignore`.
-  * Set
-    [`GIT_CONFIG_GLOBAL`](https://git-scm.com/docs/git-config#Documentation/git-config.txt-GITCONFIGGLOBAL)
-    ([more docs](https://git-scm.com/docs/git#Documentation/git.txt-GITCONFIGGLOBAL))
-    to a writable temporary file containing only `[init]\ndefaultBranch = main`,
-    so that the user's global Git configuration does not affect test results.
-  * Set
-    [`GIT_CONFIG_NOSYSTEM=1`](https://git-scm.com/docs/git#Documentation/git.txt-GITCONFIGNOSYSTEM)
-    so that the system Git configuration, such as Git for Windows'
-    `core.autocrlf=true`, does not affect test results.
-  * Set
-    [`GIT_CEILING_DIRECTORIES`](https://git-scm.com/docs/git#Documentation/git.txt-GITCEILINGDIRECTORIES)
-    to Pytest's base temporary directory (`tmp_path_factory.getbasetemp()`), so
-    Git never finds a repository above a test's temporary directory.
-  * Set
-    [`GIT_TERMINAL_PROMPT=0`](https://git-scm.com/docs/git#Documentation/git.txt-GITTERMINALPROMPT)
-    and
-    [`GIT_EDITOR=true`](https://git-scm.com/docs/git#Documentation/git.txt-GITEDITOR),
-    so no test waits for a password or an editor.
-  * Set `LC_ALL=C`, so Git's messages are in English.
-
-The function-scoped autouse `git_setup()` fixture applies the isolated variables
-to os.environ for each test and restores the prior environment afterward. Tests
-do not call the fixture directly. Create temporary directories
-with `make_temps()`, and use `make_repo()` to set up repositories. Run
-`git-hints --all` when checking hint content, commands, and documentation links.
-Use `git-hints --all --ids-only` when checking whether a hint ID is present or
-absent. Compare IDs as whole lines, not substrings. Both modes must run with the
-repository under test as the current working directory: set `cwd` to the same
-`temp_dir` passed to `make_repo()` for that repository.
-
-All Git commands executed as part of a test, including those that `git-hints`
-runs, shall use the isolated test environment established by `git_setup()`. This
-prevents test results from varying based on the Git configuration of the machine
-running the tests.
-
-### GOING TO DELETE (temporary removal area)
-
-Everything below this heading is scheduled for deletion on Sunday (sbe80). This
-temporary area keeps the material available for review before it is removed.
-
-#### Pull remote changes? (raf322)
+### Pull remote changes? (raf322)
 
 * Hint:
 
@@ -1701,7 +1311,7 @@ temporary area keeps the material available for review before it is removed.
 
 * Test case:
 
-#### Pull before committing (raf322)
+### Pull before committing (raf322)
 
 * Hint: Pull needed, your branch is behind!
 
@@ -1741,9 +1351,120 @@ temporary area keeps the material available for review before it is removed.
   10. Run `git-hints` in `temp1`. Expected hint: Is my branch up to date before
       I start editing?
 
-#### <mark>TODO: move test cases to follow the implementation of each hint.</mark>
+### Language and libraries
 
-#### Test Case 14: Pull Test (raf322) -- Requirement Proactive 7
+1. Language: Python
+
+2. Package manager: uv
+
+3. Formatter/linter: ruff
+
+4. Type checker: ty
+
+5. CLI: Typer
+
+6. Git interface: Python's built-in `subprocess` module. Use it for both
+   repository inspection and execution of user-supplied Git commands, with
+   different behavior for each mode. The existing detection conditions use Git's
+   own commands and exit codes, so no additional Git library is required.
+
+   * Plain `git-hints`: run the inspection commands defined by the hint
+     conditions and repository-context requirements. Capture standard output,
+     standard error, and exit codes to determine which hints apply. Do not
+     execute commands suggested by hints. Do not fetch unless `--fetch` is
+     supplied; follow that option's environment and timeout requirements.
+
+   * `git-hints explain`: validate that the user-supplied argument list starts
+     with `git`, then execute it once. Leave standard input and standard output
+     connected to the terminal. Capture standard error and display it after
+     completion; display the exit code and return that same code. Use the
+     command, exit code, standard error, and inspected repository state to
+     select reactive hints. Captured standard error is displayed after
+     completion rather than live. Do not disable Git's terminal prompting or
+     editor for `git-hints explain`; the `GIT_TERMINAL_PROMPT=0` requirement
+     applies only to the tool's optional fetch and isolated test environment. Do
+     not claim to recover the result of an earlier command run outside
+     `git-hints explain`.
+
+   For both modes, pass arguments separately with `shell=False` and
+   `check=False`. Interpret `returncode` according to each command's documented
+   meaning; expected nonzero codes are not automatically application errors.
+   Report unexpected failures separately rather than treating them as hint
+   conditions. If Git cannot be launched, report that failure instead of
+   inventing a Git exit code or repository condition.
+
+   Plain `git-hints` exits 0 whenever inspection completes, whether or not any
+   hint is triggered. It exits nonzero only when it reports an unexpected
+   inspection failure or that Git cannot be launched. (drj228)
+
+7. Testing: Pytest
+
+8. Git: version 2.32 or later, which added `GIT_CONFIG_GLOBAL`.
+
+Testing
+-------
+
+The test tool contains:
+
+* `make_temps(num)`: creates and returns `num` temporary directories using
+  pytest's `tmp_path_factory`.
+* `make_repo(temp_dir, commands)`: runs the list of `commands` in `temp_dir` to
+  create and populate the repository. Each command is either an argument list,
+  such as `["git", "commit", "-m", "Add foo."]`, executed using
+  `subprocess.run()` with `shell=False`, or a lambda function with no parameters
+  used to create, modify, or delete files. Pass each argument separately and
+  keep messages containing spaces in a single list element. Do not join
+  arguments into a shell string. (drj228) Lambdas run with `temp_dir` as the
+  current working directory, so they can use relative paths; `make_repo`
+  restores the previous working directory before returning.
+* `config_user(username, email)`: Set Git's global `user.name` and `user.email`.
+* `git_setup()`: creates an isolated Git configuration for the test environment.
+  The test environment shall:
+  * Remove every inherited environment variable whose name starts with `GIT_`,
+    plus `EMAIL` and `XDG_CONFIG_HOME`. Git sets `GIT_DIR`, `GIT_WORK_TREE`, and
+    `GIT_INDEX_FILE` when pytest runs from a Git hook, which would make tests
+    act on the outer repository. `GIT_AUTHOR_*`, `GIT_COMMITTER_*`, and `EMAIL`
+    override `user.name` and `user.email`. `GIT_CONFIG_PARAMETERS` and
+    `GIT_CONFIG_COUNT` add configuration that bypasses the files below.
+  * Set `HOME` to an empty temporary directory. Git reads some files from the
+    home directory even when `GIT_CONFIG_GLOBAL` is set, such as the global
+    ignore file `~/.config/git/ignore`.
+  * Set
+    [`GIT_CONFIG_GLOBAL`](https://git-scm.com/docs/git-config#Documentation/git-config.txt-GITCONFIGGLOBAL)
+    ([more docs](https://git-scm.com/docs/git#Documentation/git.txt-GITCONFIGGLOBAL))
+    to a writable temporary file containing only `[init]\ndefaultBranch = main`,
+    so that the user's global Git configuration does not affect test results.
+  * Set
+    [`GIT_CONFIG_NOSYSTEM=1`](https://git-scm.com/docs/git#Documentation/git.txt-GITCONFIGNOSYSTEM)
+    so that the system Git configuration, such as Git for Windows'
+    `core.autocrlf=true`, does not affect test results.
+  * Set
+    [`GIT_CEILING_DIRECTORIES`](https://git-scm.com/docs/git#Documentation/git.txt-GITCEILINGDIRECTORIES)
+    to pytest's base temporary directory (`tmp_path_factory.getbasetemp()`), so
+    Git never finds a repository above a test's temporary directory.
+  * Set
+    [`GIT_TERMINAL_PROMPT=0`](https://git-scm.com/docs/git#Documentation/git.txt-GITTERMINALPROMPT)
+    and
+    [`GIT_EDITOR=true`](https://git-scm.com/docs/git#Documentation/git.txt-GITEDITOR),
+    so no test waits for a password or an editor.
+  * Set `LC_ALL=C`, so Git's messages are in English.
+
+A typical test calls `git_setup()` (provided as an autouse fixture), creates
+temporary directories with `make_temps()`, and uses `make_repo()` to set up
+repositories. Run `git-hints --all` when checking hint content, commands, and
+documentation links. Use `git-hints --all --ids-only` when checking whether a
+hint ID is present or absent. Compare IDs as whole lines, not substrings. Both
+modes must run with the repository under test as the current working directory.
+
+All Git commands executed as part of a test, including those that `git-hints`
+runs, shall use the isolated test environment established by `git_setup()`. This
+prevents test results from varying based on the Git configuration of the machine
+running the tests. This should be implemented as a PyTest autouse fixture which
+applies to all tests.
+
+### <mark>TODO: move test cases to follow the implementation of each hint.</mark>
+
+### Test Case 14: Pull Test (raf322) -- Requirement Proactive 7
 
 1. Call `make_temps(3)` to create three temp directories: `temp1`, `temp2` and
    `remote`. `remote` will act as a shared server between the other two.
@@ -1766,7 +1487,7 @@ temporary area keeps the material available for review before it is removed.
 6. Run `git-hints` in `temp1`. Expected hint: Is my branch up to date before I
    start editing?
 
-#### Test Case 15: Branch Behind Test (raf322) -- Requirement Proactive 4
+### Test Case 15: Branch Behind Test (raf322) -- Requirement Proactive 4
 
 1. Call `make_temps(3)` to create three temp directories: `local1`, `local2` and
    `remote`. `remote` will act as a shared server between the other two.
