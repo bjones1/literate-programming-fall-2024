@@ -501,9 +501,7 @@ runs. (jit45)
   upstream. If you prefer a linear history, Caution: `git pull --rebase` replays
   your local commits on top of the remote ones, which changes them; they remain
   recoverable through the reflog. A plain `git pull` fails on diverged branches
-  unless `pull.rebase` or `pull.ff` is configured. It is important to note that 
-  git pull only fails on more recent Git versions. The exact release this was
-  implemted is unclear, but using at least Git version 2.34 should suffice.
+  unless `pull.rebase` or `pull.ff` is configured.
 
 * ID: `diverged`, priority class: workflow, safety: safe.
 
@@ -512,7 +510,10 @@ runs. (jit45)
   branch.ab +<ahead> -<behind>`; the hint applies when both numbers are above 0.
   When it applies, do not show the `behind` or `push-ahead` hints, because this
   hint replaces them. Label the hint "as of last fetch" (see `git-hints
-  --fetch`). (sbe80; edited by jhg246; jhg246 will test)
+  --fetch`). Do not display this hint while a merge is in progress (`git
+  rev-parse -q --verify MERGE_HEAD` exits 0) or while the index has unresolved
+  entries (`git diff --name-only --diff-filter=U` returns paths). (sbe80; edited
+  by jhg246; jhg246 will test)
 
 * Test case:
 
@@ -606,8 +607,11 @@ runs. (jit45)
   change to be committed. Run `git diff --cached --quiet`; exit code 1 means
   staged changes exist, exit code 0 means none exist, and any other exit code
   indicates an error. Do not display the hint when the staging area is empty.
-  This includes staged files in a repository with no commits yet. (drj228; sbe80
-  will test)
+  This includes staged files in a repository with no commits yet. Do not display
+  this hint while the index contains unresolved merge entries; check with `git
+  diff --name-only --diff-filter=U`. Also suppress it while a rebase is in
+  progress, using the `rebase-merge` and `rebase-apply` path checks defined by
+  `detached-head`. (drj228; sbe80 will test)
 
 * Test case:
 
