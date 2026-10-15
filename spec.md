@@ -1615,7 +1615,7 @@ automatically. The failed pull's actual exit code must be preserved by
 
 7. Testing: Pytest
 
-8. Git: version 2.32 or later, which added `GIT_CONFIG_GLOBAL` This is necessary specifically for testing.
+8. Git: version 2.34 or later
 
 Testing
 -------
@@ -1623,8 +1623,8 @@ Testing
 The test tool contains:
 
 * `make_temps(num)`: creates and returns `num` temporary directories using
-  Pytest's `tmp_path_factory`. This only creates directories, but does not name them.
-  Individual tests must name the directories.
+  Pytest's `tmp_path_factory`. The helper does not assign names such as local or remote; 
+  each test should assign descriptive variable names to the returned paths.
 * `make_repo(temp_dir, commands)`: runs the list of `commands` in `temp_dir` to
   create and populate the repository. Each command is either an argument list,
   such as `["git", "commit", "-m", "Add foo."]`, executed using
@@ -1634,8 +1634,8 @@ The test tool contains:
   not join arguments into a shell string. (drj228) Lambdas run with `temp_dir`
   as the current working directory, so they can use relative paths;
   `make_repo()` restores the previous working directory before returning.
-* `config_user(username, email)`: Set Git's global `user.name` and `user.email` by
-   writing to the global `GIT_CONFIG_GLOBAL` file.
+* `config_user(username, email)`: Set the isolated testing Git enviornments 
+   global `user.name` and `user.email` by writing to the global `GIT_CONFIG_GLOBAL` file.
 * `git_setup()`: creates an isolated Git configuration for the test environment.
   The test environment shall:
   * Remove every inherited environment variable whose name starts with `GIT_`,
