@@ -218,7 +218,7 @@ the assignment (`HOME`, `GIT_CONFIG_GLOBAL`, `GIT_CONFIG_NOSYSTEM=1`,
 
 9. **Leaving stdout connected to the terminal works for today's reactive hints,
    but only because none of them reads Git's stdout. The spec should state that
-   restriction, because some Git failures report only on stdout.** (I do not agree with this one)
+   restriction, because some Git failures report only on stdout.** (I do not agree with this one because it is redundant)
 
    * Location: Language and libraries, `git-hints explain` (lines 1372 to 1382).
    * Verified streams (Git 2.56):

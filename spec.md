@@ -1,4 +1,4 @@
-`mgit-hints` specification
+`git-hints` specification
 ==========================
 
 `git-hints` is a Python command-line tool that helps Git learners see where they
@@ -1566,9 +1566,11 @@ automatically. The failed pull's actual exit code must be preserved by
   8. Clean up: run `git rm -r --cached build`, then `git-hints --all
      --ids-only`; verify that `tracked-but-ignored` is absent.
 
+<mark>Review section 7 (sbe80) begins here; see Review assignments.</mark>
+
 ### Language and libraries
 
-1. Language: Python (Minimum version of 3.10 for all libraries listed below)
+1. Language: Python (Minimum version of 3.10 to ensure compatability with all used libraries)
 
 2. Package manager: uv
 
@@ -1628,13 +1630,13 @@ The test tool contains:
 * `make_repo(temp_dir, commands)`: runs the list of `commands` in `temp_dir` to
   create and populate the repository. Each command is either an argument list,
   such as `["git", "commit", "-m", "Add foo."]`, executed using
-  `subprocess.run()` with `cwd=temp_dir` and `shell=False`, or a lambda function
-  with no parameters used to create, modify, or delete files. Pass each argument
+  `subprocess.run(cwd=temp_dir, shell=False)`, or a zero argument 
+  lambda function used to create, modify, or delete files. Pass each argument
   separately and keep messages containing spaces in a single list element. Do
   not join arguments into a shell string. (drj228) Lambdas run with `temp_dir`
   as the current working directory, so they can use relative paths;
   `make_repo()` restores the previous working directory before returning.
-* `config_user(username, email)`: Set the isolated testing Git enviornments 
+* `config_user(username, email)`: Set the isolated testing Git environment's 
    global `user.name` and `user.email` by writing to the global `GIT_CONFIG_GLOBAL` file.
 * `git_setup()`: creates an isolated Git configuration for the test environment.
   The test environment shall:
