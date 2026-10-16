@@ -39,198 +39,224 @@ no student reviews material they wrote or revised.</mark>
 
 <mark>Review section 1 (ams2083) begins here; see Review assignments.</mark>
 
-CLI commands
-------------
+# CLI commands
 
-1. `git-hints`: inspect observable repository state and display up to three
-   currently triggered proactive hints in priority order. If more than three
-   hints are triggered, inform the user that additional hints are available.
-   (jit45)
+1. **`git-hints`**: inspect observable repository state and display up to three 
+currently triggered proactive hints in priority order. If more than three hints are 
+triggered, state how many additional hints are available. Do not perform a network 
+operation unless `--fetch` is supplied. (jit45)
 
-   1. `--all`: display every currently triggered proactive hint instead of
-      applying the normal three-hint display limit. (jit45)
+   1. **`--all`**: display every currently triggered proactive hint instead of 
+   applying the three-hint limit. (jit45)
 
-   2. `--exclude <hint-id1[,hint-id2[,...]]>`: exclude the list of `git-hints`
-      ids from the generated hints. **Future work. Do not implement.**
+   2. **`--ids-only`**: print only the IDs of the hints that would otherwise be 
+   displayed, one per line in display order. Print no branch context, explanatory 
+   text, additional-hints notice, fetch messages, or other labels. Print nothing if no 
+   hints trigger. The three-hint limit still applies unless `--all` is also present. 
+   Use `git-hints --all --ids-only` in tests that assert a hint is present or absent. 
+   Exit codes are unchanged. (sbe80; clarified by drj228)
 
-   3. `--dismiss <hint-id1[,hint-id2[,...]]>`: dismiss one or more currently
-      triggered hints. **Future work. Do not implement.**
+   3. **`--fetch`**: before inspecting a working tree, run `git fetch --quiet --no-auto-maintenance` with `GIT_TERMINAL_PROMPT=0`, standard input redirected from 
+   `subprocess.DEVNULL`, output captured, and a 10-second timeout. Fetch from the 
+   remote associated with the current branch's upstream, or from `origin` if there is 
+   no upstream but `origin` exists. If neither exists, skip fetching and treat remote 
+   information as cached. Skip fetching outside a working tree. A successful fetch 
+   permits `push-ahead`, `behind`, and `diverged` hints to omit their “as of last 
+   fetch” qualifier. If fetching fails, times out, or is skipped for lack of an 
+   applicable remote, continue inspecting using cached information; this is not an 
+   unexpected inspection failure. After the branch context line, print `Fetch failed; showing results as of last fetch.` 
+   for a failed or timed-out fetch (except under `--ids-only`). Retain “as of last 
+   fetch” on affected hints. Without `--fetch`, never fetch and label `push-ahead`, `behind`, 
+   and `diverged` hints “as of last fetch.” (jhg246)
 
-      Save the hint ID and the values used to detect its condition in
-      `git-hints/dismissals.json` inside the repository's Git directory.
+2. **`git-hints explain -- <git command>`**: execute the supplied Git command,
+capture its exit code and standard error, and select reactive hints from the resulting 
+error. Return the same exit code as Git. The arguments must begin with `git`; 
+otherwise print an error to standard error, run nothing, and exit 2.
 
-      Exclude dismissed hints from normal output and `git-hints --all` while
-      those values remain unchanged.
+   - A `--` separator before the Git command is recommended to make argument
+boundaries unambiguous.
 
-      Clear the dismissal when those values change or when the tool observes
-      that the condition no longer exists. Show the hint again only if its
-      condition applies. Unrelated repository changes do not clear a dismissal.
+   - Global options, where applicable, precede `explain`: for example,
+`git-hints --ids-only explain -- git push`. The `--fetch` option is invalid with `explain` and must be rejected without running Git.
 
-      For example, configuring a missing user name while the email is still
-      missing allows the commit-identity hint to appear again.
+   - Emit captured Git standard error to standard error. In normal output,
+print `Git exited with code <n>.` before any reactive hint blocks on standard output. 
+When Git exits successfully, print `No error detected.` instead of a reactive hint. On 
+a nonzero exit, print all triggered reactive hints using the `ID: <id>` block format 
+below; the proactive three-hint limit does not apply. No branch context line is 
+printed for `explain`.
 
-      (ewj55; clarified by drj228, sbe80, and jit45)
+   - Under `--ids-only`, standard output contains only triggered reactive hint
 
-   4. `--ids-only` outputs only the IDs of hints; typically used for testing.
-      <mark>TODO: this is mentioned in several places throughout the spec.
-      Consolidate it here.</mark>
+IDs, one per line, and no exit-code message. Captured standard error remains on 
+standard error; the process still returns Git's exit code. With `--all`, the reactive 
+output remains complete.
 
-   5. `--fetch`: run `git fetch` before inspecting the repository, with
-      `GIT_TERMINAL_PROMPT=0` and a 10 second timeout, so that ahead/behind
-      hints use current remote information. Without this option, never fetch (a
-      fetch is slow, needs the network, and can hang on a credential prompt) and
-      label the ahead/behind hints "as of last fetch". (jhg246)
-2. `git-hints def <command>`: display a short definition of the requested Git
-   command, explain what it does, and provide a link to the official Git
-   documentation. If the command is unknown, report that it is unsupported.
-   (jit45) **Future work. Do not implement.**
+   - Configure Typer to accept extra arguments and ignore unknown options
+(`allow_extra_args=True`, `ignore_unknown_options=True`), so Git receives flags and 
+arguments intact. Examples: `git-hints explain -- git pull --rebase` and `git-hints explain -- git reset --hard HEAD~1`. (sbe80)
 
-3. `git-hints howto <task>`: give step-by-step instructions for supported tasks
-   such as committing, pulling, and pushing. If the requested task is unknown,
-   report that it is unsupported instead of generating unverified instructions.
-   (jit45) **Future work. Do not implement.**
+   - On Windows, call the Typer entry point with `app(windows_expand_args=False)`
+to prevent Typer/Click from expanding wildcards, `~`, and environment variables 
+intended for Git. This setting applies to the CLI entry point, not just `explain`.
 
-4. `git-hints explain -- <git command>`: execute the specified Git command and
-   capture its exit code and standard error, printing both back to the console
-   but also including hints on how to resolve this error; it returns the same
-   exit code that `git` produced. It uses this information to select an
-   appropriate reactive hint. The `<git command>` must start with `git`,
-   producing an error otherwise. If running the Git command produces no error,
-   `git-hints` adds a note saying no error was detected, instead generating an
-   appropriate hint.
+   - Any state needed across invocations, including counts of repeated
+integration failures, belongs under the path returned by `git rev-parse --git-path git-hints` 
+so linked worktrees are handled correctly.
 
-   Implementation note: on Windows, disable expansion via
-   `windows_expand_args=False` since Typer/Click expands wildcards, `~`, and
-   environment variables that `git` should instead interpret.
+3. **`--help`**: Typer automatically generates help for commands and
+subcommands. Each implemented command/subcommand docstring must include at least one 
+complete usage example, such as `git-hints --all` or `git-hints explain -- git pull`. 
+Do not advertise unimplemented future-work commands as available. (jit45)
 
-   Configure the Typer command to allow extra arguments and ignore unknown
-   options (for example, with `allow_extra_args=True` and
-   `ignore_unknown_options=True`) so Git options are passed through rather than
-   parsed by Typer. For example, `git-hints explain -- git pull --rebase` and
-   `git-hints explain -- git reset --hard HEAD~1` must reach Git with their
-   arguments intact. (sbe80)
+# Future Work
 
-5. `git-hints --bug <user comments explaining why the hint was wrong>
-   [explain -- ...]`: Gather the current repo state and (for `explain`) git
-   command output then post an issue in the GitHub repo. **Future work. Do not
-   implement.**
+The following features are **future work; do not implement them in the initial version**.
 
-6. Typer automatically generates `--help` for commands and subcommands. Each
-   command and subcommand docstring must include at least one usage example so
-   the generated help is useful. Examples should use the complete command names,
-   such as `git-hints def status` and `git-hints howto commit`. (jit45)
+1. **`git-hints def <term>`**: display a short definition for a supported Git
+command or term and link to official documentation; report unsupported terms rather 
+than inventing definitions. An editor such as CodeChat Editor could invoke `git-hints def <term>` 
+to display an inline summary and documentation link when a user types a term such as `repo` or `pull`. (jit45; ewj55)
 
-Future Work
------------
+2. **`git-hints howto <task>`**: provide verified step-by-step instructions for
+supported tasks such as committing, pulling, and pushing. Report unsupported tasks 
+rather than generating unverified instructions. (jit45)
 
-1. CodeChat Editor automatically displays a hyperlink and a summarized
-   definition whenever specific commands such as "repo" or "pull" are typed out.
-   Purpose of this feature is to serve an inline reminder of command functions,
-   giving users immediate context while they work directly within the IDE.
-   (ewj55) <mark>TODO: is this part of git howto? Move it to the appropriate
-   section.</mark>
+3. **`git-hints --exclude <hint-id1[,hint-id2[,...]]>`**: exclude the specified
+permanent hint IDs from generated output.
 
-<h2 id="cc-SbouyCXTsP">Hint structure</h2>
+4. **`git-hints --dismiss <hint-id1[,hint-id2[,...]]>`**: dismiss currently
+triggered hints. Save each hint ID and the condition values used to trigger it at the 
+location returned by `git rev-parse --git-path git-hints/dismissals.json`. Suppress a 
+dismissed hint in normal and `--all` output while those values remain unchanged. Clear 
+the dismissal if the relevant values change or the condition ceases to apply; 
+unrelated repository changes must not clear it. For example, fixing only a missing 
+user name allows `commit-identity` to reappear if a missing email still triggers it. 
+(ewj55; clarified by drj228, sbe80, and jit45)
 
-<mark>Remove the heading then rewrite the following two paragraphs as a numbered
-item, following the format of the rest of the section</mark>
+5. **`git-hints --bug <comments> [explain -- ...]`**: collect the current
+repository state and, for `explain`, Git command output, then propose an issue for the 
+project's GitHub repository. Before sending anything, preview the collected 
+information, redact secrets (including tokens in remote URLs), and require explicit 
+user consent; repository state can contain sensitive paths and identifiers.
 
-### Repository context
+# Hint structure
 
-In normal output and `--all` inside a Git working tree, print the context line
-first, before any hint, as `Branch: <name>` or `Branch: detached HEAD`. Detect
-the branch name with `git branch --show-current`. If it returns an empty value
-because HEAD is detached, use `Branch: detached HEAD`. This context line is not
-a hint and does not count toward the three-hint limit.
+1. **Repository context**: in normal output and with `--all`, if `git rev-parse --is-inside-work-tree`
+reports `true`, make the first output line `Branch: <name>` using `git branch --show-current`. 
+If that command returns an empty name (detached HEAD, including during a rebase or 
+bisect), print `Branch: detached HEAD`. This line is not a hint, has no ID, and does 
+not count toward the three-hint limit. Under `--ids-only`, omit it. (sbe80; clarified 
+by drj228) If `git rev-parse --is-inside-work-tree` succeeds but reports `false` (for 
+example, in a bare repository or inside `.git`), print `Not inside a working tree (bare repository or .git directory); run git-hints from the project directory.`, 
+generate no working-tree hints, and exit 0; under `--ids-only`, print nothing. Outside 
+a repository, use the separate `not-a-repo` handling specified in Implementation.
 
-Omit the context line with `--ids-only`, which prints one hint ID per line in
-display order and nothing else, including no additional-hints notice. Without
-`--all`, the three-hint limit still applies; combine `--all --ids-only` to list
-every triggered hint ID. (sbe80; clarified by drj228)
+2. **Required hint fields**: every hint has a permanent ID, exactly one
+priority class, exactly one safety level, hint text containing at least one official 
+documentation link, a one-sentence Git-stage explanation, at least one suggested 
+command, and that command's expected result. The Git-stage sentence identifies the 
+working directory, staging area, local repository, or remote repository as applicable. 
+The first implementation supports the CLI; a future GUI may show the corresponding GUI 
+action alongside the command. (ewj55; clarified by drj228)
 
-1. Each actionable hint must show the terminal command and explain its expected
-   result. The initial implementation will support the CLI. If a GUI is added
-   later, show the equivalent GUI action alongside the terminal command. (ewj55;
-   clarified by drj228)
+3. **Documentation targets**: link to the specific passage of the official Git
+manual that supports a hint. Prefer the page's existing anchor. Otherwise use a [text fragment](https://developer.mozilla.org/en-US/docs/Web/URI/Reference/Fragment/Text_fragments), such as `#:~:text=Updates%20one%20or%20more%20branches`, quoting 
+wording that appears on the page and percent-encoding reserved characters. The page 
+must remain useful if the browser ignores the fragment. (ewj55)
 
-2. Each hint should include a 1-sentence breakdown of what Git stage the user is
-   currently in (Working in the directory, staging area, local repo, or remote),
-   so the user learns the Git mental model while working (ewj55).
+4. **Markdown and terminal rendering**: hint source text supports plain text,
+inline code spans, and inline Markdown links of the form `[label](url "title")`. Each 
+link must have a meaningful title of at most 160 Unicode code points, with no embedded 
+double-quote character; longer explanations belong in the documentation itself. 
+Terminal rendering removes code-span backticks, prints each link label inline followed 
+by a numbered reference `[n]`, and after the hint text prints each link on its own 
+line as `[n] label: title URL`. Do not insert the title and URL in the middle of a 
+sentence. Descriptions must remain visible without hover. (drj228) For example, source 
+text `Do you want to [stage](https://git-scm.com/docs/git-add "Choose changed files for the staging area") files?` becomes:
 
-3. Every hint about a specific task and command links to the official docs for
-   more information (ewj55).
+   ```text
+   Do you want to stage [1] files?
+   [1] stage: Choose changed files for the staging area https://git-scm.com/docs/git-add
+   ```
 
-4. Highlight sections from the docs to show where that specific hint came from
-   (ewj55) **Example: When you see the definition for a push command that might
-   have been simplified to "It sends your updated files from your local personal
-   computer to a shared central computer, making them public" you can click on
-   the link to the documentation and it will highlight the section where that
-   summarized definition came from, which was from the quote "Updates one or
-   more branches, tags, or other references in one or more remote repositories
-   from your local repository, and sends all necessary data that isn’t already
-   on the remote." Its similar to how search engines use Scroll to Text
-   Fragment(STTF) and Featured Snippets to highlight the specifc information you
-   are most likely looking for.** <mark>TODO: Rewrite -- simply specify that
-   links to Git manual pages must use
-   [text fragments](https://developer.mozilla.org/en-US/docs/Web/URI/Reference/Fragment/Text_fragments).</mark>
+5. **Priority**: assign every hint exactly one priority class based on the
+**repository state or failure the hint reports**, not the danger of its suggested command. Use these exact lowercase class names, highest priority first:
 
-5. Hints must consist of Markdown text. Each documentation link must include a
-   title summarizing the linked term or command, limited to 160 characters. Put
-   longer explanations in the linked documentation.
+   1. `error/blocked`: a failed command, an unresolved conflict, or another
+state preventing the current operation from proceeding.
 
-   The initial CLI will display hints as plain text, converting Markdown links
-   into their label, URL, and title text. For example: Git status — Shows the
-   working tree and staging-area status. Documentation:
-   https://git-scm.com/docs/git-status
+   2. `data-loss risk`: an existing state that puts work at risk of being lost,
+such as detached HEAD with commits not contained in any local branch. Name the work at 
+risk. Do not classify an otherwise ordinary hint in this class only because its 
+suggested command is risky.
 
-   Descriptions must be visible in the terminal without hovering over a link.
-   (drj228)
+   3. `workflow`: a useful, actionable next step based on repository state.
 
-6. Assign every hint exactly one priority class and display higher-priority
-   classes first:
+   4. `informational`: explanatory guidance that does not block work.
 
-   1. Error/blocked: failed commands, unresolved merge conflicts, or another
-      condition that prevents the current Git workflow from proceeding.
+   Within a priority class, place specifically important state hints ahead of routine 
+   suggestions using this precedence for the named IDs when they coexist: `merge-conflicts`, `detached-head`, `no-commits`, `diverged`, `behind`, `push-ahead`, `staged-and-unstaged-changes`, `staged-changes`, `unstaged-changes`, `untracked-files`. 
+   This ordering applies only within a class; class order always wins. Other IDs sort 
+   by Unicode code point after the listed IDs within their class. Future IDs that 
+   require special precedence must be added to this list explicitly. Where detached 
+   HEAD includes commits not contained in any local branch (check `git for-each-ref --contains HEAD refs/heads`), classify `detached-head` as `data-loss risk`; 
+   otherwise classify it as `informational` unless its individual definition specifies 
+   a higher applicable class.
 
-   2. Data-loss risk: use this class when an action may discard or overwrite
-      work the user may want to keep, including uncommitted or staged changes,
-      untracked files, local commits, or remote commits. Name what is at risk.
-      Prefix the suggested command with `Caution:` when committed work may be
-      changed but is usually recoverable through the reflog. Prefix it with
-      `Warning:` when uncommitted or untracked work, or commits on a remote, may
-      be permanently lost; explain what could be lost and tell the user to back
-      it up first. Read-only actions need no safety prefix.
+6. **Command safety**: apply safety labeling to **each suggested command**,
+independently of the hint's priority class. Commands that only read or add changes 
+without discarding existing work need no prefix. Prefix `Caution:` when the command 
+rewrites commits or moves a branch while the prior commits generally remain 
+recoverable through the reflog (for example, `git pull --rebase` or `git commit --amend`). Prefix `Warning:` when the command can permanently destroy uncommitted, 
+staged, or untracked work, a stash, or remote commits (for example, `git reset --hard`, `git clean -f`, `git stash drop`, or `git push --force`); identify what might 
+be lost and instruct the user to back up first. Each hint's `safety` field is the 
+strongest risk among its commands: `safe`, `caution`, or `warning`. For example, a `diverged` hint that suggests `Caution: git pull --rebase` has `safety: caution` even 
+if its priority class is `workflow`.
 
-   3. Workflow: actionable next-step suggestions based on repository state.
+7. **Operation-in-progress protection**: before recommending a workflow
+command, determine whether an operation is in progress by checking unmerged index 
+entries and applicable Git paths returned by `git rev-parse --git-path` (`MERGE_HEAD`, `rebase-merge`, `rebase-apply`, `CHERRY_PICK_HEAD`, `REVERT_HEAD`, and `BISECT_START`). 
+If any such state is detected, show an appropriate proactive `error/blocked` hint for 
+an unresolved or stopped operation, and suppress workflow suggestions whose commands 
+would fail or interfere until the operation is resolved. In particular, `merge-conflicts` must be available as a proactive as well as reactive hint, and 
+staged changes must not cause an unconditional suggestion to commit while the index 
+contains unresolved conflicts. An ongoing but healthy bisect is not necessarily an 
+error: explain the state and suppress only incompatible suggestions.
 
-   4. Informational: status or explanatory guidance that does not block work.
+8. **IDs and output blocks**: each hint must have a unique, permanent lowercase
+ASCII kebab-case ID matching `[a-z][a-z0-9]*(-[a-z0-9]+)*`, shared across proactive 
+and reactive hint definitions. IDs do not depend on list positions or display wording 
+and are never reused for different hints. Use the ID for test assertions and, in 
+future, `--exclude` and `--dismiss`. (sbe80; clarified by drj228) In normal output and 
+with `--all`, each hint starts with a line exactly `ID: <id>`, followed by `Priority: <class>`, its hint text and documentation references, `Git stage: <sentence>`, `Command: <command>`, and `Result: <expected outcome>`. Each block ends immediately 
+before the next `ID:` or at the end of output. There is no separate title field: tests 
+should identify hints by ID rather than by an incidental heading. Place any 
+additional-hints notice ahead of the first hint block. With no triggered hints, print `No hints.` after the context line; with `--ids-only`, print nothing. With more than 
+three hints in normal output, place the exact notice `<n> more hint(s) available; run "git-hints --all" to see them.` immediately after the context line, where `<n>` is the 
+number not shown. (drj228) Example normal output when five hints are triggered, the 
+first of which is `behind`:
 
-   If two triggered hints have the same priority class, order them by their
-   permanent hint ID.
+   ```text
+   Branch: main
+   2 more hint(s) available; run "git-hints --all" to see them.
+   ID: behind
+   Priority: workflow
+   As of last fetch: Do you want to pull [1] the newest remote commits?
+   [1] pull: Incorporate changes from a remote repository https://git-scm.com/docs/git-pull
+   Git stage: Your local repository is behind its configured remote-tracking branch.
+   Command: git pull
+   Result: Your local branch incorporates the incoming changes if the pull succeeds.
+   ```
 
-7. Every hint must have a unique, permanent text ID, such as `diverged`,
-   `push-ahead`, or `commit-identity`. IDs must not depend on list positions or
-   displayed wording. Display the ID with each hint and use it for `--exclude`
-   or `--dismiss` switches and test assertions. (sbe80; clarified by drj228)
+The example is illustrative, not a claim that `git pull` will always succeed or that these specific five hints can coexist in every repository.
 
-   In normal output and `--all`, print each hint as a block beginning with a
-   line exactly formatted as `ID: <id>`. The block ends immediately before the
-   next `ID:` line or at the end of output. Place any additional-hints notice
-   before the first hint block so it is not included in a hint's text. With
-   `--ids-only`, print only the IDs as specified under Repository context.
-   (drj228)
+# Implementation
 
-8. <mark>TODO: Add an template/example of how hints are formatted, showing the
-   location/format of the branch name, hint, Git stage, command and results, and
-   ID.</mark>
+## `git-hints`
 
-Implementation
---------------
-
-### `git-hints`
-
-Proactive hints are triggered by observable repository state when `git-hints`
-runs. (jit45)
+Proactive hints are triggered by observable repository state when `git-hints` runs. (jit45)
 
 <mark>Review section 2 (jit45) begins here; see Review assignments.</mark>
 
