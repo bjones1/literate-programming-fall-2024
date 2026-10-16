@@ -291,65 +291,95 @@ Proactive hints are triggered by observable repository state when `git-hints` ru
      4. Add it: `git add foo.txt`.
      5. Commit it: `git commit -m "Add foo."`.
      6. Modify `foo.txt`: append `y` to it.
-     7. Run `git-hints --all` in the temp dir. Expected hint ID:
-        `unstaged-changes`.
+     7. Run `git-hints --all --ids-only` in the temp dir. Verify that
+        `unstaged-changes` appears.
      8. Stage the changes: `git add foo.txt`.
-     9. Run `git-hints --all` in the temp dir. Hint ID: `unstaged-changes` must
-        not appear.
+     9. Run `git-hints --all --ids-only` in the temp dir. Verify that
+        `unstaged-changes` is absent.
 
 ### Push (ewj55)
 
 * Hint: Do you want to
   [push](https://git-scm.com/docs/git-push "Uploads the latest changes of your local repository (repo) to a remote repository, this allows other collaborators to download your work.")?
 
-  Git Stage: You are working in the local repo. You have commits that have not
-  been pushed to the remote branch.
+  Git stage: Your local repository has commits that are not contained in
+  its upstream tracking branch.
 
-  Command: `git push <remote> <name of local branch>:<name of remote branch>`;
-  afterward, displays push output (most likely in tabular format) output: stderr
-  progress report followed by: `<flag> <summary> <from> -> <to> (<reason>)`
+  Command: `git push <remote> HEAD:<upstream-branch>`; replace `<remote>` with
+  the upstream's remote and `<upstream-branch>` with its branch name. After a
+  successful push, the remote branch contains the uploaded commits.
 
   * ID: `push-ahead`, priority class: workflow, safety: safe.
 
-  * Conditions: local repository was changed and looks different from remote
-    repository. Run `git status -sb`. If the branch status shows that the local
-    branch is ahead of its upstream branch by one or more commits, then the
-    local commits exist that are not yet public. Label results "as of last
-    fetch".
+  * Conditions: Run `git status --porcelain=v2 --branch` to check the current
+    branch's upstream status. Display this hint only when the current branch
+    tracks a branch on a configured remote, is ahead by one or more commits,
+    and is behind by zero commits. Use that upstream's remote and branch name
+    in the suggested push command; do not display this hint for a local
+    upstream. Label the hint "as of last fetch" unless `--fetch` succeeds.
 
   * Test case:
 
   1. **Setup** The autouse `git_setup` fixture provides the isolated
-     environment. Create two temporary directories: `remote` and `local`.
+     environment. Create three temporary directories: `remote`, `local`,
+     and `other`.
   2. Call `config_user("user1", "user1@foo.com")`.
   3. In `remote`, run `git init --bare -b main`.
   4. Clone `remote` into `local` using `git clone <remote> <local>`.
   5. In `local`, create `foo.txt` containing `xxx`, run `git add foo.txt`, `git
      commit -m "Add foo."`, then `git push -u origin main`.
-  6. Run `git-hints --all` in `local`. Verify the `push-ahead` hint is absent.
+  6. Run `git-hints --all --ids-only` in `local`. Verify that `push-ahead`
+     is absent.
   7. Append `y` to `foo.txt` and run `git commit -am "Change foo."`.
   8. Run `git log origin/main..HEAD` and verify it lists exactly one commit.
-  9. Run `git-hints --all` in `local`. Expected hint: **Push?** (ID
-     `push-ahead`), labeled "as of last fetch" and suggesting `git push`. Verify
-     that the `behind` and `diverged` hints are absent.
+  9. Run `git-hints --all --ids-only` in `local`. Verify that `push-ahead`
+     appears and `behind` and `diverged` are absent. Run `git-hints --all`
+     and verify that the hint is labeled "as of last fetch" and suggests
+     `git push origin HEAD:main`.
+  10. Clone `remote` into `other`. In that clone, create
+      and commit a new file, then push the commit to `remote`. Run `git fetch`
+      in `local` and verify that the local branch is both ahead of and behind
+      its upstream.
+  11. Run `git-hints --all --ids-only` in `local`. Verify that `push-ahead`
+      is absent and `diverged` is present.
+  12. Test different local and upstream branch names. In `local`, run
+      `git switch -c dev --track origin/main` to create a local `dev`
+      branch tracking `origin/main`. Create `dev.txt` containing `xxx`,
+      stage it, and commit it with `git commit -m "Add dev."`.
+      Verify that `git status --porcelain=v2 --branch` reports
+      `# branch.upstream origin/main` and `# branch.ab +1 -0`.
+      Run `git-hints --all --ids-only` and verify that `push-ahead`
+      appears. Run `git-hints --all` and verify that it suggests
+      `git push origin HEAD:main`.
+
+  13. Test a local-only upstream. In `local`, run `git switch main`
+      and `git switch -c local-test`. Set the upstream with
+      `git branch --set-upstream-to=main local-test`. Create
+      `local.txt` containing `xxx`, stage it, and commit it with
+      `git commit -m "Add local."`.
+      Verify that `git status --porcelain=v2 --branch` reports
+      `# branch.upstream main` and `# branch.ab +1 -0`.
+      Run `git-hints --all --ids-only` and verify that `push-ahead`
+      is absent because the upstream is a local branch.
 
 ### Clone a Repository (ewj55)
 
-* Hint: Would you like to clone
-  [repo](https://git-scm.com/book/en/v2/GitHub-Maintaining-a-Project.html#_creating_a_new_repository "A collection of snapshots tracking a project's history, where people can download a local copy to modify.")?
+* Hint: Would you like to clone a
+  [repository](https://git-scm.com/docs/git-clone "Clone a repository into a new directory")?
 
   Git stage: You are not inside a Git repository, you need to either clone or
   initialize a repository before you can begin tracking files.
 
-  Command: `git clone <repository-url>`
+  Command: `git clone <repository-url>`; afterward, Git creates a local
+  copy of the specified repository.
 
-* ID: `not-a-repo`, priority class: Informational, safety: safe.
+* ID: `not-a-repo`, priority class: informational, safety: safe.
 
-* Conditions: Determine if current directory is inside a Git working tree by
-  running `git rev-parse --is-inside-work-tree` using `subprocess`. Exit code 0
-  with output `true` means it is inside a working tree. Exit code 128 means its
-  outside a Git repository, which triggers this hint." Avoid suggesting cloning
-  hint for other unexpected Git errors.
+* Conditions: Run `git rev-parse --is-inside-work-tree` using `subprocess`.
+  Exit code 0 with output `true` means the directory is inside a working tree;
+  output `false` uses the separate non-working-tree handling. Trigger this hint
+  on exit code 128 only when Git reports that the directory is not a repository.
+  Treat other failures as inspection errors.
 
 * Test case:
 
@@ -358,17 +388,19 @@ Proactive hints are triggered by observable repository state when `git-hints` ru
      parent so Git cannot discover an enclosing repo.
   2. In the temporary directory, run `git rev-parse --is-inside-work-tree` and
      verify exit code 128.
-  3. Run `git-hints --all`. Expected hint: **Clone a repo?**, identified by its
-     permanent ID, suggesting `git clone <repository-url>` with a link to the
-     official documentation. Verify that `git-hints` exits normally.
-  4. Run `git init -b main`, then `git-hints --all` again. Verify the clone hint
-     is absent.
+  3. Run `git-hints --all --ids-only`. Verify that `not-a-repo` appears.
+     Run `git-hints --all` and verify that the hint suggests
+     `git clone <repository-url>`, links to the official Git documentation,
+     and that `git-hints` exits normally.
+  4. Run `git init -b main`, then `git-hints --all --ids-only` again.
+     Verify that `not-a-repo` is absent.
 
 #### Keep [unstaged changes](https://git-scm.com/docs/git-diff "Shows unstaged changes in the working tree.") out of this commit? **Sbe80**
 
 * Hint: Do you want to keep unstaged changes out of this commit?
   [git commit](https://git-scm.com/docs/git-commit "Records the staged changes in a new commit.")
-  records staged changes only.
+  records staged changes only. Review the staged changes with
+  [git diff](https://git-scm.com/docs/git-diff "Shows changes staged for the next commit").
 
 * Git stage: Some of your edits are in the staging area and will be included in
   the next commit; other edits remain in the working directory and will not be
@@ -403,7 +435,8 @@ Proactive hints are triggered by observable repository state when `git-hints` ru
      commit it with `git commit -m "Add foo."`.
   5. Check the staged-only state:
      1. Append `y` to `foo.txt` and run `git add foo.txt`.
-     2. Run `git-hints --all`.
+     2. Run `git-hints --all --ids-only` to check hint IDs and
+        `git-hints --all` to verify the hint's content.
      3. Verify that the `staged-and-unstaged-changes` hint is absent, because
         there are no unstaged changes.
      4. Verify that the `staged-changes` hint appears. Verify that it recommends
@@ -413,13 +446,14 @@ Proactive hints are triggered by observable repository state when `git-hints` ru
   6. Check the unstaged-only state:
      1. Commit the staged change with `git commit -m "Append y."`.
      2. Append `z` to `foo.txt` without staging it.
-     3. Run `git-hints --all` and verify that both the
+     3. Run `git-hints --all --ids-only` and verify that both the
         `staged-and-unstaged-changes` and `staged-changes` hints are absent: the
         file has unstaged changes, but nothing is staged for the next commit.
   7. Check the staged-plus-unstaged state:
      1. Run `git add foo.txt` to stage the `z` change.
      2. Append `w` to `foo.txt` and leave this change unstaged.
-     3. Run `git-hints --all`.
+     3. Run `git-hints --all --ids-only` to check hint IDs and
+        `git-hints --all` to verify the hint's content.
      4. Verify that both the `staged-and-unstaged-changes` and `staged-changes`
         hints appear. Verify that the `staged-and-unstaged-changes` hint
         explains that a plain `git commit` records staged changes only and
@@ -442,15 +476,14 @@ Proactive hints are triggered by observable repository state when `git-hints` ru
      `conflict.txt` to `topic change`, and commit it.
   5. Switch back to `main`, change `conflict.txt` to `main change`, and commit
      it. The branch histories now conflict on `conflict.txt`.
-  6. Append `staged change` to `other.txt` and run `git add other.txt`. Append
-     `unstaged change` to `other.txt` and leave it unstaged.
-  7. Run `git merge topic` and verify that it exits nonzero and leaves
-     `conflict.txt` unresolved. Verify that `git diff --cached --quiet` and `git
-     diff --quiet` both exit 1, while `git diff --name-only --diff-filter=U`
-     lists `conflict.txt`.
+  6. Run `git merge topic` and verify that it exits nonzero and leaves
+     `conflict.txt` unresolved. Verify that `git diff --name-only
+     --diff-filter=U` lists `conflict.txt`.
+  7. Verify that `git diff --cached --quiet` and `git diff --quiet`
+     both exit 1 while the merge conflict remains unresolved.
   8. Run `git-hints --all --ids-only`. Verify that both
-     `staged-and-unstaged-changes` and `unstaged-changes` are absent while the
-     conflict exists.
+     `staged-and-unstaged-changes` and `unstaged-changes` are absent
+     while the conflict exists.
   9. Run `git merge --abort` as cleanup, including if an assertion fails.
 
 <mark>Review section 3 (ewj55) begins here; see Review assignments.</mark>
