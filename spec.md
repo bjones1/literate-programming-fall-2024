@@ -1511,9 +1511,9 @@ automatically. The failed pull's actual exit code must be preserved by
   waits for an editor. Collapse whitespace in hint output before searching it
   for phrases.
 
-  1. Call `make_temps(tmp_path_factory, 1)`. In the directory: run `git init -b main`; call
-     `config_user("user1", "user1@foo.com")`; create `foo.txt` containing
-     `base`; stage it and commit with the message `"Add foo."`.
+  1. Call `make_temps(tmp_path_factory, 1)`. In the directory: run `git init -b
+     main`; call `config_user("user1", "user1@foo.com")`; create `foo.txt`
+     containing `base`; stage it and commit with the message `"Add foo."`.
   2. Run `git-hints --all --ids-only`. Verify that `operation-in-progress` is
      absent in a clean repository.
   3. Run `git switch -c topic`. Change `foo.txt` to `topic` and commit it with
@@ -1756,7 +1756,10 @@ The test tool contains:
   `subprocess.run(cwd=temp_dir, shell=False)`, or a zero argument lambda
   function used to create, modify, or delete files. Pass each argument
   separately and keep messages containing spaces in a single list element. Do
-  not join arguments into a shell string. (drj228) File-operation lambdas must use paths rooted at `temp_dir`—for example, `temp_dir / "foo.txt"`—and must not rely on or change the process’s current working directory. `make_repo()` does not call `os.chdir`.
+  not join arguments into a shell string. (drj228) File-operation lambdas must
+  use paths rooted at `temp_dir`—for example, `temp_dir / "foo.txt"`—and must
+  not rely on or change the process’s current working directory. `make_repo()`
+  does not call `os.chdir`.
 * `git_setup()`: creates an isolated Git configuration for the test environment.
   The test environment shall:
   * Remove every inherited environment variable whose name starts with `GIT_`,
@@ -1787,6 +1790,9 @@ The test tool contains:
     [`GIT_EDITOR=true`](https://git-scm.com/docs/git#Documentation/git.txt-GITEDITOR),
     so no test waits for a password or an editor.
   * Set `LC_ALL=C`, so Git's messages are in English.
+* `config_user(username, email)`: Set the isolated testing Git environment's
+  global `user.name` and `user.email` by writing to the global
+  `GIT_CONFIG_GLOBAL` file.
 
 The function-scoped autouse `git_setup()` fixture applies the isolated variables
 to os.environ for each test and restores the prior environment afterward. Tests
@@ -1803,7 +1809,9 @@ runs, shall use the isolated test environment established by `git_setup()`. This
 prevents test results from varying based on the Git configuration of the machine
 running the tests.
 
-Repository setup commands must exit successfully; fail the test immediately if one does not. Run any command that is expected to fail as part of the behavior under test separately, and explicitly verify its expected exit code and output.
+Repository setup commands must exit successfully; fail the test immediately if
+one does not. Run any command that is expected to fail as part of the behavior
+under test separately, and explicitly verify its expected exit code and output.
 
 ### GOING TO DELETE (temporary removal area)
 
@@ -1842,9 +1850,9 @@ temporary area keeps the material available for review before it is removed.
 
 * Test case:
 
-  1. Call `git_setup` and then call `make_temps(tmp_path_factory, 3)` to create three temp
-     directories: `temp1`, `temp2` and `remote`. `remote` will act as a shared
-     server between the other two.
+  1. Call `git_setup` and then call `make_temps(tmp_path_factory, 3)` to create
+     three temp directories: `temp1`, `temp2` and `remote`. `remote` will act as
+     a shared server between the other two.
   2. In `remote`, run `git init --bare -b main`.
   3. In `temp1`, execute:
      1. Create a repo with `git init -b main`.
@@ -1868,8 +1876,9 @@ temporary area keeps the material available for review before it is removed.
 
 #### Test Case 14: Pull Test (raf322) -- Requirement Proactive 7
 
-1. Call `make_temps(tmp_path_factory, 3)` to create three temp directories: `temp1`, `temp2` and
-   `remote`. `remote` will act as a shared server between the other two.
+1. Call `make_temps(tmp_path_factory, 3)` to create three temp directories:
+   `temp1`, `temp2` and `remote`. `remote` will act as a shared server between
+   the other two.
 2. In `remote`, run `git init --bare -b main`.
 3. In `temp1`, execute:
    1. Create a repo with `git init -b main`.
@@ -1891,8 +1900,9 @@ temporary area keeps the material available for review before it is removed.
 
 #### Test Case 15: Branch Behind Test (raf322) -- Requirement Proactive 4
 
-1. Call `make_temps(tmp_path_factory, 3)` to create three temp directories: `local1`, `local2` and
-   `remote`. `remote` will act as a shared server between the other two.
+1. Call `make_temps(tmp_path_factory, 3)` to create three temp directories:
+   `local1`, `local2` and `remote`. `remote` will act as a shared server between
+   the other two.
 2. In `remote`, run `git init --bare -b main`.
 3. In `local1`, execute:
    1. Create a repo with `git init -b main`.

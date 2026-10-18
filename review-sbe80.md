@@ -347,23 +347,25 @@ testability of section 7, or are concrete document cleanup recommendations.
 14. **A minimum Python version is given, but it is not the version used to
     validate the specified CLI stack.**
 
-    * Location: Language and libraries, item 6 and item 8 (current lines 1581 to
-      1585 and 1617 to 1619).
-    * Python 3.5 is cited only because `subprocess` is available there, but the
-      spec also requires Typer, pytest, `encoding`/`errors` subprocess behavior,
-      and modern project tooling. The cited Git minimum is explicitly tied to a
-      test-only feature, while the Python minimum is not tied to any supported
-      dependency versions. That makes it unclear what environment implementers
-      must support.
+    * Location: Language and libraries, items 1 and 8 (current lines 1688-1689
+      and 1740-1743).
+    * The earlier version cited Python 3.5 only because `subprocess` is
+      available there, but the spec also requires Typer, pytest,
+      `encoding`/`errors` subprocess behavior, and modern project tooling. The
+      cited Git minimum was tied to a test-only feature, while the Python
+      minimum was not tied to any supported dependency versions. That made it
+      unclear what environment implementers must support.
     * Recommendation: give the intended supported Python version based on the
       project dependency metadata, or say this item only describes the standard
       library API and that the project metadata controls the actual minimum.
+    * Current status: the spec now sets Python 3.10 and Git 2.34 for both
+      application and test environments (lines 1688-1689 and 1740-1743).
 15. **The specification still contains unresolved editorial TODOs and a
     temporary deletion area.**
 
     * Location: Hint structure items 4 and 8 (current lines 163 to 175 and 223
       to 225), Future Work (lines 126 to 131), the `--ids-only` note (lines 75
-      to 76), and the temporary area beginning at line 1685.
+      to 76), and the temporary area beginning at line 1808.
     * The full-document scan found several open TODOs outside section 7, plus
       the `GOING TO DELETE` area that explicitly says its contents are
       temporary. The temporary area still contains the obsolete pull hint and
@@ -424,9 +426,9 @@ behavior against the project's chosen Python, Git, and pytest versions before
 changing requirements.
 
 This pass checked the current `spec.md`. The normative part of section 7 is now
-the Language and libraries and Testing material at lines 1634-1748. The
+the Language and libraries and Testing material at lines 1686-1806. The
 `pull-before` hint, its empty placeholder, and Test Cases 14 and 15 still appear
-at lines 1750-1858, but they are inside the explicitly temporary deletion area.
+at lines 1808-1916, but they are inside the explicitly temporary deletion area.
 Several earlier findings are already resolved in the current text: Python's
 minimum is now stated, Git output encoding and path parsing are specified, the
 pytest fixture is function-scoped and autouse, and test invocations specify both
@@ -436,7 +438,7 @@ reopened.
 
 17. **Remove the temporary pull material and update the review assignment.**
 
-    * Location: the `GOING TO DELETE` block at lines 1750-1858, and review
+    * Location: the `GOING TO DELETE` block at lines 1808-1916, and review
       assignment 7 near the beginning of `spec.md`.
 
     * The block still contains a blank hint template, the obsolete `pull-before`
@@ -458,7 +460,7 @@ reopened.
 18. **Tie the minimum Python and Git versions to the dependency and behavior
     requirements.**
 
-    * Location: Language and libraries, items 1 and 8 (lines 1636 and 1683).
+    * Location: Language and libraries, items 1 and 8 (lines 1688 and 1742).
 
     * Python 3.10 is justified as compatible with "all used libraries," but the
       spec does not identify the dependency versions or the source of truth for
@@ -474,11 +476,15 @@ reopened.
       versions synchronized with those project files when they change. Also
       correct the spelling `compatability` to `compatibility`.
 
+    * Current status: Git's scope is now explicit, the Python minimum is stated,
+      and the spelling is correct (lines 1688-1689 and 1740-1743). Linking the
+      Python floor to dependency metadata remains an optional maintenance idea.
+
       **Added small clarification to git version. I dont personally agree that versions need super indepth rationale**
 19. **Define exactly which executable token `explain` accepts.**
 
     * Location: CLI command 2 and Language and libraries, item 6 (current lines
-      72-78 and 1657-1658).
+      72-78 and 1710-1712).
 
     * The requirement says the argument list must start with `git` exactly. That
       does not say whether `git.exe` (common on Windows), a full path to Git, or
@@ -490,11 +496,14 @@ reopened.
       otherwise list the additional accepted forms. Keep argument passing as a
       list with `shell=False` as already required.
 
+    * Current status: the spec now says that only the word `git` is accepted
+      (lines 1710-1712).
+
       **Cleared up wording that it accepts only `git`**
 20. **Resolve the repository context used for post-command reactive hints.**
 
     * Location: Language and libraries, item 6, `git-hints explain` (lines
-      1657-1666).
+      1710-1723).
     * `explain` may run commands such as `git -C <dir> status`, or commands
       using `--git-dir`/`--work-tree`, while the specification says reactive
       hints can use repository state inspected after the command. It does not
@@ -507,10 +516,15 @@ reopened.
       hints when the command redirects Git's repository context. Also state what
       happens when the command changes branches or leaves a merge/rebase in
       progress, since those states affect reactive-hint selection.
-      **Opted to skip hints the change repo context. Fully implementing a fix for this will require retooling some of the spec (especially tests) which I dont want to do. This would be good future work.**
+    * Current status: the spec now skips repository-state hints for commands
+      using redirection options such as `-C`, `--git-dir`, and `--work-tree`;
+      stderr- and exit-code-based hints may still run (line 1723).
+      **Opted to skip hints the change repo context. Fully implementing a fix
+      for this will require retooling some of the spec (especially tests) which
+      I dont want to do. This would be good future work.**
 21. **Define the outcome when inspection fails during `explain`.**
 
-    * Location: Language and libraries, item 6, especially lines 1660-1673.
+    * Location: Language and libraries, item 6, especially lines 1723-1734.
     * The command's Git exit code is to be returned, while unexpected inspection
       failures must be reported separately. The spec gives a nonzero policy for
       plain `git-hints`, but not for an `explain` run where Git completed and
@@ -526,7 +540,7 @@ reopened.
 22. **Specify how plain inspection failures affect partial results.**
 
     * Location: Language and libraries, item 6, plain `git-hints` (lines
-      1651-1655 and 1668-1677).
+      1704-1708 and 1725-1734).
     * The spec says to report unexpected failures separately and return nonzero
       if inspection fails, but does not say whether the tool continues
       evaluating other hints, displays hints whose conditions were determined
@@ -544,36 +558,43 @@ reopened.
 23. **Avoid changing pytest's process-wide working directory inside file
     lambdas.**
 
-    * Location: `make_repo()` at lines 1693-1701.
-    * The helper says file lambdas run after changing the process current
-      directory to `temp_dir`, then restores it. Current-directory changes are
-      process-wide. Concurrent tests or another thread using a relative path can
-      therefore operate in the wrong directory, and restoration may be skipped
-      if a lambda raises unless it is protected by `finally`.
-    * Recommendation: have lambdas receive `temp_dir` and use explicit paths (or
-      provide a file-operation helper rooted there), without calling `os.chdir`.
-      If changing the directory is retained, require a `try/finally` restoration
-      and prohibit concurrent execution; path-based operations are simpler to
-      reason about.
-      **Changed the lambda to not use relative paths. This is a saftey thing and I dont think this will affect the rest of the spec**
+    * Location: `make_repo()` at lines 1753-1759.
+    * The earlier helper wording said file lambdas ran after changing the
+      process current directory to `temp_dir`, then restored it. Current-
+      directory changes are process-wide. Concurrent tests or another thread
+      using a relative path can therefore operate in the wrong directory, and
+      restoration may be skipped if a lambda raises unless protected by
+      `finally`.
+    * Recommendation: have lambdas receive `temp_dir` and use explicit paths
+      (or provide a file-operation helper rooted there), without calling
+      `os.chdir`. If changing the directory is retained, require a `try/finally`
+      restoration and prohibit concurrent execution; path-based operations are
+      simpler to reason about.
+    * Current status: the current spec requires rooted paths and explicitly says
+      `make_repo()` does not call `os.chdir` (lines 1753-1759).
+      **Changed the lambda to not use relative paths. This is a saftey thing
+      and I dont think this will affect the rest of the spec**
 24. **Show how `make_temps()` receives pytest's temporary-directory factory.**
 
-    * Location: `make_temps(num)` at lines 1690-1692.
-    * The helper is said to use `tmp_path_factory`, but its signature only
-      accepts `num`. The spec does not explain whether it is a fixture, a
-      module-level helper that receives the fixture, or a wrapper around a
-      global fixture value. This leaves a concrete implementation choice
+    * Location: `make_temps(tmp_path_factory, num)` at lines 1750-1752.
+    * The earlier helper was said to use `tmp_path_factory`, but its signature
+      only accepted `num`. The spec did not explain whether it was a fixture, a
+      module-level helper that received the fixture, or a wrapper around a
+      global fixture value. This left a concrete implementation choice
       unresolved.
     * Recommendation: give the helper a signature such as
       `make_temps(tmp_path_factory, num)` and show that tests receive
       `tmp_path_factory` as a pytest fixture, or define `make_temps` itself as a
       fixture that returns a factory function.
-      **Specified that it is passed as an argument. All tests should now reflect this**
+    * Current status: the current Testing section specifies that signature and
+      says each test must request and pass the pytest fixture (lines 1750-1752).
+      **Specified that it is passed as an argument. All tests should now reflect
+      this**
 25. **Make test setup command failures fail the test, while retaining explicit
     nonzero assertions for scenarios under test.**
 
-    * Location: `make_repo()` at lines 1693-1699 and the final testing
-      paragraphs at lines 1735-1748.
+    * Location: `make_repo()` at lines 1753-1759 and the final testing
+      paragraphs at lines 1801-1806.
     * `make_repo()` is told to invoke each setup command with
       `subprocess.run(..., shell=False)`, but the setup-failure behavior is
       unstated. If commands such as `git init`, `git commit`, or `git push` fail
@@ -592,7 +613,7 @@ reopened.
     choice.**
 
     * Location: Language and libraries, item 6, `git-hints explain` (lines
-      1657-1661).
+      1710-1715).
     * Standard output remains connected to the terminal, but standard error is
       buffered and printed only after Git exits. This means output can appear
       out of order, and Git progress written to stderr may not display while a
@@ -608,8 +629,8 @@ reopened.
 27. **Keep reactive-command tests separate from the proactive hint-output
     conventions.**
 
-    * Location: Testing paragraphs at lines 1739-1743 and the temporary tests at
-      lines 1806-1858.
+    * Location: Testing paragraphs at lines 1795-1806 and the temporary tests at
+      lines 1808-1916.
     * The `--all` and `--all --ids-only` instructions correctly cover proactive
       hint checks. The temporary Test Cases 14 and 15 still invoke plain
       `git-hints`, assert on prose rather than IDs, and use requirement numbers
@@ -624,7 +645,70 @@ reopened.
       than applying proactive flags to it.
       **These are being deleted**
 
-The current spec has already addressed the earlier working-directory ambiguity
-for Git and `git-hints` test subprocesses (lines 1742-1748), so that previous
-finding should remain closed. The remaining `make_repo()` concern above is
-specifically about its process-wide `os.chdir` behavior for file lambdas.
+The current spec has addressed the earlier working-directory ambiguity for Git
+and `git-hints` test subprocesses (lines 1795-1804), and it now explicitly keeps
+file lambdas from changing the process working directory (lines 1753-1759).
+
+### Additional LLM suggestions (2026-10-17)
+
+These are LLM suggestions from a separate pass over the current section. They
+include technical and test-spec questions as well as small editorial fixes.
+
+28. **Fix two copyediting issues in the current section.**
+
+    * Location: Language and libraries, lines 1725-1730; Testing,
+      `make_temps()` at lines 1750-1752.
+    * The phrase “suppress hints that depend the failed commands” is missing
+      “on.” The `make_temps()` paragraph also runs two sentences together as
+      `` `make_temps`.The helper `` and is difficult to scan because the line is
+      unusually long.
+    * Recommendation: change the phrase to “suppress hints that depend on
+      failed commands,” and put the `make_temps()` explanation in a new sentence
+      or paragraph with normal spacing and wrapping.
+
+29. **Resolve the `--ids-only` versus Git-stdout behavior in `explain`.**
+
+    * Location: CLI command 2, `--ids-only` (lines 96-100), and Language and
+      libraries, `git-hints explain` (lines 1710-1715).
+    * The CLI says `--ids-only` standard output contains only reactive hint IDs.
+      The language rules leave Git's standard output connected to the terminal.
+      Since both streams reach the same stdout, a command such as
+      `git-hints --ids-only explain -- git status --short` prints Git output
+      alongside the IDs (or alongside the empty result), contradicting the
+      output contract.
+    * Recommendation: define whether the IDs-only promise applies only to
+      `git-hints`-generated output or to the entire process stream. If Git
+      stdout remains a pass-through, qualify the CLI rule accordingly; if the
+      stream must be machine-readable, specify where Git stdout goes in this
+      mode. Add a test that runs a Git command which writes to stdout.
+      **This should be fixed in the earlier section I think**
+
+30. **Define the `config_user()` helper used throughout the tests.**
+
+    * Location: the Testing helper list (lines 1748-1806) and calls throughout
+      the test cases, including lines 1851 and 1876.
+    * Many test instructions call `config_user(name, email)`, but `config_user`
+      is not described among the test helpers or defined elsewhere in the spec.
+      Its behavior matters because tests depend on commits having the intended
+      identity, and the isolated configuration is stored in `GIT_CONFIG_GLOBAL`.
+    * Recommendation: specify whether the helper writes repository-local or
+      global `user.name` and `user.email`, how it invokes Git, which environment
+      and working directory it uses, and how it fails if setup does not
+      succeed. If it writes global config, state that it updates the isolated
+      `GIT_CONFIG_GLOBAL` file.
+      **This was an accidental deletion**
+
+31. **Require a fresh or reset global config file for each test.**
+
+    * Location: `git_setup()` and the function-scoped fixture (lines 1760-1794).
+    * `config_user()` changes `GIT_CONFIG_GLOBAL`, but the spec only calls it a
+      writable temporary file and does not say that the file is newly created
+      or reset for each fixture invocation. Function scope restores the
+      environment variable; it does not by itself restore the contents of a
+      file at a reused path. A prior test's identity could therefore affect a
+      later test if the fixture reuses that file.
+    * Recommendation: require a distinct temporary config file per test (or
+      explicitly rewrite it to the baseline contents before each test), then
+      point that test's `GIT_CONFIG_GLOBAL` at it. This makes the stated
+      per-test isolation independent of fixture implementation details.
+      **Git setup already clarifies this**
