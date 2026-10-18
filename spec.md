@@ -1,5 +1,5 @@
 `git-hints` specification
-==========================
+=========================
 
 `git-hints` is a Python command-line tool that helps Git learners see where they
 are and what to do next. Run with no arguments, it inspects the current
@@ -39,142 +39,166 @@ no student reviews material they wrote or revised.</mark>
 
 <mark>Review section 1 (ams2083) begins here; see Review assignments.</mark>
 
-# CLI commands
+CLI commands
+============
 
-1. **`git-hints`**: inspect observable repository state and display up to three 
-currently triggered proactive hints in priority order. If more than three hints are 
-triggered, state how many additional hints are available. Do not perform a network 
-operation unless `--fetch` is supplied. (jit45)
+1. **`git-hints`**: inspect observable repository state and display up to three
+   currently triggered proactive hints in priority order. If more than three
+   hints are triggered, state how many additional hints are available. Do not
+   perform a network operation unless `--fetch` is supplied. (jit45)
 
-   1. **`--all`**: display every currently triggered proactive hint instead of 
-   applying the three-hint limit. (jit45)
+   1. **`--all`**: display every currently triggered proactive hint instead of
+      applying the three-hint limit. (jit45)
 
-   2. **`--ids-only`**: print only the IDs of the hints that would otherwise be 
-   displayed, one per line in display order. Print no branch context, explanatory 
-   text, additional-hints notice, fetch messages, or other labels. Print nothing if no 
-   hints trigger. The three-hint limit still applies unless `--all` is also present. 
-   Use `git-hints --all --ids-only` in tests that assert a hint is present or absent. 
-   Exit codes are unchanged. (sbe80; clarified by drj228)
+   2. **`--ids-only`**: print only the IDs of the hints that would otherwise be
+      displayed, one per line in display order. Print no branch context,
+      explanatory text, additional-hints notice, fetch messages, or other
+      labels. Print nothing if no hints trigger. The three-hint limit still
+      applies unless `--all` is also present. Use `git-hints --all --ids-only`
+      in tests that assert a hint is present or absent. Exit codes are
+      unchanged. (sbe80; clarified by drj228)
 
-   3. **`--fetch`**: before inspecting a working tree, run `git fetch --quiet --no-auto-maintenance` with `GIT_TERMINAL_PROMPT=0`, standard input redirected from 
-   `subprocess.DEVNULL`, output captured, and a 10-second timeout. Fetch from the 
-   remote associated with the current branch's upstream, or from `origin` if there is 
-   no upstream but `origin` exists. If neither exists, skip fetching and treat remote 
-   information as cached. Skip fetching outside a working tree. A successful fetch 
-   permits `push-ahead`, `behind`, and `diverged` hints to omit their “as of last 
-   fetch” qualifier. If fetching fails, times out, or is skipped for lack of an 
-   applicable remote, continue inspecting using cached information; this is not an 
-   unexpected inspection failure. After the branch context line, print `Fetch failed; showing results as of last fetch.` 
-   for a failed or timed-out fetch (except under `--ids-only`). Retain “as of last 
-   fetch” on affected hints. Without `--fetch`, never fetch and label `push-ahead`, `behind`, 
-   and `diverged` hints “as of last fetch.” (jhg246)
-
+   3. **`--fetch`**: before inspecting a working tree, run `git fetch --quiet
+      --no-auto-maintenance` with `GIT_TERMINAL_PROMPT=0`, standard input
+      redirected from `subprocess.DEVNULL`, output captured, and a 10-second
+      timeout. Fetch from the remote associated with the current branch's
+      upstream, or from `origin` if there is no upstream but `origin` exists. If
+      neither exists, skip fetching and treat remote information as cached. Skip
+      fetching outside a working tree. A successful fetch permits `push-ahead`,
+      `behind`, and `diverged` hints to omit their “as of last fetch” qualifier.
+      If fetching fails, times out, or is skipped for lack of an applicable
+      remote, continue inspecting using cached information; this is not an
+      unexpected inspection failure. After the branch context line, print `Fetch
+      failed; showing results as of last fetch.` for a failed or timed-out fetch
+      (except under `--ids-only`). Retain “as of last fetch” on affected hints.
+      Without `--fetch`, never fetch and label `push-ahead`, `behind`, and
+      `diverged` hints “as of last fetch.” (jhg246)
 2. **`git-hints explain -- <git command>`**: execute the supplied Git command,
-capture its exit code and standard error, and select reactive hints from the resulting 
-error. Return the same exit code as Git. The arguments must begin with `git`; 
-otherwise print an error to standard error, run nothing, and exit 2.
+   capture its exit code and standard error, and select reactive hints from the
+   resulting error. Return the same exit code as Git. The arguments must begin
+   with `git`; otherwise print an error to standard error, run nothing, and
+   exit 2.
 
-   - A `--` separator before the Git command is recommended to make argument
-boundaries unambiguous.
+   * A `--` separator before the Git command is recommended to make argument
+     boundaries unambiguous.
 
-   - Global options, where applicable, precede `explain`: for example,
-`git-hints --ids-only explain -- git push`. The `--fetch` option is invalid with `explain` and must be rejected without running Git.
+   * Global options, where applicable, precede `explain`: for example,
+     `git-hints --ids-only explain -- git push`. The `--fetch` option is invalid
+     with `explain` and must be rejected without running Git.
 
-   - Emit captured Git standard error to standard error. In normal output,
-print `Git exited with code <n>.` before any reactive hint blocks on standard output. 
-When Git exits successfully, print `No error detected.` instead of a reactive hint. On 
-a nonzero exit, print all triggered reactive hints using the `ID: <id>` block format 
-below; the proactive three-hint limit does not apply. No branch context line is 
-printed for `explain`.
+   * Emit captured Git standard error to standard error. In normal output, print
+     `Git exited with code <n>.` before any reactive hint blocks on standard
+     output. When Git exits successfully, print `No error detected.` instead of
+     a reactive hint. On a nonzero exit, print all triggered reactive hints
+     using the `ID: <id>` block format below; the proactive three-hint limit
+     does not apply. No branch context line is printed for `explain`.
 
-   - Under `--ids-only`, standard output contains only triggered reactive hint
+   * Under `--ids-only`, standard output contains only triggered reactive hint
 
-IDs, one per line, and no exit-code message. Captured standard error remains on 
-standard error; the process still returns Git's exit code. With `--all`, the reactive 
-output remains complete.
+IDs, one per line, and no exit-code message. Captured standard error remains on
+standard error; the process still returns Git's exit code. With `--all`, the
+reactive output remains complete.
 
-   - Configure Typer to accept extra arguments and ignore unknown options
-(`allow_extra_args=True`, `ignore_unknown_options=True`), so Git receives flags and 
-arguments intact. Examples: `git-hints explain -- git pull --rebase` and `git-hints explain -- git reset --hard HEAD~1`. (sbe80)
+* Configure Typer to accept extra arguments and ignore unknown options
+  (`allow_extra_args=True`, `ignore_unknown_options=True`), so Git receives
+  flags and arguments intact. Examples: `git-hints explain -- git pull --rebase`
+  and `git-hints explain -- git reset --hard HEAD~1`. (sbe80)
 
-   - On Windows, call the Typer entry point with `app(windows_expand_args=False)`
-to prevent Typer/Click from expanding wildcards, `~`, and environment variables 
-intended for Git. This setting applies to the CLI entry point, not just `explain`.
+* On Windows, call the Typer entry point with `app(windows_expand_args=False)`
+  to prevent Typer/Click from expanding wildcards, `~`, and environment
+  variables intended for Git. This setting applies to the CLI entry point, not
+  just `explain`.
 
-   - Any state needed across invocations, including counts of repeated
-integration failures, belongs under the path returned by `git rev-parse --git-path git-hints` 
-so linked worktrees are handled correctly.
+* Any state needed across invocations, including counts of repeated integration
+  failures, belongs under the path returned by `git rev-parse --git-path
+  git-hints` so linked worktrees are handled correctly.
 
 3. **`--help`**: Typer automatically generates help for commands and
-subcommands. Each implemented command/subcommand docstring must include at least one 
-complete usage example, such as `git-hints --all` or `git-hints explain -- git pull`. 
-Do not advertise unimplemented future-work commands as available. (jit45)
+   subcommands. Each implemented command/subcommand docstring must include at
+   least one complete usage example, such as `git-hints --all` or `git-hints
+   explain -- git pull`. Do not advertise unimplemented future-work commands as
+   available. (jit45)
 
-# Future Work
+Future Work
+===========
 
-The following features are **future work; do not implement them in the initial version**.
+The following features are **future work; do not implement them in the initial
+version**.
 
 1. **`git-hints def <term>`**: display a short definition for a supported Git
-command or term and link to official documentation; report unsupported terms rather 
-than inventing definitions. An editor such as CodeChat Editor could invoke `git-hints def <term>` 
-to display an inline summary and documentation link when a user types a term such as `repo` or `pull`. (jit45; ewj55)
+   command or term and link to official documentation; report unsupported terms
+   rather than inventing definitions. An editor such as CodeChat Editor could
+   invoke `git-hints def <term>` to display an inline summary and documentation
+   link when a user types a term such as `repo` or `pull`. (jit45; ewj55)
 
 2. **`git-hints howto <task>`**: provide verified step-by-step instructions for
-supported tasks such as committing, pulling, and pushing. Report unsupported tasks 
-rather than generating unverified instructions. (jit45)
+   supported tasks such as committing, pulling, and pushing. Report unsupported
+   tasks rather than generating unverified instructions. (jit45)
 
 3. **`git-hints --exclude <hint-id1[,hint-id2[,...]]>`**: exclude the specified
-permanent hint IDs from generated output.
+   permanent hint IDs from generated output.
 
 4. **`git-hints --dismiss <hint-id1[,hint-id2[,...]]>`**: dismiss currently
-triggered hints. Save each hint ID and the condition values used to trigger it at the 
-location returned by `git rev-parse --git-path git-hints/dismissals.json`. Suppress a 
-dismissed hint in normal and `--all` output while those values remain unchanged. Clear 
-the dismissal if the relevant values change or the condition ceases to apply; 
-unrelated repository changes must not clear it. For example, fixing only a missing 
-user name allows `commit-identity` to reappear if a missing email still triggers it. 
-(ewj55; clarified by drj228, sbe80, and jit45)
+   triggered hints. Save each hint ID and the condition values used to trigger
+   it at the location returned by `git rev-parse --git-path
+   git-hints/dismissals.json`. Suppress a dismissed hint in normal and `--all`
+   output while those values remain unchanged. Clear the dismissal if the
+   relevant values change or the condition ceases to apply; unrelated repository
+   changes must not clear it. For example, fixing only a missing user name
+   allows `commit-identity` to reappear if a missing email still triggers it.
+   (ewj55; clarified by drj228, sbe80, and jit45)
 
 5. **`git-hints --bug <comments> [explain -- ...]`**: collect the current
-repository state and, for `explain`, Git command output, then propose an issue for the 
-project's GitHub repository. Before sending anything, preview the collected 
-information, redact secrets (including tokens in remote URLs), and require explicit 
-user consent; repository state can contain sensitive paths and identifiers.
+   repository state and, for `explain`, Git command output, then propose an
+   issue for the project's GitHub repository. Before sending anything, preview
+   the collected information, redact secrets (including tokens in remote URLs),
+   and require explicit user consent; repository state can contain sensitive
+   paths and identifiers.
 
-# Hint structure
+Hint structure
+==============
 
-1. **Repository context**: in normal output and with `--all`, if `git rev-parse --is-inside-work-tree`
-reports `true`, make the first output line `Branch: <name>` using `git branch --show-current`. 
-If that command returns an empty name (detached HEAD, including during a rebase or 
-bisect), print `Branch: detached HEAD`. This line is not a hint, has no ID, and does 
-not count toward the three-hint limit. Under `--ids-only`, omit it. (sbe80; clarified 
-by drj228) If `git rev-parse --is-inside-work-tree` succeeds but reports `false` (for 
-example, in a bare repository or inside `.git`), print `Not inside a working tree (bare repository or .git directory); run git-hints from the project directory.`, 
-generate no working-tree hints, and exit 0; under `--ids-only`, print nothing. Outside 
-a repository, use the separate `not-a-repo` handling specified in Implementation.
+1. **Repository context**: in normal output and with `--all`, if `git rev-parse
+   --is-inside-work-tree` reports `true`, make the first output line `Branch:
+   <name>` using `git branch --show-current`. If that command returns an empty
+   name (detached HEAD, including during a rebase or bisect), print `Branch:
+   detached HEAD`. This line is not a hint, has no ID, and does not count toward
+   the three-hint limit. Under `--ids-only`, omit it. (sbe80; clarified by
+   drj228) If `git rev-parse --is-inside-work-tree` succeeds but reports `false`
+   (for example, in a bare repository or inside `.git`), print `Not inside a
+   working tree (bare repository or .git directory); run git-hints from the
+   project directory.`, generate no working-tree hints, and exit 0; under
+   `--ids-only`, print nothing. Outside a repository, use the separate
+   `not-a-repo` handling specified in Implementation.
 
-2. **Required hint fields**: every hint has a permanent ID, exactly one
-priority class, exactly one safety level, hint text containing at least one official 
-documentation link, a one-sentence Git-stage explanation, at least one suggested 
-command, and that command's expected result. The Git-stage sentence identifies the 
-working directory, staging area, local repository, or remote repository as applicable. 
-The first implementation supports the CLI; a future GUI may show the corresponding GUI 
-action alongside the command. (ewj55; clarified by drj228)
+2. **Required hint fields**: every hint has a permanent ID, exactly one priority
+   class, exactly one safety level, hint text containing at least one official
+   documentation link, a one-sentence Git-stage explanation, at least one
+   suggested command, and that command's expected result. The Git-stage sentence
+   identifies the working directory, staging area, local repository, or remote
+   repository as applicable. The first implementation supports the CLI; a future
+   GUI may show the corresponding GUI action alongside the command. (ewj55;
+   clarified by drj228)
 
 3. **Documentation targets**: link to the specific passage of the official Git
-manual that supports a hint. Prefer the page's existing anchor. Otherwise use a [text fragment](https://developer.mozilla.org/en-US/docs/Web/URI/Reference/Fragment/Text_fragments), such as `#:~:text=Updates%20one%20or%20more%20branches`, quoting 
-wording that appears on the page and percent-encoding reserved characters. The page 
-must remain useful if the browser ignores the fragment. (ewj55)
+   manual that supports a hint. Prefer the page's existing anchor. Otherwise use
+   a
+   [text fragment](https://developer.mozilla.org/en-US/docs/Web/URI/Reference/Fragment/Text_fragments),
+   such as `#:~:text=Updates%20one%20or%20more%20branches`, quoting wording that
+   appears on the page and percent-encoding reserved characters. The page must
+   remain useful if the browser ignores the fragment. (ewj55)
 
 4. **Markdown and terminal rendering**: hint source text supports plain text,
-inline code spans, and inline Markdown links of the form `[label](url "title")`. Each 
-link must have a meaningful title of at most 160 Unicode code points, with no embedded 
-double-quote character; longer explanations belong in the documentation itself. 
-Terminal rendering removes code-span backticks, prints each link label inline followed 
-by a numbered reference `[n]`, and after the hint text prints each link on its own 
-line as `[n] label: title URL`. Do not insert the title and URL in the middle of a 
-sentence. Descriptions must remain visible without hover. (drj228) For example, source 
-text `Do you want to [stage](https://git-scm.com/docs/git-add "Choose changed files for the staging area") files?` becomes:
+   inline code spans, and inline Markdown links of the form `[label](url
+   "title")`. Each link must have a meaningful title of at most 160 Unicode code
+   points, with no embedded double-quote character; longer explanations belong
+   in the documentation itself. Terminal rendering removes code-span backticks,
+   prints each link label inline followed by a numbered reference `[n]`, and
+   after the hint text prints each link on its own line as `[n] label: title
+   URL`. Do not insert the title and URL in the middle of a sentence.
+   Descriptions must remain visible without hover. (drj228) For example, source
+   text `Do you want to [stage](https://git-scm.com/docs/git-add "Choose changed
+   files for the staging area") files?` becomes:
 
    ```text
    Do you want to stage [1] files?
@@ -182,61 +206,79 @@ text `Do you want to [stage](https://git-scm.com/docs/git-add "Choose changed fi
    ```
 
 5. **Priority**: assign every hint exactly one priority class based on the
-**repository state or failure the hint reports**, not the danger of its suggested command. Use these exact lowercase class names, highest priority first:
+   **repository state or failure the hint reports**, not the danger of its
+   suggested command. Use these exact lowercase class names, highest priority
+   first:
 
    1. `error/blocked`: a failed command, an unresolved conflict, or another
-state preventing the current operation from proceeding.
+      state preventing the current operation from proceeding.
 
    2. `data-loss risk`: an existing state that puts work at risk of being lost,
-such as detached HEAD with commits not contained in any local branch. Name the work at 
-risk. Do not classify an otherwise ordinary hint in this class only because its 
-suggested command is risky.
+      such as detached HEAD with commits not contained in any local branch. Name
+      the work at risk. Do not classify an otherwise ordinary hint in this class
+      only because its suggested command is risky.
 
    3. `workflow`: a useful, actionable next step based on repository state.
 
    4. `informational`: explanatory guidance that does not block work.
 
-   Within a priority class, place specifically important state hints ahead of routine 
-   suggestions using this precedence for the named IDs when they coexist: `merge-conflicts`, `detached-head`, `no-commits`, `diverged`, `behind`, `push-ahead`, `staged-and-unstaged-changes`, `staged-changes`, `unstaged-changes`, `untracked-files`. 
-   This ordering applies only within a class; class order always wins. Other IDs sort 
-   by Unicode code point after the listed IDs within their class. Future IDs that 
-   require special precedence must be added to this list explicitly. Where detached 
-   HEAD includes commits not contained in any local branch (check `git for-each-ref --contains HEAD refs/heads`), classify `detached-head` as `data-loss risk`; 
-   otherwise classify it as `informational` unless its individual definition specifies 
-   a higher applicable class.
+   Within a priority class, place specifically important state hints ahead of
+   routine suggestions using this precedence for the named IDs when they
+   coexist: `merge-conflicts`, `detached-head`, `no-commits`, `diverged`,
+   `behind`, `push-ahead`, `staged-and-unstaged-changes`, `staged-changes`,
+   `unstaged-changes`, `untracked-files`. This ordering applies only within a
+   class; class order always wins. Other IDs sort by Unicode code point after
+   the listed IDs within their class. Future IDs that require special precedence
+   must be added to this list explicitly. Where detached HEAD includes commits
+   not contained in any local branch (check `git for-each-ref --contains HEAD
+   refs/heads`), classify `detached-head` as `data-loss risk`; otherwise
+   classify it as `informational` unless its individual definition specifies a
+   higher applicable class.
 
 6. **Command safety**: apply safety labeling to **each suggested command**,
-independently of the hint's priority class. Commands that only read or add changes 
-without discarding existing work need no prefix. Prefix `Caution:` when the command 
-rewrites commits or moves a branch while the prior commits generally remain 
-recoverable through the reflog (for example, `git pull --rebase` or `git commit --amend`). Prefix `Warning:` when the command can permanently destroy uncommitted, 
-staged, or untracked work, a stash, or remote commits (for example, `git reset --hard`, `git clean -f`, `git stash drop`, or `git push --force`); identify what might 
-be lost and instruct the user to back up first. Each hint's `safety` field is the 
-strongest risk among its commands: `safe`, `caution`, or `warning`. For example, a `diverged` hint that suggests `Caution: git pull --rebase` has `safety: caution` even 
-if its priority class is `workflow`.
+   independently of the hint's priority class. Commands that only read or add
+   changes without discarding existing work need no prefix. Prefix `Caution:`
+   when the command rewrites commits or moves a branch while the prior commits
+   generally remain recoverable through the reflog (for example, `git pull
+   --rebase` or `git commit --amend`). Prefix `Warning:` when the command can
+   permanently destroy uncommitted, staged, or untracked work, a stash, or
+   remote commits (for example, `git reset --hard`, `git clean -f`, `git stash
+   drop`, or `git push --force`); identify what might be lost and instruct the
+   user to back up first. Each hint's `safety` field is the strongest risk among
+   its commands: `safe`, `caution`, or `warning`. For example, a `diverged` hint
+   that suggests `Caution: git pull --rebase` has `safety: caution` even if its
+   priority class is `workflow`.
 
-7. **Operation-in-progress protection**: before recommending a workflow
-command, determine whether an operation is in progress by checking unmerged index 
-entries and applicable Git paths returned by `git rev-parse --git-path` (`MERGE_HEAD`, `rebase-merge`, `rebase-apply`, `CHERRY_PICK_HEAD`, `REVERT_HEAD`, and `BISECT_START`). 
-If any such state is detected, show an appropriate proactive `error/blocked` hint for 
-an unresolved or stopped operation, and suppress workflow suggestions whose commands 
-would fail or interfere until the operation is resolved. In particular, `merge-conflicts` must be available as a proactive as well as reactive hint, and 
-staged changes must not cause an unconditional suggestion to commit while the index 
-contains unresolved conflicts. An ongoing but healthy bisect is not necessarily an 
-error: explain the state and suppress only incompatible suggestions.
+7. **Operation-in-progress protection**: before recommending a workflow command,
+   determine whether an operation is in progress by checking unmerged index
+   entries and applicable Git paths returned by `git rev-parse --git-path`
+   (`MERGE_HEAD`, `rebase-merge`, `rebase-apply`, `CHERRY_PICK_HEAD`,
+   `REVERT_HEAD`, and `BISECT_START`). If any such state is detected, show an
+   appropriate proactive `error/blocked` hint for an unresolved or stopped
+   operation, and suppress workflow suggestions whose commands would fail or
+   interfere until the operation is resolved. In particular, `merge-conflicts`
+   must be available as a proactive as well as reactive hint, and staged changes
+   must not cause an unconditional suggestion to commit while the index contains
+   unresolved conflicts. An ongoing but healthy bisect is not necessarily an
+   error: explain the state and suppress only incompatible suggestions.
 
 8. **IDs and output blocks**: each hint must have a unique, permanent lowercase
-ASCII kebab-case ID matching `[a-z][a-z0-9]*(-[a-z0-9]+)*`, shared across proactive 
-and reactive hint definitions. IDs do not depend on list positions or display wording 
-and are never reused for different hints. Use the ID for test assertions and, in 
-future, `--exclude` and `--dismiss`. (sbe80; clarified by drj228) In normal output and 
-with `--all`, each hint starts with a line exactly `ID: <id>`, followed by `Priority: <class>`, its hint text and documentation references, `Git stage: <sentence>`, `Command: <command>`, and `Result: <expected outcome>`. Each block ends immediately 
-before the next `ID:` or at the end of output. There is no separate title field: tests 
-should identify hints by ID rather than by an incidental heading. Place any 
-additional-hints notice ahead of the first hint block. With no triggered hints, print `No hints.` after the context line; with `--ids-only`, print nothing. With more than 
-three hints in normal output, place the exact notice `<n> more hint(s) available; run "git-hints --all" to see them.` immediately after the context line, where `<n>` is the 
-number not shown. (drj228) Example normal output when five hints are triggered, the 
-first of which is `behind`:
+   ASCII kebab-case ID matching `[a-z][a-z0-9]*(-[a-z0-9]+)*`, shared across
+   proactive and reactive hint definitions. IDs do not depend on list positions
+   or display wording and are never reused for different hints. Use the ID for
+   test assertions and, in future, `--exclude` and `--dismiss`. (sbe80;
+   clarified by drj228) In normal output and with `--all`, each hint starts with
+   a line exactly `ID: <id>`, followed by `Priority: <class>`, its hint text and
+   documentation references, `Git stage: <sentence>`, `Command: <command>`, and
+   `Result: <expected outcome>`. Each block ends immediately before the next
+   `ID:` or at the end of output. There is no separate title field: tests should
+   identify hints by ID rather than by an incidental heading. Place any
+   additional-hints notice ahead of the first hint block. With no triggered
+   hints, print `No hints.` after the context line; with `--ids-only`, print
+   nothing. With more than three hints in normal output, place the exact notice
+   `<n> more hint(s) available; run "git-hints --all" to see them.` immediately
+   after the context line, where `<n>` is the number not shown. (drj228) Example
+   normal output when five hints are triggered, the first of which is `behind`:
 
    ```text
    Branch: main
@@ -250,13 +292,17 @@ first of which is `behind`:
    Result: Your local branch incorporates the incoming changes if the pull succeeds.
    ```
 
-The example is illustrative, not a claim that `git pull` will always succeed or that these specific five hints can coexist in every repository.
+The example is illustrative, not a claim that `git pull` will always succeed or
+that these specific five hints can coexist in every repository.
 
-# Implementation
+Implementation
+==============
 
-## `git-hints`
+`git-hints`
+-----------
 
-Proactive hints are triggered by observable repository state when `git-hints` runs. (jit45)
+Proactive hints are triggered by observable repository state when `git-hints`
+runs. (jit45)
 
 <mark>Review section 2 (jit45) begins here; see Review assignments.</mark>
 
@@ -283,7 +329,7 @@ Proactive hints are triggered by observable repository state when `git-hints` ru
 
 * Test case:
 
-  1. Invoke `make_temps(1)` to create a temporary directory.
+  1. Invoke `make_temps(tmp_path_factory, 1)` to create a temporary directory.
   2. Execute the following in this temp directory:
      1. Call `config_user("user1", "user1@example.com")`.
      2. Create an empty git repo with `git init -b main`.
@@ -302,8 +348,8 @@ Proactive hints are triggered by observable repository state when `git-hints` ru
 * Hint: Do you want to
   [push](https://git-scm.com/docs/git-push "Uploads the latest changes of your local repository (repo) to a remote repository, this allows other collaborators to download your work.")?
 
-  Git stage: Your local repository has commits that are not contained in
-  its upstream tracking branch.
+  Git stage: Your local repository has commits that are not contained in its
+  upstream tracking branch.
 
   Command: `git push <remote> HEAD:<upstream-branch>`; replace `<remote>` with
   the upstream's remote and `<upstream-branch>` with its branch name. After a
@@ -313,54 +359,60 @@ Proactive hints are triggered by observable repository state when `git-hints` ru
 
   * Conditions: Run `git status --porcelain=v2 --branch` to check the current
     branch's upstream status. Display this hint only when the current branch
-    tracks a branch on a configured remote, is ahead by one or more commits,
-    and is behind by zero commits. Use that upstream's remote and branch name
-    in the suggested push command; do not display this hint for a local
-    upstream. Label the hint "as of last fetch" unless `--fetch` succeeds.
+    tracks a branch on a configured remote, is ahead by one or more commits, and
+    is behind by zero commits. Use that upstream's remote and branch name in the
+    suggested push command; do not display this hint for a local upstream. Label
+    the hint "as of last fetch" unless `--fetch` succeeds.
 
   * Test case:
 
   1. **Setup** The autouse `git_setup` fixture provides the isolated
-     environment. Create three temporary directories: `remote`, `local`,
-     and `other`.
+     environment. Create three temporary directories: `remote`, `local`, and
+     `other`.
+
   2. Call `config_user("user1", "user1@foo.com")`.
+
   3. In `remote`, run `git init --bare -b main`.
+
   4. Clone `remote` into `local` using `git clone <remote> <local>`.
+
   5. In `local`, create `foo.txt` containing `xxx`, run `git add foo.txt`, `git
      commit -m "Add foo."`, then `git push -u origin main`.
-  6. Run `git-hints --all --ids-only` in `local`. Verify that `push-ahead`
-     is absent.
-  7. Append `y` to `foo.txt` and run `git commit -am "Change foo."`.
-  8. Run `git log origin/main..HEAD` and verify it lists exactly one commit.
-  9. Run `git-hints --all --ids-only` in `local`. Verify that `push-ahead`
-     appears and `behind` and `diverged` are absent. Run `git-hints --all`
-     and verify that the hint is labeled "as of last fetch" and suggests
-     `git push origin HEAD:main`.
-  10. Clone `remote` into `other`. In that clone, create
-      and commit a new file, then push the commit to `remote`. Run `git fetch`
-      in `local` and verify that the local branch is both ahead of and behind
-      its upstream.
-  11. Run `git-hints --all --ids-only` in `local`. Verify that `push-ahead`
-      is absent and `diverged` is present.
-  12. Test different local and upstream branch names. In `local`, run
-      `git switch -c dev --track origin/main` to create a local `dev`
-      branch tracking `origin/main`. Create `dev.txt` containing `xxx`,
-      stage it, and commit it with `git commit -m "Add dev."`.
-      Verify that `git status --porcelain=v2 --branch` reports
-      `# branch.upstream origin/main` and `# branch.ab +1 -0`.
-      Run `git-hints --all --ids-only` and verify that `push-ahead`
-      appears. Run `git-hints --all` and verify that it suggests
-      `git push origin HEAD:main`.
 
-  13. Test a local-only upstream. In `local`, run `git switch main`
-      and `git switch -c local-test`. Set the upstream with
-      `git branch --set-upstream-to=main local-test`. Create
-      `local.txt` containing `xxx`, stage it, and commit it with
-      `git commit -m "Add local."`.
-      Verify that `git status --porcelain=v2 --branch` reports
-      `# branch.upstream main` and `# branch.ab +1 -0`.
-      Run `git-hints --all --ids-only` and verify that `push-ahead`
-      is absent because the upstream is a local branch.
+  6. Run `git-hints --all --ids-only` in `local`. Verify that `push-ahead` is
+     absent.
+
+  7. Append `y` to `foo.txt` and run `git commit -am "Change foo."`.
+
+  8. Run `git log origin/main..HEAD` and verify it lists exactly one commit.
+
+  9. Run `git-hints --all --ids-only` in `local`. Verify that `push-ahead`
+     appears and `behind` and `diverged` are absent. Run `git-hints --all` and
+     verify that the hint is labeled "as of last fetch" and suggests `git push
+     origin HEAD:main`.
+
+  10. Clone `remote` into `other`. In that clone, create and commit a new file,
+      then push the commit to `remote`. Run `git fetch` in `local` and verify
+      that the local branch is both ahead of and behind its upstream.
+
+  11. Run `git-hints --all --ids-only` in `local`. Verify that `push-ahead` is
+      absent and `diverged` is present.
+
+  12. Test different local and upstream branch names. In `local`, run `git
+      switch -c dev --track origin/main` to create a local `dev` branch tracking
+      `origin/main`. Create `dev.txt` containing `xxx`, stage it, and commit it
+      with `git commit -m "Add dev."`. Verify that `git status --porcelain=v2
+      --branch` reports `# branch.upstream origin/main` and `# branch.ab +1 -0`.
+      Run `git-hints --all --ids-only` and verify that `push-ahead` appears. Run
+      `git-hints --all` and verify that it suggests `git push origin HEAD:main`.
+
+  13. Test a local-only upstream. In `local`, run `git switch main` and `git
+      switch -c local-test`. Set the upstream with `git branch
+      --set-upstream-to=main local-test`. Create `local.txt` containing `xxx`,
+      stage it, and commit it with `git commit -m "Add local."`. Verify that
+      `git status --porcelain=v2 --branch` reports `# branch.upstream main` and
+      `# branch.ab +1 -0`. Run `git-hints --all --ids-only` and verify that
+      `push-ahead` is absent because the upstream is a local branch.
 
 ### Clone a Repository (ewj55)
 
@@ -370,30 +422,30 @@ Proactive hints are triggered by observable repository state when `git-hints` ru
   Git stage: You are not inside a Git repository, you need to either clone or
   initialize a repository before you can begin tracking files.
 
-  Command: `git clone <repository-url>`; afterward, Git creates a local
-  copy of the specified repository.
+  Command: `git clone <repository-url>`; afterward, Git creates a local copy of
+  the specified repository.
 
 * ID: `not-a-repo`, priority class: informational, safety: safe.
 
-* Conditions: Run `git rev-parse --is-inside-work-tree` using `subprocess`.
-  Exit code 0 with output `true` means the directory is inside a working tree;
-  output `false` uses the separate non-working-tree handling. Trigger this hint
-  on exit code 128 only when Git reports that the directory is not a repository.
-  Treat other failures as inspection errors.
+* Conditions: Run `git rev-parse --is-inside-work-tree` using `subprocess`. Exit
+  code 0 with output `true` means the directory is inside a working tree; output
+  `false` uses the separate non-working-tree handling. Trigger this hint on exit
+  code 128 only when Git reports that the directory is not a repository. Treat
+  other failures as inspection errors.
 
 * Test case:
 
   1. The autouse `git_setup` fixture provides the isolated environment and
-     `make_temps(1)`. Set `GIT_CEILING_DIRECTORIES` to the temporary directory's
+     `make_temps(tmp_path_factory, 1)`. Set `GIT_CEILING_DIRECTORIES` to the temporary directory's
      parent so Git cannot discover an enclosing repo.
   2. In the temporary directory, run `git rev-parse --is-inside-work-tree` and
      verify exit code 128.
-  3. Run `git-hints --all --ids-only`. Verify that `not-a-repo` appears.
-     Run `git-hints --all` and verify that the hint suggests
-     `git clone <repository-url>`, links to the official Git documentation,
-     and that `git-hints` exits normally.
-  4. Run `git init -b main`, then `git-hints --all --ids-only` again.
-     Verify that `not-a-repo` is absent.
+  3. Run `git-hints --all --ids-only`. Verify that `not-a-repo` appears. Run
+     `git-hints --all` and verify that the hint suggests `git clone
+     <repository-url>`, links to the official Git documentation, and that
+     `git-hints` exits normally.
+  4. Run `git init -b main`, then `git-hints --all --ids-only` again. Verify
+     that `not-a-repo` is absent.
 
 #### Keep [unstaged changes](https://git-scm.com/docs/git-diff "Shows unstaged changes in the working tree.") out of this commit? **Sbe80**
 
@@ -435,8 +487,8 @@ Proactive hints are triggered by observable repository state when `git-hints` ru
      commit it with `git commit -m "Add foo."`.
   5. Check the staged-only state:
      1. Append `y` to `foo.txt` and run `git add foo.txt`.
-     2. Run `git-hints --all --ids-only` to check hint IDs and
-        `git-hints --all` to verify the hint's content.
+     2. Run `git-hints --all --ids-only` to check hint IDs and `git-hints --all`
+        to verify the hint's content.
      3. Verify that the `staged-and-unstaged-changes` hint is absent, because
         there are no unstaged changes.
      4. Verify that the `staged-changes` hint appears. Verify that it recommends
@@ -452,8 +504,8 @@ Proactive hints are triggered by observable repository state when `git-hints` ru
   7. Check the staged-plus-unstaged state:
      1. Run `git add foo.txt` to stage the `z` change.
      2. Append `w` to `foo.txt` and leave this change unstaged.
-     3. Run `git-hints --all --ids-only` to check hint IDs and
-        `git-hints --all` to verify the hint's content.
+     3. Run `git-hints --all --ids-only` to check hint IDs and `git-hints --all`
+        to verify the hint's content.
      4. Verify that both the `staged-and-unstaged-changes` and `staged-changes`
         hints appear. Verify that the `staged-and-unstaged-changes` hint
         explains that a plain `git commit` records staged changes only and
@@ -479,11 +531,11 @@ Proactive hints are triggered by observable repository state when `git-hints` ru
   6. Run `git merge topic` and verify that it exits nonzero and leaves
      `conflict.txt` unresolved. Verify that `git diff --name-only
      --diff-filter=U` lists `conflict.txt`.
-  7. Verify that `git diff --cached --quiet` and `git diff --quiet`
-     both exit 1 while the merge conflict remains unresolved.
+  7. Verify that `git diff --cached --quiet` and `git diff --quiet` both exit 1
+     while the merge conflict remains unresolved.
   8. Run `git-hints --all --ids-only`. Verify that both
-     `staged-and-unstaged-changes` and `unstaged-changes` are absent
-     while the conflict exists.
+     `staged-and-unstaged-changes` and `unstaged-changes` are absent while the
+     conflict exists.
   9. Run `git merge --abort` as cleanup, including if an assertion fails.
 
 <mark>Review section 3 (ewj55) begins here; see Review assignments.</mark>
@@ -621,7 +673,7 @@ Proactive hints are triggered by observable repository state when `git-hints` ru
 
 * Test case:
 
-1. Invoke `make_temps(2)` to create two temporary directories.
+1. Invoke `make_temps(tmp_path_factory, 2)` to create two temporary directories.
 2. In the first directory:
    1. Initialize a repository with `git init -b main`.
    2. Call `config_user("user1", "user1@foo.com")`.
@@ -826,7 +878,7 @@ interpreted as a triggered hint.
 * Test case: Commit repo? (written by jit45; formerly Test Case 12).
 
   1. The autouse `git_setup` fixture provides the isolated environment and
-     create one temporary directory using `make_temps(1)`.
+     create one temporary directory using `make_temps(tmp_path_factory, 1)`.
   2. Initialize a repository there with `git init -b main`.
   3. Call `config_user("user1", "user1@example.com")`.
   4. Create four files, `one.txt`, `two.txt`, `three.txt`, and `four.txt`, each
@@ -922,7 +974,7 @@ interpreted as a triggered hint.
   specified. Use the isolated environment from the autouse `git_setup()` fixture
   and the command-list behavior defined by `make_repo()`.
 
-  1. Create two temporary directories with `make_temps(2)`: `local` and
+  1. Create two temporary directories with `make_temps(tmp_path_factory, 2)`: `local` and
      `remote`. Call `config_user("user1", "user1@example.com")` before
      initializing the repositories.
   2. In `remote`, run `git init --bare -b main`. In `local`, run `git init -b
@@ -1039,7 +1091,7 @@ interpreted as a triggered hint.
   from the autouse `git_setup()` fixture and the command-list behavior defined
   by `make_repo()`.
 
-  1. Create one temporary directory with `make_temps(1)`. Call
+  1. Create one temporary directory with `make_temps(tmp_path_factory, 1)`. Call
      `config_user("user1", "user1@example.com")`, then initialize the repository
      with `git init -b main`.
   2. Preconditions: `git rev-parse --verify --quiet HEAD` exits 1 with empty
@@ -1205,7 +1257,7 @@ automatically. The failed pull's actual exit code must be preserved by
 
   1. The autouse `git_setup` fixture provides the isolated environment and
      create three temporary directories named `remote`, `local`, and `other`
-     using `make_temps(3)`.
+     using `make_temps(tmp_path_factory, 3)`.
   2. In `remote`, run `git init --bare -b main`.
   3. Clone `remote` into `other` using `git clone <remote> <other>`.
   4. In `other`, call `config_user("user1", "user1@example.com")`.
@@ -1337,7 +1389,7 @@ automatically. The failed pull's actual exit code must be preserved by
 
   1. The autouse `git_setup` fixture provides the isolated environment and
      create three temporary directories named `remote`, `local`, and `other`
-     using `make_temps(3)`.
+     using `make_temps(tmp_path_factory, 3)`.
   2. In `remote`, run `git init --bare -b main`. Clone it into `local` and call
      `config_user("user1", "user1@foo.com")` there.
   3. In `local`, create and commit `foo.txt`, then run `git push -u origin
@@ -1459,7 +1511,7 @@ automatically. The failed pull's actual exit code must be preserved by
   waits for an editor. Collapse whitespace in hint output before searching it
   for phrases.
 
-  1. Call `make_temps(1)`. In the directory: run `git init -b main`; call
+  1. Call `make_temps(tmp_path_factory, 1)`. In the directory: run `git init -b main`; call
      `config_user("user1", "user1@foo.com")`; create `foo.txt` containing
      `base`; stage it and commit with the message `"Add foo."`.
   2. Run `git-hints --all --ids-only`. Verify that `operation-in-progress` is
@@ -1592,7 +1644,7 @@ automatically. The failed pull's actual exit code must be preserved by
   The autouse `git_setup` fixture provides the isolated environment. Collapse
   whitespace in hint output before searching it for phrases.
 
-  1. Call `make_temps(1)`. In the directory: run `git init -b main`; call
+  1. Call `make_temps(tmp_path_factory, 1)`. In the directory: run `git init -b main`; call
      `config_user("user1", "user1@foo.com")`; create `foo.txt` containing `xxx`,
      `debug.log` containing `log`, and `my notes.log` containing `notes`. Stage
      all three and commit with `git commit -m "Add files."`.
@@ -1633,7 +1685,8 @@ automatically. The failed pull's actual exit code must be preserved by
 
 ### Language and libraries
 
-1. Language: Python (Minimum version of 3.10 to ensure compatability with all used libraries)
+1. Language: Python (Minimum version of 3.10 to ensure compatibility with all
+   used libraries)
 
 2. Package manager: uv
 
@@ -1643,64 +1696,67 @@ automatically. The failed pull's actual exit code must be preserved by
 
 5. CLI: Typer
 
-6. Git interface: Python's built-in `subprocess` module. Use it for both
-   repository inspection and execution of user-supplied Git commands, with
-   different behavior for each mode. The existing detection conditions use Git's
-   own commands and exit codes, so no additional Git library is required.
+Git interface: Python's built-in `subprocess` module. Use it for both repository
+inspection and execution of user-supplied Git commands, with different behavior
+for each mode. The existing detection conditions use Git's own commands and exit
+codes, so no additional Git library is required.
 
-   * Plain `git-hints`: run the inspection commands defined by the hint
-     conditions and repository-context requirements. Capture standard output,
-     standard error, and exit codes to determine which hints apply. Do not
-     execute commands suggested by hints. Do not fetch unless `--fetch` is
-     supplied; follow that option's environment and timeout requirements.
+* Plain `git-hints`: run the inspection commands defined by the hint conditions
+  and repository-context requirements. Capture standard output, standard error,
+  and exit codes to determine which hints apply. Do not execute commands
+  suggested by hints. Do not fetch unless `--fetch` is supplied; follow that
+  option's environment and timeout requirements.
 
-   * `git-hints explain`: validate that the user-supplied argument list starts
-     with `git` exactly, then execute it once. Leave standard input and standard output
-     connected to the terminal. Capture standard error and display it after
-     completion (not live); display the exit code and return that same code. Use the
-     command, exit code, standard error, and inspected repository state to
-     select reactive hints. Do not disable Git's terminal prompting or
-     editor for `git-hints explain`; the `GIT_TERMINAL_PROMPT=0` requirement
-     applies only to the tool's optional fetch and isolated test environment. Do
-     not claim to recover the result of an earlier command run outside
-     `git-hints explain`.
+* `git-hints explain`: validate that the user-supplied argument list starts with
+  `git` (only the word `git` is accepted. No other format), then execute it
+  once. Leave standard input and standard output connected to the terminal.
+  Capture standard error and display it after completion (not live); display the
+  exit code and return that same code. Use the command, exit code, standard
+  error, and inspected repository state to select reactive hints. Do not disable
+  Git's terminal prompting or editor for `git-hints explain`; the
+  `GIT_TERMINAL_PROMPT=0` requirement applies only to the tool's optional fetch
+  and isolated test environment. Do not claim to recover the result of an
+  earlier command run outside `git-hints explain`.
 
-   For both modes, pass arguments separately with `shell=False` and
-   `check=False`. Interpret `returncode` according to each command's documented
-   meaning; expected nonzero codes are not automatically application errors.
-   Report unexpected failures separately rather than treating them as hint
-   conditions. If Git cannot be launched, report that failure instead of
-   inventing a Git exit code or repository condition.
+<p><br></p>
 
-   Plain `git-hints` exits 0 whenever inspection completes, whether or not any
-   hint is triggered. It exits nonzero only when it reports an unexpected
-   inspection failure or that Git cannot be launched. (drj228)
+When git-hints explain runs a command with repository-redirection options such as -C, --git-dir, or --work-tree, skip reactive hints that require repository-state inspection. Hints based only on the command’s exit code or captured standard error may still be evaluated.
 
-   Decode Git output as UTF-8 (`encoding="utf-8", errors="replace"`), not with the locale default. When a path list is parsed, use `-z` or `-c core.quotePath=false`.
+For both modes, pass arguments separately with `shell=False` and `check=False`.
+Interpret `returncode` according to each command's documented meaning; expected
+nonzero codes are not automatically application errors. Report unexpected
+failures separately and suppress hints that depend the failed commands. If Git ran,
+return Git's exit code. If Git cannot be launched, report that failure 
+instead of inventing a Git exit code or repository condition. 
 
-7. Testing: Pytest
+Plain `git-hints` exits 0 whenever inspection completes, whether or not any hint
+is triggered. It exits nonzero only when it reports an unexpected inspection
+failure or that Git cannot be launched. (drj228)
 
-8. Git: version 2.34 or later
+Decode Git output as UTF-8 (`encoding="utf-8", errors="replace"`), not with the
+locale default. When a path list is parsed, use `-z` or `-c
+core.quotePath=false`.
+
+1. Testing: Pytest
+
+2. Git: version 2.34 or later. This applies for both running the application and
+   testing.
 
 Testing
 -------
 
 The test tool contains:
 
-* `make_temps(num)`: creates and returns `num` temporary directories using
-  Pytest's `tmp_path_factory`. The helper does not assign names such as local or remote; 
-  each test should assign descriptive variable names to the returned paths.
+* `make_temps(tmp_path_factory, num)`: creates and returns `num` temporary directories using
+  Pytest's `tmp_path_factory`. Each test that calls this function must request `tmp_path_factory` from pytest and pass it to `make_temps`.The helper does not assign names such as local or remote; each test should assign descriptive variable names to the returned
+  paths.
 * `make_repo(temp_dir, commands)`: runs the list of `commands` in `temp_dir` to
   create and populate the repository. Each command is either an argument list,
   such as `["git", "commit", "-m", "Add foo."]`, executed using
-  `subprocess.run(cwd=temp_dir, shell=False)`, or a zero argument 
-  lambda function used to create, modify, or delete files. Pass each argument
+  `subprocess.run(cwd=temp_dir, shell=False)`, or a zero argument lambda
+  function used to create, modify, or delete files. Pass each argument
   separately and keep messages containing spaces in a single list element. Do
-  not join arguments into a shell string. (drj228) Lambdas run with `temp_dir`
-  as the current working directory, so they can use relative paths;
-  `make_repo()` restores the previous working directory before returning.
-* `config_user(username, email)`: Set the isolated testing Git environment's 
-   global `user.name` and `user.email` by writing to the global `GIT_CONFIG_GLOBAL` file.
+  not join arguments into a shell string. (drj228) File-operation lambdas must use paths rooted at `temp_dir`—for example, `temp_dir / "foo.txt"`—and must not rely on or change the process’s current working directory. `make_repo()` does not call `os.chdir`.
 * `git_setup()`: creates an isolated Git configuration for the test environment.
   The test environment shall:
   * Remove every inherited environment variable whose name starts with `GIT_`,
@@ -1747,6 +1803,8 @@ runs, shall use the isolated test environment established by `git_setup()`. This
 prevents test results from varying based on the Git configuration of the machine
 running the tests.
 
+Repository setup commands must exit successfully; fail the test immediately if one does not. Run any command that is expected to fail as part of the behavior under test separately, and explicitly verify its expected exit code and output.
+
 ### GOING TO DELETE (temporary removal area)
 
 Everything below this heading is scheduled for deletion on Sunday (sbe80). This
@@ -1784,7 +1842,7 @@ temporary area keeps the material available for review before it is removed.
 
 * Test case:
 
-  1. Call `git_setup` and then call `make_temps(3)` to create three temp
+  1. Call `git_setup` and then call `make_temps(tmp_path_factory, 3)` to create three temp
      directories: `temp1`, `temp2` and `remote`. `remote` will act as a shared
      server between the other two.
   2. In `remote`, run `git init --bare -b main`.
@@ -1810,7 +1868,7 @@ temporary area keeps the material available for review before it is removed.
 
 #### Test Case 14: Pull Test (raf322) -- Requirement Proactive 7
 
-1. Call `make_temps(3)` to create three temp directories: `temp1`, `temp2` and
+1. Call `make_temps(tmp_path_factory, 3)` to create three temp directories: `temp1`, `temp2` and
    `remote`. `remote` will act as a shared server between the other two.
 2. In `remote`, run `git init --bare -b main`.
 3. In `temp1`, execute:
@@ -1833,7 +1891,7 @@ temporary area keeps the material available for review before it is removed.
 
 #### Test Case 15: Branch Behind Test (raf322) -- Requirement Proactive 4
 
-1. Call `make_temps(3)` to create three temp directories: `local1`, `local2` and
+1. Call `make_temps(tmp_path_factory, 3)` to create three temp directories: `local1`, `local2` and
    `remote`. `remote` will act as a shared server between the other two.
 2. In `remote`, run `git init --bare -b main`.
 3. In `local1`, execute:
