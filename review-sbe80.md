@@ -588,8 +588,7 @@ reopened.
       fixture that returns a factory function.
     * Current status: the current Testing section specifies that signature and
       says each test must request and pass the pytest fixture (lines 1750-1752).
-      **Specified that it is passed as an argument. All tests should now reflect
-      this**
+      **Specified that it is passed as an argument. All tests should now reflect this**
 25. **Make test setup command failures fail the test, while retaining explicit
     nonzero assertions for scenarios under test.**
 
@@ -681,7 +680,7 @@ include technical and test-spec questions as well as small editorial fixes.
       stdout remains a pass-through, qualify the CLI rule accordingly; if the
       stream must be machine-readable, specify where Git stdout goes in this
       mode. Add a test that runs a Git command which writes to stdout.
-      **This should be fixed in the earlier section I think**
+      **Specified that standard output is redirected if --ids-only is used**
 
 30. **Define the `config_user()` helper used throughout the tests.**
 
@@ -712,3 +711,19 @@ include technical and test-spec questions as well as small editorial fixes.
       point that test's `GIT_CONFIG_GLOBAL` at it. This makes the stated
       per-test isolation independent of fixture implementation details.
       **Git setup already clarifies this**
+### Review follow-up (2026-10-18)
+
+32. **Finish the `explain` launch-failure exit rule (follow-up to finding 21).**
+
+    * Location: Language and libraries, `git-hints explain`, and the shared
+      subprocess-failure paragraph.
+    * The current text says to always return Git's exit code, then says that if
+      Git cannot be launched, report the failure instead of inventing a Git exit
+      code. It does not define `git-hints`' own exit status for that launch
+      failure, so callers cannot rely on a documented result.
+    * Recommendation: specify a nonzero `git-hints` exit status for failure to
+      launch Git, keep returning Git's status whenever launch succeeds, and add
+      a test for the launch-failure path. This is the remaining part of finding
+      21; the current wording clarifies the diagnostic but still leaves the
+      tool's exit status open.
+      **Git hints already has an exit code for this. Clarified that this also applies to `explain`**

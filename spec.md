@@ -436,8 +436,8 @@ runs. (jit45)
 * Test case:
 
   1. The autouse `git_setup` fixture provides the isolated environment and
-     `make_temps(tmp_path_factory, 1)`. Set `GIT_CEILING_DIRECTORIES` to the temporary directory's
-     parent so Git cannot discover an enclosing repo.
+     `make_temps(tmp_path_factory, 1)`. Set `GIT_CEILING_DIRECTORIES` to the
+     temporary directory's parent so Git cannot discover an enclosing repo.
   2. In the temporary directory, run `git rev-parse --is-inside-work-tree` and
      verify exit code 128.
   3. Run `git-hints --all --ids-only`. Verify that `not-a-repo` appears. Run
@@ -974,9 +974,9 @@ interpreted as a triggered hint.
   specified. Use the isolated environment from the autouse `git_setup()` fixture
   and the command-list behavior defined by `make_repo()`.
 
-  1. Create two temporary directories with `make_temps(tmp_path_factory, 2)`: `local` and
-     `remote`. Call `config_user("user1", "user1@example.com")` before
-     initializing the repositories.
+  1. Create two temporary directories with `make_temps(tmp_path_factory, 2)`:
+     `local` and `remote`. Call `config_user("user1", "user1@example.com")`
+     before initializing the repositories.
   2. In `remote`, run `git init --bare -b main`. In `local`, run `git init -b
      main` and `git remote add origin <absolute-path-to-remote>`. No fetch or
      push is needed for this test.
@@ -1644,10 +1644,11 @@ automatically. The failed pull's actual exit code must be preserved by
   The autouse `git_setup` fixture provides the isolated environment. Collapse
   whitespace in hint output before searching it for phrases.
 
-  1. Call `make_temps(tmp_path_factory, 1)`. In the directory: run `git init -b main`; call
-     `config_user("user1", "user1@foo.com")`; create `foo.txt` containing `xxx`,
-     `debug.log` containing `log`, and `my notes.log` containing `notes`. Stage
-     all three and commit with `git commit -m "Add files."`.
+  1. Call `make_temps(tmp_path_factory, 1)`. In the directory: run `git init -b
+     main`; call `config_user("user1", "user1@foo.com")`; create `foo.txt`
+     containing `xxx`, `debug.log` containing `log`, and `my notes.log`
+     containing `notes`. Stage all three and commit with `git commit -m "Add
+     files."`.
   2. Preconditions: no `.gitignore` exists, and `git ls-files -ci
      --exclude-standard` prints nothing. Run `git-hints --all --ids-only` and
      verify that `tracked-but-ignored` is absent.
@@ -1709,29 +1710,38 @@ codes, so no additional Git library is required.
 
 * `git-hints explain`: validate that the user-supplied argument list starts with
   `git` (only the word `git` is accepted. No other format), then execute it
-  once. Leave standard input and standard output connected to the terminal.
-  Capture standard error and display it after completion (not live); display the
-  exit code and return that same code. Use the command, exit code, standard
-  error, and inspected repository state to select reactive hints. Do not disable
-  Git's terminal prompting or editor for `git-hints explain`; the
+  once. Leave standard input connected to the terminal. Leave Git's standard
+  output connected to the terminal in normal output; under `--ids-only`, redirect
+  Git's standard output to `subprocess.DEVNULL` so it is not displayed. Capture
+  standard error and display it after completion (not live). In normal output,
+  display the exit code; under `--ids-only`, omit the exit-code message. Always
+  return Git's exit code. Use the command, exit code, standard error, and
+  inspected repository state to select reactive hints.
+  Do not disable Git's terminal prompting or editor for `git-hints explain`; the
   `GIT_TERMINAL_PROMPT=0` requirement applies only to the tool's optional fetch
   and isolated test environment. Do not claim to recover the result of an
   earlier command run outside `git-hints explain`.
 
 <p><br></p>
 
-When git-hints explain runs a command with repository-redirection options such as -C, --git-dir, or --work-tree, skip reactive hints that require repository-state inspection. Hints based only on the command’s exit code or captured standard error may still be evaluated.
+When git-hints explain runs a command with repository-redirection options such
+as -C, --git-dir, or --work-tree, skip reactive hints that require
+repository-state inspection. Hints based only on the command’s exit code or
+captured standard error may still be evaluated.
 
 For both modes, pass arguments separately with `shell=False` and `check=False`.
 Interpret `returncode` according to each command's documented meaning; expected
 nonzero codes are not automatically application errors. Report unexpected
-failures separately and suppress hints that depend the failed commands. If Git ran,
-return Git's exit code. If Git cannot be launched, report that failure 
-instead of inventing a Git exit code or repository condition. 
+failures separately and suppress hints that depend the failed commands. If Git
+ran, return Git's exit code. If Git cannot be launched, report that failure
+instead of inventing a Git exit code or repository condition.
 
 Plain `git-hints` exits 0 whenever inspection completes, whether or not any hint
 is triggered. It exits nonzero only when it reports an unexpected inspection
 failure or that Git cannot be launched. (drj228)
+
+`git-hints explain` should also return non zero if Git does not launch or for any
+unexpected inspection failures.
 
 Decode Git output as UTF-8 (`encoding="utf-8", errors="replace"`), not with the
 locale default. When a path list is parsed, use `-z` or `-c
@@ -1747,9 +1757,11 @@ Testing
 
 The test tool contains:
 
-* `make_temps(tmp_path_factory, num)`: creates and returns `num` temporary directories using
-  Pytest's `tmp_path_factory`. Each test that calls this function must request `tmp_path_factory` from pytest and pass it to `make_temps`.The helper does not assign names such as local or remote; each test should assign descriptive variable names to the returned
-  paths.
+* `make_temps(tmp_path_factory, num)`: creates and returns `num` temporary
+  directories using Pytest's `tmp_path_factory`. Each test that calls this
+  function must request `tmp_path_factory` from pytest and pass it to
+  `make_temps`.The helper does not assign names such as local or remote; each
+  test should assign descriptive variable names to the returned paths.
 * `make_repo(temp_dir, commands)`: runs the list of `commands` in `temp_dir` to
   create and populate the repository. Each command is either an argument list,
   such as `["git", "commit", "-m", "Add foo."]`, executed using
@@ -1812,115 +1824,3 @@ running the tests.
 Repository setup commands must exit successfully; fail the test immediately if
 one does not. Run any command that is expected to fail as part of the behavior
 under test separately, and explicitly verify its expected exit code and output.
-
-### GOING TO DELETE (temporary removal area)
-
-Everything below this heading is scheduled for deletion on Sunday (sbe80). This
-temporary area keeps the material available for review before it is removed.
-
-#### Pull remote changes? (raf322)
-
-* Hint:
-
-* Git stage:
-
-* Command:
-
-* ID:
-
-* Conditions:
-
-* Test case:
-
-#### Pull before committing (raf322)
-
-* Hint: Pull needed, your branch is behind!
-
-* Git stage: You are trying to commit and merge but your branch has not been
-  updated with the latest commit.
-
-* Command: `git pull <name of branch>`
-
-* ID: `pull-before` priority class: error/blocked, safety: safe
-
-* Conditions: Determine if there are no commits that have not been pulled yet.
-  Run `git fetch` and then run `git rev-list --count HEAD..@{u}`. If 0 is
-  returned, the branch is up to date. Otherwise, there are still new commits
-  that have not been pulled.
-
-* Test case:
-
-  1. Call `git_setup` and then call `make_temps(tmp_path_factory, 3)` to create
-     three temp directories: `temp1`, `temp2` and `remote`. `remote` will act as
-     a shared server between the other two.
-  2. In `remote`, run `git init --bare -b main`.
-  3. In `temp1`, execute:
-     1. Create a repo with `git init -b main`.
-     2. Call `config_user("user1", "user1@foo.com")`.
-     3. Create a file called `foo.txt` with the content `xxx`.
-     4. Add and commit it with the message `"Add foo."`.
-     5. Add the `remote` directory as a remote called `origin`.
-     6. Push `main` to `origin` with `git push -u origin main`.
-  4. In `temp2`, execute:
-  5. Clone `remote` into the directory with `git clone <remote> .`.
-  6. Call `config_user("user2", "user2@foo.com")`.
-  7. Change `foo.txt` so that it contains `xxxy`.
-  8. Commit with `git commit -am "Modify foo."` and push with `git push`.
-  9. Change back to `temp1` and run `git fetch`, so that it learns about the new
-     commit on the remote. `temp1` is now 1 commit behind `origin/main`, with no
-     commits of its own that the remote lacks and no uncommitted changes.
-  10. Run `git-hints` in `temp1`. Expected hint: Is my branch up to date before
-      I start editing?
-
-#### <mark>TODO: move test cases to follow the implementation of each hint.</mark>
-
-#### Test Case 14: Pull Test (raf322) -- Requirement Proactive 7
-
-1. Call `make_temps(tmp_path_factory, 3)` to create three temp directories:
-   `temp1`, `temp2` and `remote`. `remote` will act as a shared server between
-   the other two.
-2. In `remote`, run `git init --bare -b main`.
-3. In `temp1`, execute:
-   1. Create a repo with `git init -b main`.
-   2. Call `config_user("user1", "user1@foo.com")`.
-   3. Create a file called `foo.txt` with the content `xxx`.
-   4. Add and commit it with the message `"Add foo."`.
-   5. Add the `remote` directory as a remote called `origin`.
-   6. Push `main` to `origin` with `git push -u origin main`.
-4. In `temp2`, execute:
-   1. Clone `remote` into the directory with `git clone <remote> .`.
-   2. Call `config_user("user2", "user2@foo.com")`.
-   3. Change `foo.txt` so that it contains `xxxy`.
-   4. Commit with `git commit -am "Modify foo."` and push with `git push`.
-5. Change back to `temp1` and run `git fetch`, so that it learns about the new
-   commit on the remote. `temp1` is now 1 commit behind `origin/main`, with no
-   commits of its own that the remote lacks and no uncommitted changes.
-6. Run `git-hints` in `temp1`. Expected hint: Is my branch up to date before I
-   start editing?
-
-#### Test Case 15: Branch Behind Test (raf322) -- Requirement Proactive 4
-
-1. Call `make_temps(tmp_path_factory, 3)` to create three temp directories:
-   `local1`, `local2` and `remote`. `remote` will act as a shared server between
-   the other two.
-2. In `remote`, run `git init --bare -b main`.
-3. In `local1`, execute:
-   1. Create a repo with `git init -b main`.
-   2. Call `config_user("user1", "user1@foo.com")`.
-   3. Create a file called `foo.txt` with the content `xxx`.
-   4. Add and commit it with the message `"Add foo."`.
-   5. Add the `remote` directory as a remote called `origin`.
-   6. Push `main` to `origin` with `git push -u origin main`.
-4. In `local2`, execute:
-   1. Clone `remote` into the directory with `git clone <remote> .`.
-   2. Call `config_user("user2", "user2@foo.com")`.
-   3. Change `foo.txt` so that it contains `xxxy`.
-   4. Commit with `git commit -am "Modify foo."`.
-   5. Change `foo.txt` so that it contains `xxxyz`.
-   6. Commit with `git commit -am "Modify foo again."` and push both commits
-      with `git push`.
-5. `cd` to `local1` and run `git fetch`, so that it learns about the new commits
-   on the remote. `local1` is now 2 commits behind `origin/main`, with no
-   commits of its own that the remote lacks and no uncommitted changes.
-6. Run `git-hints` in `local1`. Expected hint: Pull needed, your branch is
-   behind!
