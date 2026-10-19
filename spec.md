@@ -19,8 +19,8 @@ Review assignments
 
 <mark>Each student reviews one of the seven sections below. A "Review section"
 note marks where each section begins; the section continues until the next such
-note. Sections are roughly equal in length (about 200 lines) and difficulty, and
-no student reviews material they wrote or revised.</mark>
+note. Sections are roughly equal in length f(about 200 lines) and difficulty,
+and no student reviews material they wrote or revised.</mark>
 
 1. (ams2083): the overview at the top of this document, CLI commands, Future
    Work, Hint structure, and the introduction to Implementation.
@@ -179,6 +179,9 @@ Hint structure
    repository as applicable. The first implementation supports the CLI; a future
    GUI may show the corresponding GUI action alongside the command. (ewj55;
    clarified by drj228)
+   
+   A hint may also have a **Related output** field, which states how other
+   hints and the repository context line behave while the hint applies.
 
 3. **Documentation targets**: link to the specific passage of the official Git
    manual that supports a hint. Prefer the page's existing anchor. Otherwise use
@@ -302,7 +305,9 @@ Implementation
 -----------
 
 Proactive hints are triggered by observable repository state when `git-hints`
-runs. (jit45)
+runs. Every proactive hint except `not-a-repo` requires `git rev-parse--is-inside-work-tree` to exit 0 and print `true`. Repository context (Hint structure, item 1) covers output `false`, and `not-a-repo` covers exit code 128.
+The Conditions of the hints below assume this check and do not repeat it.
+(jit45)
 
 <mark>Review section 2 (jit45) begins here; see Review assignments.</mark>
 
@@ -664,12 +669,15 @@ runs. (jit45)
 
 * Conditions: The current branch has no upstream branch configured. Confirm that
   the repository is on a local branch, rather than in a detached HEAD state,
-  using `git symbolic-ref --quiet --short HEAD`. Check for an upstream using
-  `git rev-parse --abbrev-ref --symbolic-full-name "@{upstream}"`. Confirm that
-  the `origin` remote exists using `git remote`. Suggest configuring an upstream
-  only when the current branch has no resolvable upstream and `origin` exists.
-  Do not display the hint in detached HEAD state or when a valid upstream is
-  configured.
+   using `git symbolic-ref --quiet --short HEAD`. Confirm that the branch has at
+  least one commit: `git rev-parse --verify --quiet HEAD` must exit 0, because
+  pushing a branch with no commits fails with `src refspec <branch> does not
+  match any`. Check for an upstream using `git rev-parse --abbrev-ref
+  --symbolic-full-name "@{upstream}"`. Confirm that the `origin` remote exists
+  using `git remote`. Suggest configuring an upstream only when the current
+  branch has no resolvable upstream and `origin` exists. Do not display the hint
+  in detached HEAD state, on a branch with no commits, or when a valid upstream
+  is configured.
 
 * Test case:
 
@@ -928,9 +936,11 @@ interpreted as a triggered hint.
 #### Detached HEAD state (jit45; revised by drj228)
 
 * Hint: You are in
-  [detached HEAD](https://git-scm.com/docs/git-switch "Switch branches or create a branch at the current commit").
+  [detached HEAD](https://git-scm.com/docs/git-checkout#_detached_head "HEAD points at a commit instead of a branch; new commits belong to no branch").
   Create a branch if you want to keep working here and give your commits a
-  branch name.
+  branch name. When Conditions step 5 finds that HEAD is on no local branch,
+  add: "Your commits made here are not on any branch; create a branch before
+  switching away or they will be hard to find."
 
 * Git stage: You are working in the local repository at a specific commit
   instead of on a named local branch.
@@ -940,35 +950,53 @@ interpreted as a triggered hint.
   it, so any subsequent commits belong to that branch. This also gives commits
   already made at the current detached HEAD a branch name.
 
-* ID: `detached-head`, priority class: informational, safety: safe.
+  When Conditions step 5 prints at least one branch, also show: "To return to a
+  branch without keeping anything: `git switch <branch>`", with `<branch>`
+  replaced by the first branch that step 5 printed. Expected result: HEAD is
+  attached to that branch again, and `git status` reports `On branch <branch>`.
+  Do not show this command when HEAD is on no local branch, because switching
+  away would leave commits behind.
+
+* ID: `detached-head`, priority class: informational, or `data-loss risk` when
+  Conditions step 5 finds that HEAD is on no local branch (see Priority in Hint
+  structure), safety: safe.
 
 * Conditions:
 
-  1. Confirm that the current directory is inside a Git working tree using `git
-     rev-parse --is-inside-work-tree`; require exit code 0 and output `true`.
-     Handle a directory outside a working tree through the existing `not-a-repo`
-     behavior. Report unexpected Git errors separately.
-  2. Run `git symbolic-ref --quiet --short HEAD`. Exit code 0 means HEAD is
+  1. Run `git symbolic-ref --quiet --short HEAD`. Exit code 0 means HEAD is
      attached to a branch, including a branch without its first commit; do not
      display `detached-head`. Exit code 1 means HEAD is not symbolic; continue
      the checks. Other exit codes indicate errors, not this hint.
-  3. Require `git rev-parse --verify --quiet "HEAD^{commit}"` to succeed before
+  2. Require `git rev-parse --verify --quiet "HEAD^{commit}"` to succeed before
      treating the nonsymbolic HEAD as a usable detached commit. Report an
      invalid or unreadable HEAD separately.
-  4. Obtain the operation-state paths with `git rev-parse --git-path
-     rebase-merge`, `git rev-parse --git-path rebase-apply`, and `git rev-parse
-     --git-path BISECT_START`. Resolve relative paths against the working
-     directory used for these Git commands. Suppress this hint if any of the
-     returned paths exists. If a path lookup fails, report the inspection error
-     rather than assuming no operation is in progress.
-  5. Display `detached-head` only when HEAD is detached at a valid commit and
-     neither a rebase nor a bisect is in progress.
+  3. Run `git rev-parse --show-superproject-working-tree`. Nonempty output means
+     the repository is a submodule, where a detached HEAD is Git's normal state
+     after `git clone --recurse-submodules` or `git submodule update`; do not
+     display `detached-head`. Empty output with exit code 0 means the repository
+     is not a submodule; continue the checks.
+  4. Obtain the operation-state paths with one call: `git rev-parse
+     --path-format=absolute --git-path rebase-merge --git-path rebase-apply
+     --git-path BISECT_START`. It prints three absolute paths, one per line,
+     which are correct from any subdirectory and in linked worktrees. Suppress
+     this hint if any of the returned paths exists. If the call fails, report
+     the inspection error rather than assuming no operation is in progress.
+  5. Run `git for-each-ref --contains HEAD --format=%(refname:short)
+     refs/heads`, passing `--format=%(refname:short)` as one argument with no
+     quote characters. Empty output with exit code 0 means HEAD is on no local
+     branch, so commits made here can be lost: use priority class `data-loss
+     risk` and add the warning sentence to the hint text. Nonempty output means
+     at least one local branch contains HEAD: use `informational` and show the
+     `git switch <branch>` command. Other exit codes are inspection errors.
+  6. Display `detached-head` only when HEAD is detached at a valid commit
+     outside a submodule and neither a rebase nor a bisect is in progress.
 * Related output: In normal output and `--all`, the repository context line must
   show `detached HEAD`, even when this hint is suppressed during an operation.
   The context line is not a hint. The existing `no-upstream-branch` hint must
   remain absent while HEAD is detached.
 
-* Test case 10: Detached HEAD state (written and revised by drj228).
+* Test case: Detached HEAD state (written and revised by drj228; formerly Test
+  Case 10).
 
   All commands run in the repository under test unless a different directory is
   specified. Use the isolated environment from the autouse `git_setup()` fixture
@@ -996,34 +1024,47 @@ interpreted as a triggered hint.
      rev-parse --verify --quiet "HEAD^{commit}"` exits 0. Obtain the three
      operation-state paths specified in Conditions and verify that none exists.
   7. Run `git-hints --all` and require exit code 0. Check the output block for
-     ID `detached-head`: it contains `git switch -c` and the documentation URL
-     `https://git-scm.com/docs/git-switch`. Verify that the first output line is
-     exactly `Branch: detached HEAD`. Run `git-hints --all --ids-only`; verify
-     that `detached-head` is present and `no-upstream-branch` and `no-commits`
-     are absent. Identify hints by exact ID, without requiring their descriptive
-     wording to match.
-  8. Run `git switch -c saved-work`. Precondition: `git symbolic-ref --quiet
-     --short HEAD` exits 0 and prints `saved-work`. Run `git-hints --all
-     --ids-only` and verify that `detached-head` is absent.
+     ID `detached-head`: it contains `Priority: informational`, `git switch -c`,
+     `git switch main`, and the documentation URL
+     `https://git-scm.com/docs/git-checkout#_detached_head`. Verify that the
+     first output line is exactly `Branch: detached HEAD`. Run `git-hints
+     --all    --ids-only`; verify that `detached-head` is present and
+     `no-upstream-branch` and `no-commits` are absent. Identify hints by exact
+     ID, without requiring their descriptive wording to match.
+  8. Commit while detached: change `foo.txt` to `xxxyzw` and run `git commit -am
+     "Append w."`. Precondition: `git for-each-ref --contains HEAD
+     --format=%(refname:short) refs/heads` exits 0 and prints nothing. Run
+     `git-hints --all` and require exit code 0. Check the output block for ID
+     `detached-head`: it contains `Priority: data-loss risk` and `git switch
+     -c`, and does not contain `git switch main`. Then run `git switch -c
+     saved-work`, which puts the new commit on that branch. Precondition: `git
+     symbolic-ref --quiet --short HEAD` exits 0 and prints `saved-work`. Run
+     `git-hints --all --ids-only` and verify that `detached-head` is absent.
   9. Run `git bisect start HEAD HEAD~2`. Preconditions: `git symbolic-ref
      --quiet --short HEAD` exits 1 and the path returned by `git rev-parse
      --git-path BISECT_START` exists.
   10. During the bisect, run `git-hints --all` and require exit code 0 and the
       first output line exactly equal to `Branch: detached HEAD`. Run `git-hints
       --all --ids-only`; verify that `detached-head` and `no-upstream-branch`
-      are absent. Ensure `git bisect reset` runs in cleanup even if an assertion
-      fails.
+      are absent. Create an empty directory `sub` inside `local`, then run
+      `git-hints --all --ids-only` with `cwd` set to `local/sub`, as an
+      exception to the `cwd` rule in Testing, and verify that `detached-head` is
+      still absent. This catches operation-state paths resolved against the
+      wrong directory. Ensure `git bisect reset` runs in cleanup even if an
+      assertion fails.
   11. Precondition after cleanup: `git symbolic-ref --quiet --short HEAD` exits
       0 and prints `saved-work`; the `BISECT_START` path no longer exists.
   12. Precondition: `refs/heads/git-hints-test-missing` does not exist. Run `git
-      rebase --exec "git rev-parse --verify refs/heads/git-hints-test-missing"
-      HEAD~1`. Execute this command directly with `subprocess.run()` using an
-      argument list, `shell=False`, and `check=False`, rather than through
-      `make_repo()`. Capture its output and require a nonzero return code. The
-      deliberately failing exec command must stop the rebase with a nonzero exit
-      code, without a prompt. Preconditions after it stops: `git symbolic-ref
-      --quiet --short HEAD` exits 1 and the path returned by `git rev-parse
-      --git-path rebase-merge` exists.
+      rebase --exec "git rev-parse --verify
+      refs/heads/git-hints-test-missing"       HEAD~1`. This command is expected
+      to fail, so, as Testing requires, run it directly with `subprocess.run()`
+      using an argument list, `shell=False`, and `check=False`, not through
+      `make_repo()`, which fails the test when a command exits nonzero. Capture
+      its output and require a nonzero return code. The deliberately failing
+      exec command must stop the rebase with a nonzero exit code, without a
+      prompt. Preconditions after it stops: `git symbolic-ref --quiet --short
+      HEAD` exits 1 and the path returned by `git rev-parse --git-path
+      rebase-merge` exists.
   13. During the stopped rebase, run `git-hints --all` and require exit code 0
       and the first output line exactly equal to `Branch: detached HEAD`. Run
       `git-hints --all --ids-only`; verify that `detached-head` and
@@ -1061,21 +1102,18 @@ interpreted as a triggered hint.
 
 * Conditions:
 
-  1. Confirm a Git working tree with `git rev-parse --is-inside-work-tree`;
-     require exit code 0 and output `true`. Do not run the remaining checks
-     outside a working tree. Report unexpected Git errors separately.
-  2. Run `git rev-parse --verify --quiet HEAD`. Exit code 0 means HEAD resolves
+  1. Run `git rev-parse --verify --quiet HEAD`. Exit code 0 means HEAD resolves
      and this hint is absent. Exit code 1 means HEAD did not resolve; continue
      the checks rather than assuming the branch is empty. Other exit codes
      indicate errors.
-  3. Confirm an unborn local branch: `git symbolic-ref --quiet HEAD` must exit 0
+  2. Confirm an unborn local branch: `git symbolic-ref --quiet HEAD` must exit 0
      and return a reference under `refs/heads/`. Then run `git show-ref --verify
      --quiet <returned-full-branch-reference>`. Exit code 1 confirms that the
      branch reference does not exist yet. A nonsymbolic HEAD, an existing branch
      reference with unresolved HEAD, or an unexpected command error must not be
      classified as `no-commits`; report invalid or unreadable repository state
      separately.
-  4. Run `git diff --cached --quiet`. Exit code 1 means staged changes exist, so
+  3. Run `git diff --cached --quiet`. Exit code 1 means staged changes exist, so
      include the initial-commit command. Exit code 0 means none exist, so
      include status and staging guidance without a commit command. Other exit
      codes are inspection errors, not evidence of staged changes.
@@ -1083,17 +1121,23 @@ interpreted as a triggered hint.
   `detached-head` must remain absent and normal repository context must show
   that name. The existing `many-changed-files` condition requires a commit at
   HEAD; it must remain absent before the first commit, with or without staged
-  files. An empty file count must not cause division by zero.
+  files. `no-upstream-branch` must remain absent while the current branch has no
+  commits, because there is nothing to push. `staged-changes` and
+  `untracked-files` still apply while the branch is unborn: `no-commits` repeats
+  their `git add` and `git commit` steps on purpose, so a learner who reads only
+  this hint can still make the first commit, and `untracked-files` adds
+  `.gitignore` advice, which matters most before the first commit.
 
-* Test case 11: Repository has no commits (written and revised by drj228).
+* Test case: Repository has no commits (written and revised by drj228; formerly
+  Test Case 11).
 
-  All commands run in the repository under test. Use the isolated environment
-  from the autouse `git_setup()` fixture and the command-list behavior defined
-  by `make_repo()`.
+  All commands run in `local`. Use the isolated environment from the autouse
+  `git_setup()` fixture and the command-list behavior defined by `make_repo()`.
 
-  1. Create one temporary directory with `make_temps(tmp_path_factory, 1)`. Call
-     `config_user("user1", "user1@example.com")`, then initialize the repository
-     with `git init -b main`.
+  1. Create two temporary directories with `make_temps(tmp_path_factory, 2)`:
+     `local` and `remote`. Call `config_user("user1", "user1@example.com")`. In
+     `remote`, run `git init --bare -b main`. In `local`, run `git init -b main`
+     and `git remote add origin <absolute-path-to-remote>`.
   2. Preconditions: `git rev-parse --verify --quiet HEAD` exits 1 with empty
      standard output and standard error; `git symbolic-ref --quiet --short HEAD`
      exits 0 and prints `main`; `git show-ref --verify --quiet refs/heads/main`
@@ -1104,13 +1148,14 @@ interpreted as a triggered hint.
      `https://git-scm.com/docs/git-add`. Verify that this block does not contain
      `git commit`.
   4. Run `git-hints --all --ids-only`. Verify that `no-commits` is present and
-     `detached-head`, `many-changed-files`, and `staged-changes` are absent.
+     `detached-head`, `many-changed-files`, `staged-changes`, and
+     `no-upstream-branch` are absent.
   5. Create `foo.txt` containing `xxx` without staging it. Run `git-hints --all`
      and require exit code 0 and the first output line exactly equal to `Branch:
      main`. Verify that the `no-commits` output block is present and does not
      contain `git commit`. Run `git-hints --all --ids-only`; verify that
-     `no-commits` is present and `detached-head`, `many-changed-files`, and
-     `staged-changes` are absent.
+     `no-commits` and `untracked-files` are present and `detached-head`,
+     `many-changed-files`, and `staged-changes` are absent.
   6. Run `git add foo.txt`. Precondition: `git diff --cached --quiet` exits 1,
      while `git rev-parse --verify --quiet HEAD` still exits 1.
   7. Run `git-hints --all` and require exit code 0. In the `no-commits` output
@@ -1124,8 +1169,8 @@ interpreted as a triggered hint.
      prints `main`; `git diff --cached --quiet` exits 0.
   10. Run `git-hints --all` and require exit code 0 and the first output line
       exactly equal to `Branch: main`. Run `git-hints --all --ids-only`; verify
-      that `no-commits`, `detached-head`, `many-changed-files`, and
-      `staged-changes` are absent.
+      that `no-upstream-branch` is present and `no-commits`, `detached-head`,
+      `many-changed-files`, and `staged-changes` are absent.
   11. Run `git switch --orphan fresh`. Preconditions: `git symbolic-ref --quiet
       --short HEAD` exits 0 and prints `fresh`; `git rev-parse --verify --quiet
       HEAD` exits 1; `git show-ref --verify --quiet refs/heads/fresh` exits 1;
@@ -1135,16 +1180,87 @@ interpreted as a triggered hint.
       exactly equal to `Branch: fresh`. Verify that the `no-commits` output
       block contains `git status` and `git add`, and does not contain `git
       commit`. Run `git-hints --all --ids-only`; verify that `no-commits` is
-      present and `detached-head`, `many-changed-files`, and `staged-changes`
-      are absent. Ensure `git switch main` runs in cleanup even if an assertion
-      fails.
+      present and `detached-head`, `many-changed-files`, `staged-changes`, and
+      `no-upstream-branch` are absent. Ensure `git switch main` runs in cleanup
+      even if an assertion fails.
 
-15. Committing to protected/main branch? Run `git branch --show-current` to
-    identify the current branch. Trigger this hint when the branch is `main` or
-    `master` and there are changes. Check for other local or remote branches
-    with `git for-each-ref --format='%(refname:short)' refs/heads refs/remotes`.
-    If other branches exist, suggest switching to one of them. If no other
-    branches exist, suggest creating one with `git switch -c <name>`. (raf322)
+#### Make your changes on a new branch?
+
+* Hint: You have uncommitted changes on `<branch>`, the branch your remote
+  treats as its default. Do you want to make them on a new
+  [branch](https://git-scm.com/docs/git-switch "Create a new branch at the current commit and switch to it")
+  instead?
+
+* Git stage: Your edits are in the working directory or staging area of the
+  default branch and have not been committed.
+
+* Command: `git switch -c <new-branch>`; replace `<new-branch>` with an unused
+  branch name. Expected result: Git creates the branch at the current commit and
+  switches to it. The uncommitted changes come along, and `git status` reports
+  `On branch <new-branch>`.
+
+* ID: `changes-on-default-branch`, priority class: workflow, safety: safe.
+
+* Conditions:
+
+  1. Run `git symbolic-ref --quiet --short HEAD`. Exit code 0 prints the current
+     branch name. Exit code 1 (detached HEAD) means the hint is absent. Other
+     exit codes are inspection errors.
+  2. Run `git symbolic-ref --quiet --short refs/remotes/origin/HEAD`. Exit code
+     0 prints the remote's default branch, for example `origin/main`; remove the
+     `origin/` prefix. Exit code 1 means the ref is absent, for example in a
+     repository set up with `git init` and `git remote add`; skip the hint then
+     rather than guessing `main` or `master`. Other exit codes are inspection
+     errors. Continue only when the current branch equals the default branch.
+  3. Require `git rev-parse --verify --quiet HEAD` to exit 0. On a branch with
+     no commits, `no-commits` applies instead, and its advice to commit on the
+     current branch is correct.
+  4. Suppress the hint while the index contains unresolved merge entries, that
+     is, when `git diff --name-only --diff-filter=U` prints any paths.
+  5. Require uncommitted changes to tracked files: `git diff --quiet` or `git
+     diff --cached --quiet` exits 1. Exit code 0 from both means there are no
+     such changes. Other exit codes are inspection errors. Untracked files alone
+     do not trigger this hint; `untracked-files` covers them, and `git switch
+     -c` carries them along anyway.
+* Test case: Changes on the default branch (written by ).
+
+  Use the isolated environment from the autouse `git_setup()` fixture and the
+  command-list behavior defined by `make_repo()`.
+
+  1. Create three temporary directories with `make_temps(tmp_path_factory, 3)`:
+     `upstream`, `work`, and `unborn`. Call `config_user("user1",
+     "user1@example.com")`. In `upstream`, run `git init -b main`, create
+     `foo.txt` containing `xxx`, and run `git add foo.txt` and `git commit -m
+     "Add foo."`. In `work`, run `git clone <absolute-path-to-upstream> local`.
+     The repository under test is `work/local`; run steps 2 to 6 there.
+  2. Preconditions: `git symbolic-ref --quiet --short HEAD` exits 0 and prints
+     `main`; `git symbolic-ref --quiet --short refs/remotes/origin/HEAD` exits 0
+     and prints `origin/main`; `git diff --quiet` and `git diff --cached
+     --quiet` exit 0. Run `git-hints --all --ids-only` and verify that
+     `changes-on-default-branch` is absent.
+  3. Change `foo.txt` to `xxxy` without staging it. Precondition: `git diff
+     --quiet` exits 1. Run `git-hints --all` and require exit code 0. Check the
+     output block for ID `changes-on-default-branch`: it contains `Priority:
+     workflow`, `git switch -c`, and `https://git-scm.com/docs/git-switch`. Run
+     `git-hints --all --ids-only` and verify that `changes-on-default-branch` is
+     present.
+  4. Run `git add foo.txt`. Preconditions: `git diff --quiet` exits 0 and `git
+     diff --cached --quiet` exits 1. Run `git-hints --all --ids-only` and verify
+     that `changes-on-default-branch` is still present.
+  5. Run `git commit -m "Append y."`, then create `notes.txt` containing `Hello
+     world` without staging it. Run `git-hints --all --ids-only` and verify that
+     `changes-on-default-branch` is absent and `untracked-files` is present.
+  6. Run `git switch -c feature` and change `foo.txt` to `xxxyz`. Precondition:
+     `git diff --quiet` exits 1. Run `git-hints --all --ids-only` and verify
+     that `changes-on-default-branch` is absent.
+  7. In `unborn`, run `git init -b main`, `git remote add origin
+     <absolute-path-to-upstream>`, `git fetch origin`, and `git remote set-head
+     origin main`. Create `foo.txt` containing `xxx` and run `git add foo.txt`.
+     Preconditions: `git symbolic-ref --quiet --short refs/remotes/origin/HEAD`
+     exits 0 and prints `origin/main`; `git rev-parse --verify --quiet HEAD`
+     exits 1; `git diff --cached --quiet` exits 1. With `cwd` set to `unborn`,
+     run `git-hints --all --ids-only` and verify that `no-commits` is present
+     and `changes-on-default-branch` is absent.
 
 <mark>Review section 6 (drj228) begins here; see Review assignments.</mark>
 
@@ -1711,13 +1827,13 @@ codes, so no additional Git library is required.
 * `git-hints explain`: validate that the user-supplied argument list starts with
   `git` (only the word `git` is accepted. No other format), then execute it
   once. Leave standard input connected to the terminal. Leave Git's standard
-  output connected to the terminal in normal output; under `--ids-only`, redirect
-  Git's standard output to `subprocess.DEVNULL` so it is not displayed. Capture
-  standard error and display it after completion (not live). In normal output,
-  display the exit code; under `--ids-only`, omit the exit-code message. Always
-  return Git's exit code. Use the command, exit code, standard error, and
-  inspected repository state to select reactive hints.
-  Do not disable Git's terminal prompting or editor for `git-hints explain`; the
+  output connected to the terminal in normal output; under `--ids-only`,
+  redirect Git's standard output to `subprocess.DEVNULL` so it is not displayed.
+  Capture standard error and display it after completion (not live). In normal
+  output, display the exit code; under `--ids-only`, omit the exit-code message.
+  Always return Git's exit code. Use the command, exit code, standard error, and
+  inspected repository state to select reactive hints. Do not disable Git's
+  terminal prompting or editor for `git-hints explain`; the
   `GIT_TERMINAL_PROMPT=0` requirement applies only to the tool's optional fetch
   and isolated test environment. Do not claim to recover the result of an
   earlier command run outside `git-hints explain`.
@@ -1740,8 +1856,8 @@ Plain `git-hints` exits 0 whenever inspection completes, whether or not any hint
 is triggered. It exits nonzero only when it reports an unexpected inspection
 failure or that Git cannot be launched. (drj228)
 
-`git-hints explain` should also return non zero if Git does not launch or for any
-unexpected inspection failures.
+`git-hints explain` should also return non zero if Git does not launch or for
+any unexpected inspection failures.
 
 Decode Git output as UTF-8 (`encoding="utf-8", errors="replace"`), not with the
 locale default. When a path list is parsed, use `-z` or `-c
