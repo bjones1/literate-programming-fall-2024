@@ -727,3 +727,41 @@ include technical and test-spec questions as well as small editorial fixes.
       21; the current wording clarifies the diagnostic but still leaves the
       tool's exit status open.
       **Git hints already has an exit code for this. Clarified that this also applies to `explain`**
+
+### Final LLM review using the prompt:
+My net id is sbe80. Review my section of the spec and add suggestion to the end of my sbe80-review.md file. Do not edit anything already there.
+
+I used GPT-6 Luna with codex on extra high settings.
+
+33. **Make `explain` inspection-error exit behavior consistent.**
+
+    * Location: Language and libraries, the `git-hints explain` and shared
+      subprocess-failure rules (current lines 2038-2065).
+    * `git-hints explain` is told to always return Git's exit code, and the
+      shared rule repeats that any launched Git command's code must be returned.
+      The final rule also says `explain` returns nonzero for unexpected
+      inspection failures. These instructions conflict when Git exits 0 but a
+      post-command reactive-hint inspection fails.
+    * Recommendation: state which rule takes precedence and add a test for that
+      case. To preserve Git's status whenever Git launches, report the
+      inspection failure separately and retain the Git status; if inspection
+      failure should instead make `git-hints` nonzero, define how Git's status
+      remains available and explicitly qualify the "always return Git's exit
+      code" rule.
+      **Made a small clarification that git doesnt return its code if unexpected inspection errors occur**
+
+34. **Require unambiguous output when parsing arbitrary Git pathnames.**
+
+    * Location: Language and libraries, the final path-list parsing rule
+      (current line 2031).
+    * The rule allows either `-z` or `-c core.quotePath=false`. Git documents
+      that `core.quotePath=false` only changes whether bytes above 0x80 are
+      treated as unusual; control characters, quotes, and backslashes are still
+      C-quoted. `-z` instead emits pathnames verbatim with NUL terminators. A
+      parser that treats non-`-z` output as plain lines can therefore misread
+      valid filenames. See [git-config](https://git-scm.com/docs/git-config#Documentation/git-config.txt-corequotePath)
+      and [git-status](https://git-scm.com/docs/git-status).
+    * Recommendation: require `-z` whenever code parses arbitrary pathnames.
+      If non-`-z` output is allowed, explicitly require decoding Git's quoted
+      pathname format and add tests for names containing newlines, quotes, and
+      backslashes.

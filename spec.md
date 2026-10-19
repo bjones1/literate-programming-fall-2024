@@ -19,8 +19,8 @@ Review assignments
 
 <mark>Each student reviews one of the seven sections below. A "Review section"
 note marks where each section begins; the section continues until the next such
-note. Sections are roughly equal in length (about 200 lines) and difficulty,
-and no student reviews material they wrote or revised.</mark>
+note. Sections are roughly equal in length (about 200 lines) and difficulty, and
+no student reviews material they wrote or revised.</mark>
 
 1. (ams2083): the overview at the top of this document, CLI commands, Future
    Work, Hint structure, and the introduction to Implementation.
@@ -180,8 +180,8 @@ Hint structure
    GUI may show the corresponding GUI action alongside the command. (ewj55;
    clarified by drj228)
 
-   A hint may also have a **Related output** field, which states how other
-   hints and the repository context line behave while the hint applies.
+   A hint may also have a **Related output** field, which states how other hints
+   and the repository context line behave while the hint applies.
 
 3. **Documentation targets**: link to the specific passage of the official Git
    manual that supports a hint. Prefer the page's existing anchor. Otherwise use
@@ -305,9 +305,11 @@ Implementation
 -----------
 
 Proactive hints are triggered by observable repository state when `git-hints`
-runs. Every proactive hint except `not-a-repo` requires `git rev-parse--is-inside-work-tree` to exit 0 and print `true`. Repository context (Hint structure, item 1) covers output `false`, and `not-a-repo` covers exit code 128.
-The Conditions of the hints below assume this check and do not repeat it.
-(jit45)
+runs. Every proactive hint except `not-a-repo` requires `git
+rev-parse--is-inside-work-tree` to exit 0 and print `true`. Repository context
+(Hint structure, item 1) covers output `false`, and `not-a-repo` covers exit
+code 128. The Conditions of the hints below assume this check and do not repeat
+it. (jit45)
 
 <mark>Review section 2 (jit45) begins here; see Review assignments.</mark>
 
@@ -647,7 +649,6 @@ The Conditions of the hints below assume this check and do not repeat it.
      `git push`, and links to the official `git pull` and `git push`
      documentation. Verify that `behind` and `push-ahead` are absent.
 
-
 #### Configure an upstream branch? (ams2083)
 
 * Hint: Do you want to configure an
@@ -664,7 +665,8 @@ The Conditions of the hints below assume this check and do not repeat it.
 * ID: `no-upstream-branch`, priority class: workflow, safety: safe.
 
 * Conditions: The current branch has no upstream branch configured. Confirm that
-  the repository is on a local branch, rather than in a detached HEAD state, using `git symbolic-ref --quiet --short HEAD`. Confirm that the branch has at
+  the repository is on a local branch, rather than in a detached HEAD state,
+  using `git symbolic-ref --quiet --short HEAD`. Confirm that the branch has at
   least one commit: `git rev-parse --verify --quiet HEAD` must exit 0, because
   pushing a branch with no commits fails with `src refspec <branch> does not
   match any`. Check for an upstream using `git rev-parse --abbrev-ref
@@ -765,110 +767,97 @@ The Conditions of the hints below assume this check and do not repeat it.
   [ignore](https://git-scm.com/docs/gitignore "Specify intentionally untracked files that Git should ignore")
   untracked files?
 
-* Git stage: Your working directory contains untracked files that can be staged for a future commit if they are ordinary project files, or excluded using `.gitignore` if they contain secrets or are generated outputs.
+* Git stage: Your working directory contains untracked files that can be staged
+  for a future commit if they are ordinary project files, or excluded using
+  `.gitignore` if they contain secrets or are generated outputs.
 
-  
 * Command: Run `git status` to inspect files listed under "Untracked files:".
-  The hint
-  should dynamically identify up to five ordinary untracked paths
-  and suggest `git add <path>` for each, substituting the actual
-  filename or path. For files that should be ignored, display up
-  to five matching paths and suggest appropriate `.gitignore`
-  patterns. Omit either group if no applicable files exist.
-  After staging a file, `git status` lists it under "Changes to
-  be committed." After adding a matching ignore rule, the
-  ignored file no longer appears under "Untracked files."
+  The hint should dynamically identify up to five ordinary untracked paths and
+  suggest `git add <path>` for each, substituting the actual filename or path.
+  For files that should be ignored, display up to five matching paths and
+  suggest appropriate `.gitignore` patterns. Omit either group if no applicable
+  files exist. After staging a file, `git status` lists it under "Changes to be
+  committed." After adding a matching ignore rule, the ignored file no longer
+  appears under "Untracked files."
 
 * ID: `untracked-files`, priority class: workflow, safety: safe.
 
+* Conditions: Display this hint when at least one untracked file exists in the
+  working directory.
 
-* Conditions: Display this hint when at least one untracked
-  file exists in the working directory.
-
-  Run `git status --porcelain=v1 -z --untracked-files=all`.
-  Split the output into NUL-delimited records and identify
-  untracked paths by the `?? ` status prefix. Decode each
-  filename without treating Git's quoted text format as a
+  Run `git status --porcelain=v1 -z --untracked-files=all`. Split the output
+  into NUL-delimited records and identify untracked paths by the `??` status
+  prefix. Decode each filename without treating Git's quoted text format as a
   literal filename.
 
-  Classify untracked paths as ordinary files or potential
-  ignore candidates. Potential ignore candidates include
-  files named `.env`, paths containing directories named
-  `__pycache__`, `node_modules`, `build`, `dist`, or `.venv`,
+  Classify untracked paths as ordinary files or potential ignore candidates.
+  Potential ignore candidates include files named `.env`, paths containing
+  directories named `__pycache__`, `node_modules`, `build`, `dist`, or `.venv`,
   and files ending in `.pyc`.
 
-  Apply these rules to nested paths as well as paths at the
-  repository root.
+  Apply these rules to nested paths as well as paths at the repository root.
 
-  List up to five ordinary untracked paths and recommend
-  `git add <path>` for each, substituting the actual path.
-  Quote or escape filenames correctly for the user's shell.
+  List up to five ordinary untracked paths and recommend `git add <path>` for
+  each, substituting the actual path. Quote or escape filenames correctly for
+  the user's shell.
 
-  Separately list up to five ignore candidates and suggest
-  matching `.gitignore` patterns. Omit either group if empty.
+  Separately list up to five ignore candidates and suggest matching `.gitignore`
+  patterns. Omit either group if empty.
 
-  Do not display the hint when no untracked files remain.
-  Unexpected Git command failures are inspection errors,
-  not evidence of untracked files.
+  Do not display the hint when no untracked files remain. Unexpected Git command
+  failures are inspection errors, not evidence of untracked files.
 
-  
-  In a repository without commits, `untracked-files`
-  and `no-commits` may appear together when untracked
-  files exist. Neither hint suppresses the other.
-
+  In a repository without commits, `untracked-files` and `no-commits` may appear
+  together when untracked files exist. Neither hint suppresses the other.
 
 * Test case: Stage or ignore untracked files.
 
   1. The autouse `git_setup()` fixture provides the isolated Git environment.
      Create `repo` using `make_temps(tmp_path_factory, 1)` and configure the
      test identity with `config_user("user1", "user1@foo.com")`.
-  2. Use `make_repo(repo, commands)` to run `git init -b main`, create
-     `foo.txt` containing `xxx`, stage it, and commit it with
-     `git commit -m "Add foo."`. Pass Git commands as argument lists and
-     use zero-argument file-operation lambdas rooted at `repo`.
-     Run all subsequent commands with `cwd=repo`.
-  3. Create ordinary untracked file `notes.txt` containing `Hello world`.
-     Run `git status --porcelain=v1` and verify that `?? notes.txt` appears.
-     Run `git-hints --all --ids-only` and verify that `untracked-files` is
-     present as a complete output line. Run `git-hints --all` separately
-     and verify it recommends `git add notes.txt` and includes the official
-     Git documentation links.
-  4. Run `git add notes.txt`. Check that `git status --porcelain=v1` reports
-     it staged rather than untracked. Run `git-hints --all --ids-only` and
-     verify that `untracked-files` is absent.
+  2. Use `make_repo(repo, commands)` to run `git init -b main`, create `foo.txt`
+     containing `xxx`, stage it, and commit it with `git commit -m "Add foo."`.
+     Pass Git commands as argument lists and use zero-argument file-operation
+     lambdas rooted at `repo`. Run all subsequent commands with `cwd=repo`.
+  3. Create ordinary untracked file `notes.txt` containing `Hello world`. Run
+     `git status --porcelain=v1` and verify that `?? notes.txt` appears. Run
+     `git-hints --all --ids-only` and verify that `untracked-files` is present
+     as a complete output line. Run `git-hints --all` separately and verify it
+     recommends `git add notes.txt` and includes the official Git documentation
+     links.
+  4. Run `git add notes.txt`. Check that `git status --porcelain=v1` reports it
+     staged rather than untracked. Run `git-hints --all --ids-only` and verify
+     that `untracked-files` is absent.
   5. Create `.env` containing `TEST_VARIABLE=example`, and create
-     `__pycache__/example.pyc`. Verify with `git status --porcelain=v1`
-     that both are untracked. Run `git-hints --all --ids-only` and verify
-     that `untracked-files` is present. Run `git-hints --all` and verify
-     that it suggests suitable `.gitignore` patterns rather than staging
-     these generated or sensitive files, and includes documentation links.
-  6. Create `.gitignore` containing `.env`, `__pycache__/`, and `*.pyc`,
-     then stage it with `git add .gitignore`. Verify that the ignored paths
-     disappear from `git status --porcelain=v1`. Run
-     `git-hints --all --ids-only` and verify that `untracked-files` is
-     absent because no untracked files remain.
+     `__pycache__/example.pyc`. Verify with `git status --porcelain=v1` that
+     both are untracked. Run `git-hints --all --ids-only` and verify that
+     `untracked-files` is present. Run `git-hints --all` and verify that it
+     suggests suitable `.gitignore` patterns rather than staging these generated
+     or sensitive files, and includes documentation links.
+  6. Create `.gitignore` containing `.env`, `__pycache__/`, and `*.pyc`, then
+     stage it with `git add .gitignore`. Verify that the ignored paths disappear
+     from `git status --porcelain=v1`. Run `git-hints --all --ids-only` and
+     verify that `untracked-files` is absent because no untracked files remain.
   7. Test spaces and Unicode in a fresh isolated repository created with
-     `make_temps()` and `make_repo()`. Create `my notes.txt` and `café.txt`.
-     Run `git-hints --all --ids-only` and verify that `untracked-files`
-     appears. Run `git-hints --all` and verify it preserves both real paths
-     and prints syntactically valid `git add` commands with appropriate
-     shell quoting for paths containing spaces and Unicode.
+     `make_temps()` and `make_repo()`. Create `my notes.txt` and `café.txt`. Run
+     `git-hints --all --ids-only` and verify that `untracked-files` appears. Run
+     `git-hints --all` and verify it preserves both real paths and prints
+     syntactically valid `git add` commands with appropriate shell quoting for
+     paths containing spaces and Unicode.
   8. Test nested ignore candidates in another fresh repository. Create
-     `src/app.py`, `src/.env`, and `src/__pycache__/example.pyc` without
-     staging them. Run `git-hints --all`: verify that the ordinary path
-     `src/app.py` is offered for staging and the other two are classified
-     as ignore candidates. Verify the corresponding patterns work when
-     added to `.gitignore`.
-  9. Test the output limits in a fresh repository. Create at least six
-     ordinary untracked files and six distinct ignore-candidate paths,
-     including nested cache paths. Run `git-hints --all` and verify that
-     at most five actual paths are listed in each of the stage and ignore
-     groups, and neither group includes files from the other category.
-  10. Test configuration override in a fresh repository. Set
-      `git config --local status.showUntrackedFiles no`, then create an
-      ordinary untracked file. Verify that `git-hints --all --ids-only`
-      still includes `untracked-files`, since inspection explicitly uses
-      `--untracked-files=all`.
+     `src/app.py`, `src/.env`, and `src/__pycache__/example.pyc` without staging
+     them. Run `git-hints --all`: verify that the ordinary path `src/app.py` is
+     offered for staging and the other two are classified as ignore candidates.
+     Verify the corresponding patterns work when added to `.gitignore`.
+  9. Test the output limits in a fresh repository. Create at least six ordinary
+     untracked files and six distinct ignore-candidate paths, including nested
+     cache paths. Run `git-hints --all` and verify that at most five actual
+     paths are listed in each of the stage and ignore groups, and neither group
+     includes files from the other category.
+  10. Test configuration override in a fresh repository. Set `git config --local
+      status.showUntrackedFiles no`, then create an ordinary untracked file.
+      Verify that `git-hints --all --ids-only` still includes `untracked-files`,
+      since inspection explicitly uses `--untracked-files=all`.
 
 #### Review and commit widespread changes? (jit45)
 
@@ -877,7 +866,9 @@ The Conditions of the hints below assume this check and do not repeat it.
   [commit](https://git-scm.com/docs/git-commit "Records staged changes as a new commit in the local repository")
   the work you want to save?
 
-* Git stage: Changes to tracked files may exist in the working directory, staging area, or both, but only staged changes will be included in the next commit in the local repository.
+* Git stage: Changes to tracked files may exist in the working directory,
+  staging area, or both, but only staged changes will be included in the next
+  commit in the local repository.
 
 * Command: Run `git status` to review changed files and `git diff HEAD` to
   inspect the changes relative to the last commit. Run `git add <files>` to
@@ -888,48 +879,41 @@ The Conditions of the hints below assume this check and do not repeat it.
 
 * ID: `many-changed-files`, priority class: workflow, safety: safe.
 
+* Conditions: Display this hint when more than 50% of the files tracked in
+  `HEAD` have staged, unstaged, or deleted changes. Require at least four
+  tracked files in `HEAD`.
 
-* Conditions: Display this hint when more than 50% of the
-  files tracked in `HEAD` have staged, unstaged, or deleted
-  changes. Require at least four tracked files in `HEAD`.
+  Do not display this hint while unresolved merge conflicts exist. Check with
+  `git diff --name-only --diff-filter=U` and suppress the hint if any paths are
+  returned. Also suppress it while a merge or rebase is in progress, using the
+  relevant Git operation-state paths.
 
-  Do not display this hint while unresolved merge conflicts
-  exist. Check with `git diff --name-only --diff-filter=U`
-  and suppress the hint if any paths are returned.
-  Also suppress it while a merge or rebase is in progress,
-  using the relevant Git operation-state paths.
+  Run `git rev-parse --verify --quiet HEAD` to verify that `HEAD` resolves to a
+  commit. Exit code 0 means a commit exists; exit code 1 means no commit exists,
+  so do not trigger the hint. Other nonzero codes are inspection errors.
 
-  Run `git rev-parse --verify --quiet HEAD` to verify that
-  `HEAD` resolves to a commit. Exit code 0 means a commit
-  exists; exit code 1 means no commit exists, so do not
-  trigger the hint. Other nonzero codes are inspection
-  errors.
+  Run `git ls-tree -r --name-only -z HEAD` to enumerate files tracked in `HEAD`.
+  Let T be the number of distinct paths returned.
 
-  Run `git ls-tree -r --name-only -z HEAD` to enumerate files
-  tracked in `HEAD`. Let T be the number of distinct paths
-  returned.
+  Determine the set of changed paths by taking the union of the following
+  commands:
 
-  Determine the set of changed paths by taking the union of
-  the following commands:
+  * `git diff --cached --name-only --no-renames -z`
+  * `git diff --name-only --no-renames -z`
 
-  - `git diff --cached --name-only --no-renames -z`
-  - `git diff --name-only --no-renames -z`
+  Split the output on NUL characters. Count only distinct changed paths
+  belonging to the original tracked-file set. Let C be this count.
 
-  Split the output on NUL characters. Count only distinct
-  changed paths belonging to the original tracked-file set.
-  Let C be this count.
+  Newly added and untracked files do not increase C or T. A file changed in both
+  the index and working directory counts only once. Disabling rename detection
+  allows a renamed file's original tracked path to count without double-counting
+  its destination.
 
-  Newly added and untracked files do not increase C or T.
-  A file changed in both the index and working directory
-  counts only once. Disabling rename detection allows a
-  renamed file's original tracked path to count without
-  double-counting its destination.
+  Trigger exactly when T >= 4 and 2\*C > T. At exactly 50%, do not trigger the
+  hint.
 
-  Trigger exactly when T >= 4 and 2*C > T. At exactly 50%,
-  do not trigger the hint.
-
-  Unexpected Git command failures must be reported
-  separately rather than interpreted as triggered hints.
+  Unexpected Git command failures must be reported separately rather than
+  interpreted as triggered hints.
 
 * Test case: Many changed files (written by jit45; revised by raf322).
 
@@ -938,70 +922,64 @@ The Conditions of the hints below assume this check and do not repeat it.
      `config_user("user1", "user1@example.com")`.
   2. Use `make_repo(repo, commands)` to run `git init -b main`, create
      `one.txt`, `two.txt`, `three.txt`, and `four.txt` with initial content,
-     stage them, and commit with `git commit -m "Add initial files."`.
-     Pass Git commands as argument lists and file creation as zero-argument
-     lambdas rooted at `repo`. Run all later commands with `cwd=repo`.
-  3. Run `git-hints --all --ids-only`. Verify that `many-changed-files`
-     is absent because no tracked files have changed.
-  4. Modify `one.txt` and `two.txt` without staging them. Create
-     `untracked.txt` without staging it. Verify with
-     `git status --porcelain=v1` that two tracked files have changes and
-     the new file is untracked.
-  5. Run `git-hints --all --ids-only`; verify that `many-changed-files`
-     is absent at C = 2 and T = 4, exactly 50%. Untracked files do not count.
-  6. Run `git add one.txt`, then modify `one.txt` again without staging
-     the new edit. Verify with `git status --porcelain=v1` that the path
-     has both staged and unstaged changes. Run
-     `git-hints --all --ids-only`; verify that `many-changed-files` remains
-     absent at C = 2, T = 4. A path changed in both places counts once.
-  7. Modify `three.txt` without staging it. Run
-     `git-hints --all --ids-only`; verify that `many-changed-files` now
-     appears at C = 3, T = 4. Run `git-hints --all` and verify its
-     workflow priority, stage explanation, command, expected result,
-     and official Git documentation link.
-  8. Run `git add one.txt two.txt three.txt` and
-     `git commit -m "Save tracked changes."`. Verify with
-     `git-hints --all --ids-only` that `many-changed-files` is absent.
-     `untracked.txt` remains untracked and does not affect this hint.
-  9. Test deletions in a fresh isolated repository containing four
-     committed files, created with `make_temps()` and `make_repo()`.
-     Delete two tracked files without staging the deletions; verify with
-     `git-hints --all --ids-only` that the hint is absent at C = 2, T = 4.
-     Delete a third tracked file; verify that the hint appears at C = 3,
-     T = 4. Deletions of distinct tracked paths each count once.
+     stage them, and commit with `git commit -m "Add initial files."`. Pass Git
+     commands as argument lists and file creation as zero-argument lambdas
+     rooted at `repo`. Run all later commands with `cwd=repo`.
+  3. Run `git-hints --all --ids-only`. Verify that `many-changed-files` is
+     absent because no tracked files have changed.
+  4. Modify `one.txt` and `two.txt` without staging them. Create `untracked.txt`
+     without staging it. Verify with `git status --porcelain=v1` that two
+     tracked files have changes and the new file is untracked.
+  5. Run `git-hints --all --ids-only`; verify that `many-changed-files` is
+     absent at C = 2 and T = 4, exactly 50%. Untracked files do not count.
+  6. Run `git add one.txt`, then modify `one.txt` again without staging the new
+     edit. Verify with `git status --porcelain=v1` that the path has both staged
+     and unstaged changes. Run `git-hints --all --ids-only`; verify that
+     `many-changed-files` remains absent at C = 2, T = 4. A path changed in both
+     places counts once.
+  7. Modify `three.txt` without staging it. Run `git-hints --all --ids-only`;
+     verify that `many-changed-files` now appears at C = 3, T = 4. Run
+     `git-hints --all` and verify its workflow priority, stage explanation,
+     command, expected result, and official Git documentation link.
+  8. Run `git add one.txt two.txt three.txt` and `git commit -m "Save tracked
+     changes."`. Verify with `git-hints --all --ids-only` that
+     `many-changed-files` is absent. `untracked.txt` remains untracked and does
+     not affect this hint.
+  9. Test deletions in a fresh isolated repository containing four committed
+     files, created with `make_temps()` and `make_repo()`. Delete two tracked
+     files without staging the deletions; verify with `git-hints --all
+     --ids-only` that the hint is absent at C = 2, T = 4. Delete a third tracked
+     file; verify that the hint appears at C = 3, T = 4. Deletions of distinct
+     tracked paths each count once.
   10. Test a repository without commits using a separate directory from
-      `make_temps()`. Use `make_repo()` to initialize `main`, then create
-      and stage a file without committing. Run `git-hints --all --ids-only`
-      and verify that `no-commits` is present while `many-changed-files`
-      is absent. No unexpected application error should occur.
+      `make_temps()`. Use `make_repo()` to initialize `main`, then create and
+      stage a file without committing. Run `git-hints --all --ids-only` and
+      verify that `no-commits` is present while `many-changed-files` is absent.
+      No unexpected application error should occur.
   11. Test a small repository in a fresh isolated directory. Commit only
-      `README.md` and modify it. Verify that `many-changed-files` is
-      absent because T = 1, below the minimum of four files.
-  12. Test a staged rename in a fresh repository with four committed
-      files. Run `git mv one.txt renamed.txt`. Verify that the rename
-      contributes only the original tracked `one.txt` path to C, not
-      both the source and destination. Modify `two.txt` without staging;
-      verify the hint is absent at C = 2, T = 4. Modify `three.txt`;
-      verify the hint appears at C = 3, T = 4.
-  13. Test staged changes that were undone only in the working tree.
-      In a fresh repository containing four committed files, modify and
-      `git add` `one.txt`, `two.txt`, and `three.txt`. Restore only their
-      working-tree copies from `HEAD` using
-      `git restore --source=HEAD --worktree -- one.txt two.txt three.txt`
-      (do not use `--staged`). Verify `git diff --cached --name-only`
-      still lists all three paths, whereas `git diff HEAD --name-only`
-      does not. Run `git-hints --all --ids-only` and verify that
+      `README.md` and modify it. Verify that `many-changed-files` is absent
+      because T = 1, below the minimum of four files.
+  12. Test a staged rename in a fresh repository with four committed files. Run
+      `git mv one.txt renamed.txt`. Verify that the rename contributes only the
+      original tracked `one.txt` path to C, not both the source and destination.
+      Modify `two.txt` without staging; verify the hint is absent at C = 2,
+      T = 4. Modify `three.txt`; verify the hint appears at C = 3, T = 4.
+  13. Test staged changes that were undone only in the working tree. In a fresh
+      repository containing four committed files, modify and `git add`
+      `one.txt`, `two.txt`, and `three.txt`. Restore only their working-tree
+      copies from `HEAD` using `git restore --source=HEAD --worktree -- one.txt
+      two.txt three.txt` (do not use `--staged`). Verify `git diff --cached
+      --name-only` still lists all three paths, whereas `git diff HEAD
+      --name-only` does not. Run `git-hints --all --ids-only` and verify that
       `many-changed-files` appears at C = 3, T = 4.
-  14. Test conflict suppression in another fresh four-file repository.
-      Make a `topic` branch and commit changes to `one.txt`, `two.txt`,
-      and `three.txt`. On `main`, commit a conflicting modification to
-      `one.txt`, then run `git merge topic` and require a nonzero exit.
-      Verify an unresolved path is reported by
-      `git diff --name-only --diff-filter=U` and more than half of the
-      HEAD-tracked paths have changes. Run `git-hints --all --ids-only`;
-      verify that `many-changed-files` is absent. Run
-      `git merge --abort` during cleanup, including after a failed
-      assertion.
+  14. Test conflict suppression in another fresh four-file repository. Make a
+      `topic` branch and commit changes to `one.txt`, `two.txt`, and
+      `three.txt`. On `main`, commit a conflicting modification to `one.txt`,
+      then run `git merge topic` and require a nonzero exit. Verify an
+      unresolved path is reported by `git diff --name-only --diff-filter=U` and
+      more than half of the HEAD-tracked paths have changes. Run `git-hints
+      --all --ids-only`; verify that `many-changed-files` is absent. Run `git
+      merge --abort` during cleanup, including after a failed assertion.
 
 <mark>Review section 5 (jhg246) begins here; see Review assignments.</mark>
 
@@ -1062,7 +1040,6 @@ The Conditions of the hints below assume this check and do not repeat it.
      `git switch <branch>` command. Other exit codes are inspection errors.
   6. Display `detached-head` only when HEAD is detached at a valid commit
      outside a submodule and neither a rebase nor a bisect is in progress.
-
 * Related output: In normal output and `--all`, the repository context line must
   show `detached HEAD`, even when this hint is suppressed during an operation.
   The context line is not a hint. The existing `no-upstream-branch` hint must
@@ -1100,8 +1077,8 @@ The Conditions of the hints below assume this check and do not repeat it.
      ID `detached-head`: it contains `Priority: informational`, `git switch -c`,
      `git switch main`, and the documentation URL
      `https://git-scm.com/docs/git-checkout#_detached_head`. Verify that the
-     first output line is exactly `Branch: detached HEAD`. Run `git-hints
-     --all --ids-only`; verify that `detached-head` is present and
+     first output line is exactly `Branch: detached HEAD`. Run `git-hints --all
+     --ids-only`; verify that `detached-head` is present and
      `no-upstream-branch` and `no-commits` are absent. Identify hints by exact
      ID, without requiring their descriptive wording to match.
   8. Commit while detached: change `foo.txt` to `xxxyzw` and run `git commit -am
@@ -1128,16 +1105,15 @@ The Conditions of the hints below assume this check and do not repeat it.
   11. Precondition after cleanup: `git symbolic-ref --quiet --short HEAD` exits
       0 and prints `saved-work`; the `BISECT_START` path no longer exists.
   12. Precondition: `refs/heads/git-hints-test-missing` does not exist. Run `git
-      rebase --exec "git rev-parse --verify
-      refs/heads/git-hints-test-missing" HEAD~1`. This command is expected
-      to fail, so, as Testing requires, run it directly with `subprocess.run()`
-      using an argument list, `shell=False`, and `check=False`, not through
-      `make_repo()`, which fails the test when a command exits nonzero. Capture
-      its output and require a nonzero return code. The deliberately failing
-      exec command must stop the rebase with a nonzero exit code, without a
-      prompt. Preconditions after it stops: `git symbolic-ref --quiet --short
-      HEAD` exits 1 and the path returned by `git rev-parse --git-path
-      rebase-merge` exists.
+      rebase --exec "git rev-parse --verify refs/heads/git-hints-test-missing"
+      HEAD~1`. This command is expected to fail, so, as Testing requires, run it
+      directly with `subprocess.run()` using an argument list, `shell=False`,
+      and `check=False`, not through `make_repo()`, which fails the test when a
+      command exits nonzero. Capture its output and require a nonzero return
+      code. The deliberately failing exec command must stop the rebase with a
+      nonzero exit code, without a prompt. Preconditions after it stops: `git
+      symbolic-ref --quiet --short HEAD` exits 1 and the path returned by `git
+      rev-parse --git-path rebase-merge` exists.
   13. During the stopped rebase, run `git-hints --all` and require exit code 0
       and the first output line exactly equal to `Branch: detached HEAD`. Run
       `git-hints --all --ids-only`; verify that `detached-head` and
@@ -1171,7 +1147,6 @@ The Conditions of the hints below assume this check and do not repeat it.
     the staged changes. Commit identity must be configured; the separate
     commit-identity configuration hint handles missing settings. Do not
     automatically stage or commit files.
-
 * ID: `no-commits`, priority class: informational, safety: safe.
 
 * Conditions:
@@ -1191,7 +1166,6 @@ The Conditions of the hints below assume this check and do not repeat it.
      include the initial-commit command. Exit code 0 means none exist, so
      include status and staging guidance without a commit command. Other exit
      codes are inspection errors, not evidence of staged changes.
-
 * Related output: An unborn branch is attached to its branch name, so
   `detached-head` must remain absent and normal repository context must show
   that name. The existing `many-changed-files` condition requires a commit at
@@ -1297,7 +1271,6 @@ The Conditions of the hints below assume this check and do not repeat it.
      such changes. Other exit codes are inspection errors. Untracked files alone
      do not trigger this hint; `untracked-files` covers them, and `git switch
      -c` carries them along anyway.
-
 * Test case: Changes on the default branch (written by ).
 
   Use the isolated environment from the autouse `git_setup()` fixture and the
@@ -1549,193 +1522,180 @@ automatically. The failed pull's actual exit code must be preserved by
 
 #### Suggest `git pull --rebase`? (sbe80)
 
-* Hint: After five qualifying failures to integrate with the
-  upstream branch, replaying your local commits using
+* Hint: After five qualifying failures to integrate with the upstream branch,
+  replaying your local commits using
   [git pull --rebase](https://git-scm.com/docs/git-pull "Fetch upstream changes and replay local commits on top of them")
-  may resolve the problem. Rebasing changes local commit IDs and
-  may cause conflicts. Make sure your local work is committed
-  or otherwise backed up before attempting it.
-  
-* Git stage: Your local repository contains commits that
-  have not been incorporated into the upstream branch,
-  while the upstream contains commits missing from your
-  local branch.
+  may resolve the problem. Rebasing changes local commit IDs and may cause
+  conflicts. Make sure your local work is committed or otherwise backed up
+  before attempting it.
 
-* Command: Caution: `git pull --rebase`. This fetches upstream
-  changes and replays local commits on top of them. If conflicts
-  occur, resolve them and use `git rebase --continue`, or cancel
-  with `git rebase --abort`. See the
+* Git stage: Your local repository contains commits that have not been
+  incorporated into the upstream branch, while the upstream contains commits
+  missing from your local branch.
+
+* Command: Caution: `git pull --rebase`. This fetches upstream changes and
+  replays local commits on top of them. If conflicts occur, resolve them and use
+  `git rebase --continue`, or cancel with `git rebase --abort`. See the
   [git rebase documentation](https://git-scm.com/docs/git-rebase "Replay commits on another base and resolve rebase conflicts").
-  Expected result: The local branch contains the upstream
-  commits followed by the replayed local commits and can be
-  pushed if no other errors remain.
+  Expected result: The local branch contains the upstream commits followed by
+  the replayed local commits and can be pushed if no other errors remain.
 
-  When this hint and a reactive push-failure or divergence hint
-  trigger together, display the immediate failure hint first,
-  followed by this rebase suggestion. Do not replace the
-  immediate failure hint.
+  When this hint and a reactive push-failure or divergence hint trigger
+  together, display the immediate failure hint first, followed by this rebase
+  suggestion. Do not replace the immediate failure hint.
 
-* ID: `rebase-after-repeated-integration-failures`, priority class: error/blocked, safety: caution.
+* ID: `rebase-after-repeated-integration-failures`, priority class:
+  error/blocked, safety: caution.
 
+* Conditions: Track qualifying integration failures separately for each local
+  branch. Store the failure state in `git-hints/integration-failures.json` at
+  the path returned by `git rev-parse --git-path
+  git-hints/integration-failures.json`.
 
-* Conditions: Track qualifying integration failures separately for each
-  local branch. Store the failure state in
-  `git-hints/integration-failures.json` at the path returned by
-  `git rev-parse --git-path git-hints/integration-failures.json`.
+  Key each record by the full branch reference returned by `git symbolic-ref
+  --quiet HEAD`. Store the failure count and the current `HEAD` commit ID. If
+  the state file is missing or unreadable, initialize the count to zero. Write
+  updates atomically using a temporary file followed by a rename.
 
-  Key each record by the full branch reference returned by
-  `git symbolic-ref --quiet HEAD`. Store the failure count and the
-  current `HEAD` commit ID. If the state file is missing or unreadable,
-  initialize the count to zero. Write updates atomically using a
-  temporary file followed by a rename.
+  Count only the following failures from commands executed through `git-hints
+  explain`:
 
-  Count only the following failures from commands executed through
-  `git-hints explain`:
+  * A `git push` rejected with `(fetch first)` or `(non-fast-forward)`.
+  * A `git pull` failing with "Need to specify how to reconcile divergent
+    branches" or "Not possible to fast-forward".
 
-  - A `git push` rejected with `(fetch first)` or
-    `(non-fast-forward)`.
-  - A `git pull` failing with "Need to specify how to reconcile
-    divergent branches" or "Not possible to fast-forward".
+  Match the relevant fragments in Git's captured error output, rather than
+  requiring complete lines to match.
 
-  Match the relevant fragments in Git's captured error output,
-  rather than requiring complete lines to match.
+  Do not count authentication failures, network failures, missing upstream
+  branches, dirty working trees, or unresolved conflicts. Do not count a failed
+  `git pull --rebase`. Do not recommend rebasing while a merge or rebase is in
+  progress. An upstream branch is required before counting an integration
+  failure toward a rebase recommendation.
 
-  Do not count authentication failures, network failures, missing
-  upstream branches, dirty working trees, or unresolved conflicts.
-  Do not count a failed `git pull --rebase`. Do not recommend rebasing
-  while a merge or rebase is in progress.
-  An upstream branch is required before counting an integration failure toward a rebase recommendation.
+  Skip failure counting outside a working tree, in detached HEAD, or when the
+  executed Git command uses repository-redirection options such as `-C`,
+  `--git-dir`, or `--work-tree`.
 
-  Skip failure counting outside a working tree, in detached HEAD,
-  or when the executed Git command uses repository-redirection
-  options such as `-C`, `--git-dir`, or `--work-tree`.
+  Display the hint on the fifth qualifying failure for the same branch. Reset
+  its count to zero when:
 
-  Display the hint on the fifth qualifying failure for the same
-  branch. Reset its count to zero when:
+  * A pull or push through `git-hints explain` succeeds.
+  * The hint is displayed.
+  * The stored `HEAD` commit ID differs from the current `HEAD`.
 
-  - A pull or push through `git-hints explain` succeeds.
-  - The hint is displayed.
-  - The stored `HEAD` commit ID differs from the current `HEAD`.
-
-  Other commands and failures that do not qualify leave the
-  count unchanged.
+  Other commands and failures that do not qualify leave the count unchanged.
 
 * Test case: Suggesting rebase after repeated failures (written by sbe80;
   revised by raf322).
 
   1. The autouse `git_setup()` fixture provides the isolated Git environment.
      Create directories `remote`, `local`, and `other` using
-     `make_temps(tmp_path_factory, 3)`. Call
-     `config_user("user1", "user1@foo.com")` once to set the isolated
-     global author identity.
-  2. Use `make_repo(remote, [["git", "init", "--bare", "-b", "main"]])`
-     to create the bare remote, and clone it into `local`.
-     In `local`, create and commit `foo.txt`, then run
-     `git push -u origin main`.
-  3. Clone `remote` into `other`. If testing a distinct second author,
-     configure `user.name` and `user.email` using `git config --local`
-     inside `other`; do not call `config_user()` again.
-  4. In `local`, create `bar.txt`, stage it with `git add bar.txt`, and
-     commit with `git commit -m "Add bar."`. In `other`, append `z` to
-     `foo.txt`, commit, and run `git push`. This creates divergence in
-     different files and permits a conflict-free rebase later.
+     `make_temps(tmp_path_factory, 3)`. Call `config_user("user1",
+     "user1@foo.com")` once to set the isolated global author identity.
+  2. Use `make_repo(remote, [["git", "init", "--bare", "-b", "main"]])` to
+     create the bare remote, and clone it into `local`. In `local`, create and
+     commit `foo.txt`, then run `git push -u origin main`.
+  3. Clone `remote` into `other`. If testing a distinct second author, configure
+     `user.name` and `user.email` using `git config --local` inside `other`; do
+     not call `config_user()` again.
+  4. In `local`, create `bar.txt`, stage it with `git add bar.txt`, and commit
+     with `git commit -m "Add bar."`. In `other`, append `z` to `foo.txt`,
+     commit, and run `git push`. This creates divergence in different files and
+     permits a conflict-free rebase later.
   5. In `local`, run `git-hints explain -- git push` four times, each in a
      separate process. Require a nonzero exit and a qualifying `(fetch first)`
      or `(non-fast-forward)` rejection each time. Verify that the ID
-     `rebase-after-repeated-integration-failures` is absent from each
-     response.
-  6. On the fifth qualifying rejected push, verify that the rebase hint
-     appears, after the immediate failure hint. Inspect its `Caution:`
-     command, expected result, backup/conflict explanation, the `error/blocked` priority, and official
-     `git pull` and `git rebase` documentation links.
-  7. Run one more qualifying rejected push and verify that the rebase hint
-     is absent because its counter reset when it was displayed.
+     `rebase-after-repeated-integration-failures` is absent from each response.
+  6. On the fifth qualifying rejected push, verify that the rebase hint appears,
+     after the immediate failure hint. Inspect its `Caution:` command, expected
+     result, backup/conflict explanation, the `error/blocked` priority, and
+     official `git pull` and `git rebase` documentation links.
+  7. Run one more qualifying rejected push and verify that the rebase hint is
+     absent because its counter reset when it was displayed.
   8. Run `git-hints explain -- git pull --rebase` in `local` and verify it
-     succeeds, replays the local commit on top of the upstream commit,
-     and leaves no rebase in progress. Run `git-hints explain -- git push`
-     and verify it succeeds with no rebase hint.
-  9. During cleanup (including assertion failures), abort any rebase left
-     in progress in `local` with `git rebase --abort`.
-
+     succeeds, replays the local commit on top of the upstream commit, and
+     leaves no rebase in progress. Run `git-hints explain -- git push` and
+     verify it succeeds with no rebase hint.
+  9. During cleanup (including assertion failures), abort any rebase left in
+     progress in `local` with `git rebase --abort`.
 * Additional test cases: Integration-failure counter.
 
   Use fresh isolated repositories for each scenario, with `git_setup()`,
   `make_temps()`, and `make_repo()` as appropriate. Unless otherwise stated,
-  recreate the two diverged clones described in steps 1–4 above. Invoke
-  every tested push/pull through a separate `git-hints explain -- ...`
-  process. Inspect Git's nonzero exit code and stderr and verify that IDs
-  are present or absent as complete `ID: <id>` lines. The tests may also
-  use the global `--ids-only` option before `explain` to check reactive IDs.
+  recreate the two diverged clones described in steps 1–4 above. Invoke every
+  tested push/pull through a separate `git-hints explain -- ...` process.
+  Inspect Git's nonzero exit code and stderr and verify that IDs are present or
+  absent as complete `ID: <id>` lines. The tests may also use the global
+  `--ids-only` option before `explain` to check reactive IDs.
 
-  1. **Mixed eligible failures:** Produce three qualifying rejected pushes
-     in `local`. Run `git-hints explain -- git pull --ff-only` on the
-     diverged branch and require the "Not possible to fast-forward" error.
-     Run one more rejected push. Verify that the rebase hint is absent for
-     the first four eligible failures and appears on the fifth.
+  1. **Mixed eligible failures:** Produce three qualifying rejected pushes in
+     `local`. Run `git-hints explain -- git pull --ff-only` on the diverged
+     branch and require the "Not possible to fast-forward" error. Run one more
+     rejected push. Verify that the rebase hint is absent for the first four
+     eligible failures and appears on the fifth.
+
   2. **Successful-operation reset:** Produce four qualifying rejected pushes.
-     Without changing `HEAD` or the upstream branch, successfully run
-     `git-hints explain -- git push origin HEAD:refs/heads/test-reset-ref`
-     to create a separate remote branch. Then reject another push to the
-     original upstream. Verify that the rebase hint is absent: the successful
-     push reset the count. Verify that `HEAD` remained unchanged across
-     the successful command.
+     Without changing `HEAD` or the upstream branch, successfully run `git-hints
+     explain -- git push origin HEAD:refs/heads/test-reset-ref` to create a
+     separate remote branch. Then reject another push to the original upstream.
+     Verify that the rebase hint is absent: the successful push reset the count.
+     Verify that `HEAD` remained unchanged across the successful command.
+
   3. **Ineligible errors:** In a fresh branch with no configured upstream,
-     attempt `git-hints explain -- git push` five times. Require each
-     failure to report the missing upstream, and verify that the rebase
-     hint never appears. Also verify that network/authentication errors
-     and a failed `git pull --rebase` do not increment the count.
+     attempt `git-hints explain -- git push` five times. Require each failure to
+     report the missing upstream, and verify that the rebase hint never appears.
+     Also verify that network/authentication errors and a failed `git pull
+     --rebase` do not increment the count.
+
   4. **Branch isolation:** Produce four qualifying rejected pushes on `main`.
-     Create and switch to another local branch `feature` from `main`.
-     Configure `feature` to track `origin/main` using
-     `git branch --set-upstream-to=origin/main feature`.
-     Attempt a push using `git-hints explain -- git push origin HEAD:main`;
-     require a qualifying non-fast-forward rejection and verify that the
-     rebase hint remains absent on `feature` after its first failure.
-     Switch back to `main`; verify that its next qualifying failure reaches
-     the fifth-failure threshold and triggers the hint.
-  5. **Unrelated commands:** Produce four qualifying failures. Run
-     `git-hints explain -- git status`, require success, and verify that
-     a fifth qualifying rejected push triggers the hint. An unrelated
-     successful Git command does not clear the counter.
+     Create and switch to another local branch `feature` from `main`. Configure
+     `feature` to track `origin/main` using `git branch
+     --set-upstream-to=origin/main feature`. Attempt a push using `git-hints
+     explain -- git push origin HEAD:main`; require a qualifying
+     non-fast-forward rejection and verify that the rebase hint remains absent
+     on `feature` after its first failure. Switch back to `main`; verify that
+     its next qualifying failure reaches the fifth-failure threshold and
+     triggers the hint.
+
+  5. **Unrelated commands:** Produce four qualifying failures. Run `git-hints
+     explain -- git status`, require success, and verify that a fifth qualifying
+     rejected push triggers the hint. An unrelated successful Git command does
+     not clear the counter.
+
   6. **Changed HEAD:** Produce four qualifying failures, create and commit a
      different local file, and confirm that `HEAD` now has a new commit ID.
-     Reject another push and verify that the rebase hint is absent because
-     the stored counter resets after the `HEAD` change.
-  
-  7. **Operation in progress:** Set up a fresh diverged repository
-     using the earlier test setup. Fetch the remote changes with
-     `git fetch origin`.
+     Reject another push and verify that the rebase hint is absent because the
+     stored counter resets after the `HEAD` change.
 
-     Before counting failures, modify `foo.txt` in `local` so its
-     contents conflict with the changes made to `foo.txt` in
-     `other`. Commit this local modification.
+  7. **Operation in progress:** Set up a fresh diverged repository using the
+     earlier test setup. Fetch the remote changes with `git fetch origin`.
 
-     Run `git-hints explain -- git push` four times. Verify that
-     each push fails with a qualifying non-fast-forward rejection
-     and that `rebase-after-repeated-integration-failures` is
-     absent.
+     Before counting failures, modify `foo.txt` in `local` so its contents
+     conflict with the changes made to `foo.txt` in `other`. Commit this local
+     modification.
 
-     Run `git merge origin/main` and verify that it fails with
-     an unresolved conflict in `foo.txt`. Confirm the conflict
-     using `git diff --name-only --diff-filter=U`.
+     Run `git-hints explain -- git push` four times. Verify that each push fails
+     with a qualifying non-fast-forward rejection and that
+     `rebase-after-repeated-integration-failures` is absent.
 
-     While the merge remains unresolved, run
-     `git-hints explain -- git push` once more. Verify that
-     the push fails with a qualifying non-fast-forward rejection
-     but the rebase hint remains suppressed. This failure must
-     not increment the counter.
+     Run `git merge origin/main` and verify that it fails with an unresolved
+     conflict in `foo.txt`. Confirm the conflict using `git diff --name-only
+     --diff-filter=U`.
 
-     Abort the merge using `git merge --abort` and verify that
-     `HEAD` has not changed.
+     While the merge remains unresolved, run `git-hints explain -- git push`
+     once more. Verify that the push fails with a qualifying non-fast-forward
+     rejection but the rebase hint remains suppressed. This failure must not
+     increment the counter.
 
-     Run `git-hints explain -- git push` again. Verify that
-     the rebase hint now appears because this is the fifth
-     counted qualifying failure.
+     Abort the merge using `git merge --abort` and verify that `HEAD` has not
+     changed.
 
-     Ensure that `git merge --abort` is also performed during
-     test cleanup if any earlier assertion fails.
+     Run `git-hints explain -- git push` again. Verify that the rebase hint now
+     appears because this is the fifth counted qualifying failure.
 
-
+     Ensure that `git merge --abort` is also performed during test cleanup if
+     any earlier assertion fails.
 
 #### Finish or cancel the operation in progress? (raf322)
 
@@ -2036,7 +1996,8 @@ codes, so no additional Git library is required.
   redirect Git's standard output to `subprocess.DEVNULL` so it is not displayed.
   Capture standard error and display it after completion (not live). In normal
   output, display the exit code; under `--ids-only`, omit the exit-code message.
-  Always return Git's exit code. Use the command, exit code, standard error, and
+  Return Git's exit code unless Git cannot be launched or an unexpected
+  inspection error occurs. Use the command, exit code, standard error, and
   inspected repository state to select reactive hints. Do not disable Git's
   terminal prompting or editor for `git-hints explain`; the
   `GIT_TERMINAL_PROMPT=0` requirement applies only to the tool's optional fetch
@@ -2054,15 +2015,17 @@ For both modes, pass arguments separately with `shell=False` and `check=False`.
 Interpret `returncode` according to each command's documented meaning; expected
 nonzero codes are not automatically application errors. Report unexpected
 failures separately and suppress hints that depend the failed commands. If Git
-ran, return Git's exit code. If Git cannot be launched, report that failure
-instead of inventing a Git exit code or repository condition.
+ran, return Git's exit code, unless an unexpected inspection failure occurs. If
+Git cannot be launched, report that failure instead of inventing a Git exit code
+or repository condition.
 
 Plain `git-hints` exits 0 whenever inspection completes, whether or not any hint
 is triggered. It exits nonzero only when it reports an unexpected inspection
 failure or that Git cannot be launched. (drj228)
 
 `git-hints explain` should also return non zero if Git does not launch or for
-any unexpected inspection failures.
+any unexpected inspection failures. Display Git's exit code in normal output,
+unless `--ids-only` is used.
 
 Decode Git output as UTF-8 (`encoding="utf-8", errors="replace"`), not with the
 locale default. When a path list is parsed, use `-z` or `-c
@@ -2092,8 +2055,8 @@ The test tool contains:
   not join arguments into a shell string. (drj228) File-operation lambdas must
   use paths rooted at `temp_dir`—for example, `temp_dir / "foo.txt"`—and must
   not rely on or change the process’s current working directory. `make_repo()`
-  does not call `os.chdir`. It raises an exception, failing the test, as soon
-     as any command exits nonzero.
+  does not call `os.chdir`. It raises an exception, failing the test, as soon as
+  any command exits nonzero.
 * `git_setup()`: creates an isolated Git configuration for the test environment.
   The test environment shall:
   * Remove every inherited environment variable whose name starts with `GIT_`,
