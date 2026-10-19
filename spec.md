@@ -73,19 +73,19 @@ CLI commands
      remains on standard error; the process still returns Git's exit code. With
      `--all`, the reactive output remains complete.
 
-     * Configure Typer to accept extra arguments and ignore unknown options
-       (`allow_extra_args=True`, `ignore_unknown_options=True`), so Git receives
-       flags and arguments intact. Examples: `git-hints explain -- git pull
-       --rebase` and `git-hints explain -- git reset --hard HEAD~1`.
+   * Configure Typer to accept extra arguments and ignore unknown options
+     (`allow_extra_args=True`, `ignore_unknown_options=True`), so Git receives
+     flags and arguments intact. Examples: `git-hints explain -- git pull
+     --rebase` and `git-hints explain -- git reset --hard HEAD~1`.
 
-     * On Windows, call the Typer entry point with
-       `app(windows_expand_args=False)` to prevent Typer/Click from expanding
-       wildcards, `~`, and environment variables intended for Git. This setting
-       applies to the CLI entry point, not just `explain`.
+   * On Windows, call the Typer entry point with
+     `app(windows_expand_args=False)` to prevent Typer/Click from expanding
+     wildcards, `~`, and environment variables intended for Git. This setting
+     applies to the CLI entry point, not just `explain`.
 
-     * Any state needed across invocations, including counts of repeated
-       integration failures, belongs under the path returned by `git rev-parse
-       --git-path  git-hints` so linked worktrees are handled correctly.
+   * Any state needed across invocations, including counts of repeated
+     integration failures, belongs under the path returned by `git rev-parse
+     --git-path git-hints` so linked worktrees are handled correctly.
 3. **`--help`**: Typer automatically generates help for commands and
    subcommands. Each implemented command/subcommand docstring must include at
    least one complete usage example, such as `git-hints --all` or `git-hints
@@ -251,7 +251,7 @@ Hint structure
    context line; with `--ids-only`, print nothing. With more than three hints in
    normal output, place the exact notice `<n> more hint(s) available; run
    "git-hints --all" to see them.` immediately after the context line, where
-   `<n>` is the number not shown.Example normal output when five hints are
+   `<n>` is the number not shown. Example normal output when five hints are
    triggered, the first of which is `behind`:
 
    ```text
@@ -259,11 +259,11 @@ Hint structure
    2 more hint(s) available; run "git-hints --all" to see them.
    ID: behind
    Priority: workflow
-   As of last fetch: Do you want to pull [1] the newest remote commits?
-   [1] pull: Incorporate changes from a remote repository https://git-scm.com/docs/git-pull
-   Git stage: Your local repository is behind its configured remote-tracking branch.
+   As of last fetch: Do you want to pull [1] the newest remote commits before you start editing? Your branch does not contain remote commits that were known at the last fetch.
+   [1] pull: Fetches commits from the remote and integrates them into your current branch https://git-scm.com/docs/git-pull
+   Git stage: You are working in the local repo, which is missing commits that the remote repo already has.
    Command: git pull
-   Result: Your local branch incorporates the incoming changes if the pull succeeds.
+   Result: git status reports that your branch is up to date with its upstream.
    ```
 
 The example is illustrative, not a claim that `git pull` will always succeed or
@@ -281,7 +281,7 @@ runs. Every proactive hint except `not-a-repo` requires `git rev-parse
 structure, item 1) covers output `false`, and `not-a-repo` covers exit code 128.
 The Conditions of the hints below assume this check and do not repeat it.
 
-#### Stage files
+### Stage files
 
 * Hint: Do you want to
   [stage](https://git-scm.com/docs/git-add "Also called the index; select which changed files to store in a commit")
@@ -323,25 +323,25 @@ The Conditions of the hints below assume this check and do not repeat it.
 * Hint: Do you want to
   [push](https://git-scm.com/docs/git-push "Uploads the latest changes of your local repository (repo) to a remote repository, this allows other collaborators to download your work.")?
 
-  Git stage: Your local repository has commits that are not contained in its
+* Git stage: Your local repository has commits that are not contained in its
   upstream tracking branch.
 
-  Command: `git push <remote> HEAD:<upstream-branch>`; replace `<remote>` with
+* Command: `git push <remote> HEAD:<upstream-branch>`; replace `<remote>` with
   the upstream's remote and `<upstream-branch>` with its branch name. After a
   successful push, the remote branch contains the uploaded commits.
 
-  * ID: `push-ahead`, priority class: workflow, safety: safe.
+* ID: `push-ahead`, priority class: workflow, safety: safe.
 
-  * Conditions: Run `git status --porcelain=v2 --branch` to check the current
-    branch's upstream status. Display this hint only when the current branch
-    tracks a branch on a configured remote, is ahead by one or more commits, and
-    is behind by zero commits. Use that upstream's remote and branch name in the
-    suggested push command; do not display this hint for a local upstream. Label
-    the hint "as of last fetch" unless `--fetch` succeeds.
+* Conditions: Run `git status --porcelain=v2 --branch` to check the current
+  branch's upstream status. Display this hint only when the current branch
+  tracks a branch on a configured remote, is ahead by one or more commits, and
+  is behind by zero commits. Use that upstream's remote and branch name in the
+  suggested push command; do not display this hint for a local upstream. Label
+  the hint "as of last fetch" unless `--fetch` succeeds.
 
-  * Test case:
+* Test case:
 
-  1. **Setup** The autouse `git_setup` fixture provides the isolated
+  1. **Setup:** The autouse `git_setup` fixture provides the isolated
      environment. Create three temporary directories: `remote`, `local`, and
      `other`.
 
@@ -394,10 +394,10 @@ The Conditions of the hints below assume this check and do not repeat it.
 * Hint: Would you like to clone a
   [repository](https://git-scm.com/docs/git-clone "Clone a repository into a new directory")?
 
-  Git stage: You are not inside a Git repository, you need to either clone or
+* Git stage: You are not inside a Git repository; you need to either clone or
   initialize a repository before you can begin tracking files.
 
-  Command: `git clone <repository-url>`; afterward, Git creates a local copy of
+* Command: `git clone <repository-url>`; afterward, Git creates a local copy of
   the specified repository.
 
 * ID: `not-a-repo`, priority class: informational, safety: safe.
@@ -410,9 +410,10 @@ The Conditions of the hints below assume this check and do not repeat it.
 
 * Test case:
 
-  1. The autouse `git_setup` fixture provides the isolated environment and
-     `make_temps(tmp_path_factory, 1)`. Set `GIT_CEILING_DIRECTORIES` to the
-     temporary directory's parent so Git cannot discover an enclosing repo.
+  1. The autouse `git_setup` fixture provides the isolated environment. Create
+     one temporary directory with `make_temps(tmp_path_factory, 1)`. Set
+     `GIT_CEILING_DIRECTORIES` to the temporary directory's parent so Git
+     cannot discover an enclosing repo.
   2. In the temporary directory, run `git rev-parse --is-inside-work-tree` and
      verify exit code 128.
   3. Run `git-hints --all --ids-only`. Verify that `not-a-repo` appears. Run
@@ -422,7 +423,7 @@ The Conditions of the hints below assume this check and do not repeat it.
   4. Run `git init -b main`, then `git-hints --all --ids-only` again. Verify
      that `not-a-repo` is absent.
 
-#### Keep [unstaged changes](https://git-scm.com/docs/git-diff "Shows unstaged changes in the working tree.") out of this commit?
+### Keep unstaged changes out of this commit?
 
 * Hint: Do you want to keep unstaged changes out of this commit?
   [git commit](https://git-scm.com/docs/git-commit "Records the staged changes in a new commit.")
@@ -452,8 +453,8 @@ The Conditions of the hints below assume this check and do not repeat it.
 
 * Test case: Staged and unstaged changes.
 
-  1. The autouse `git_setup` fixture provides the isolated environment and
-     create one temporary directory.
+  1. The autouse `git_setup` fixture provides the isolated environment.
+     Create one temporary directory.
   2. In the temporary directory, initialize a repository with `git init -b
      main`.
   3. Call `config_user("user1", "user1@foo.com")` after initializing the
@@ -493,8 +494,8 @@ The Conditions of the hints below assume this check and do not repeat it.
         `https://git-scm.com/docs/git-commit`.
 * Conflict suppression test:
 
-  1. The autouse `git_setup` fixture provides the isolated environment and
-     create one temporary directory.
+  1. The autouse `git_setup` fixture provides the isolated environment.
+     Create one temporary directory.
   2. Initialize a repository there with `git init -b main` and call
      `config_user("user1", "user1@example.com")`.
   3. Create `conflict.txt` and `other.txt`, each containing `base`. Stage both
@@ -513,7 +514,7 @@ The Conditions of the hints below assume this check and do not repeat it.
      conflict exists.
   9. Run `git merge --abort` as cleanup, including if an assertion fails.
 
-#### Branch is behind upstream
+### Branch is behind upstream
 
 * Hint: Do you want to
   [pull](https://git-scm.com/docs/git-pull "Fetches commits from the remote and integrates them into your current branch")
@@ -539,8 +540,8 @@ The Conditions of the hints below assume this check and do not repeat it.
 
 * Test case:
 
-  1. The autouse `git_setup` fixture provides the isolated environment and
-     create two temporary directories, `repo1` and `repo2`. Run every
+  1. The autouse `git_setup` fixture provides the isolated environment.
+     Create two temporary directories, `repo1` and `repo2`. Run every
      `git-hints` command in `repo2`.
   2. In `repo1`, initialize a repository with `git init -b main` and call
      `config_user("user1", "user1@foo.com")`.
@@ -551,8 +552,8 @@ The Conditions of the hints below assume this check and do not repeat it.
      `repo1` acts as the remote. Nothing is pushed, because `repo2` only fetches
      from it, so it does not need to be bare.
   6. In `repo2`, run `git status --porcelain=v2 --branch` and verify that it
-     reports `# branch.ab +0 -0`. Run `git-hints --ids-only` and verify that
-     `behind` is absent, because `repo2` has not fetched.
+     reports `# branch.ab +0 -0`. Run `git-hints --all --ids-only` and
+     verify that `behind` is absent, because `repo2` has not fetched.
   7. In `repo2`, run `git fetch` and verify that the status now reports `#
      branch.ab +0 -1`.
   8. Run `git-hints --all`. Verify that the `behind` hint appears, is labeled
@@ -560,15 +561,16 @@ The Conditions of the hints below assume this check and do not repeat it.
      pull` documentation. Verify that `diverged` and `push-ahead` are absent.
   9. In `repo1`, append `z` and run `git commit -am "Change foo again."`. In
      `repo2`, run `git fetch` and verify `# branch.ab +0 -2`. Run `git-hints
-     --ids-only` and verify that `behind` still appears.
+     --all --ids-only` and verify that `behind` still appears.
   10. In `repo2`, run `git pull` and verify `# branch.ab +0 -0`. Run `git-hints
-      --ids-only` and verify that `behind` is absent.
+      --all --ids-only` and verify that `behind` is absent.
   11. In `repo1`, append `w` and run `git commit -am "Change foo once more."`.
-      In `repo2`, run `git-hints --ids-only` and verify that `behind` is absent,
-      then run `git-hints --ids-only --fetch` and verify that `behind` appears
-      even though `repo2` never ran `git fetch` itself.
+      In `repo2`, run `git-hints --all --ids-only` and verify that `behind` is
+      absent, then run `git-hints --all --ids-only --fetch` and verify that
+      `behind` appears even though `repo2` has not run `git fetch` since this
+      commit.
 
-#### Branch has diverged from upstream
+### Branch has diverged from upstream
 
 * Hint: Your branch has diverged from its upstream. Do you want to integrate the
   remote commits with
@@ -586,7 +588,7 @@ The Conditions of the hints below assume this check and do not repeat it.
   recoverable through the reflog. A plain `git pull` fails on diverged branches
   unless `pull.rebase` or `pull.ff` is configured.
 
-* ID: `diverged`, priority class: workflow, safety: safe.
+* ID: `diverged`, priority class: workflow, safety: caution.
 
 * Conditions: The current branch has an upstream and is both ahead of and behind
   it, as of the last fetch. Run `git status --porcelain=v2 --branch` and read `#
@@ -604,16 +606,17 @@ The Conditions of the hints below assume this check and do not repeat it.
   2. In `repo2`, create `bar.txt` containing `zzz`, stage it with `git add
      bar.txt`, and commit it with `git commit -m "Add bar."`.
   3. Run `git status --porcelain=v2 --branch` and verify `# branch.ab +1 -0`.
-     Run `git-hints --ids-only` and verify that `push-ahead` appears and
-     `diverged` is absent, because `repo2` has not fetched the new remote
+     Run `git-hints --all --ids-only` and verify that `push-ahead` appears
+     and `diverged` is absent, because `repo2` has not fetched the new remote
      commit.
   4. Run `git fetch` and verify that the status now reports `# branch.ab +1 -1`.
   5. Run `git-hints --all`. Verify that the `diverged` hint appears, is labeled
-     "as of last fetch", suggests `git pull` or `git pull --rebase` and then
-     `git push`, and links to the official `git pull` and `git push`
-     documentation. Verify that `behind` and `push-ahead` are absent.
+     "as of last fetch", suggests `git pull --no-rebase` and then `git push`,
+     offers `git pull --rebase` with a `Caution:` prefix as the alternative,
+     and links to the official `git pull` and `git push` documentation. Verify
+     that `behind` and `push-ahead` are absent.
 
-#### Configure an upstream branch?
+### Configure an upstream branch?
 
 * Hint: Do you want to configure an
   [upstream branch](https://git-scm.com/docs/git-branch "A remote branch that your local branch tracks")
@@ -640,30 +643,31 @@ The Conditions of the hints below assume this check and do not repeat it.
 
 * Test case:
 
-1. Invoke `make_temps(tmp_path_factory, 2)` to create two temporary directories.
-2. In the first directory:
-   1. Initialize a repository with `git init -b main`.
-   2. Call `config_user("user1", "user1@foo.com")`.
-   3. Create `foo.txt` containing `xxx`.
-   4. Stage it with `git add foo.txt`.
-   5. Commit it with `git commit -m "Add foo."`.
-   6. Create and switch to a new branch with `git switch -c feature-test`.
-3. In the second directory, initialize a bare remote repository with `git init
-   --bare`.
-4. In the first directory, add the second repository as the `origin` remote
-   using `git remote add origin <path-to-second-directory>`.
-5. Run `git rev-parse --abbrev-ref --symbolic-full-name @{upstream}` and verify
-   that it fails because no upstream is configured.
-6. Run `git-hints --all`. Verify that the hint with ID `no-upstream-branch`
-   appears and recommends `git push -u origin feature-test`.
-7. Run `git push -u origin feature-test` to push the branch and configure its
-   upstream.
-8. Run `git rev-parse --abbrev-ref --symbolic-full-name "@{upstream}"` and
-   verify that it returns `origin/feature-test`.
-9. Run `git-hints --all` and verify that the hint with ID `no-upstream-branch`
-   is absent.
+  1. Invoke `make_temps(tmp_path_factory, 2)` to create two temporary
+     directories.
+  2. In the first directory:
+     1. Initialize a repository with `git init -b main`.
+     2. Call `config_user("user1", "user1@foo.com")`.
+     3. Create `foo.txt` containing `xxx`.
+     4. Stage it with `git add foo.txt`.
+     5. Commit it with `git commit -m "Add foo."`.
+     6. Create and switch to a new branch with `git switch -c feature-test`.
+  3. In the second directory, initialize a bare remote repository with `git
+     init --bare`.
+  4. In the first directory, add the second repository as the `origin` remote
+     using `git remote add origin <path-to-second-directory>`.
+  5. Run `git rev-parse --abbrev-ref --symbolic-full-name @{upstream}` and
+     verify that it fails because no upstream is configured.
+  6. Run `git-hints --all`. Verify that the hint with ID `no-upstream-branch`
+     appears and recommends `git push -u origin feature-test`.
+  7. Run `git push -u origin feature-test` to push the branch and configure
+     its upstream.
+  8. Run `git rev-parse --abbrev-ref --symbolic-full-name "@{upstream}"` and
+     verify that it returns `origin/feature-test`.
+  9. Run `git-hints --all` and verify that the hint with ID
+     `no-upstream-branch` is absent.
 
-#### Review staged changes before committing?
+### Review staged changes before committing?
 
 * Hint: Would you like to review your
   [staged changes](https://git-scm.com/docs/git-diff "Show changes staged for the next commit")
@@ -682,19 +686,19 @@ The Conditions of the hints below assume this check and do not repeat it.
 * ID: `staged-changes`, priority class: workflow, safety: safe.
 
 * Conditions: Display this hint when the staging area contains at least one
-  change to be committed. Run `git diff --cached --quiet`; exit code 1 means
-  staged changes exist, exit code 0 means none exist, and any other exit code
+  change to be committed, including staged files in a repository with no
+  commits yet. Run `git diff --cached --quiet`; exit code 1 means staged
+  changes exist, exit code 0 means none exist, and any other exit code
   indicates an error. Do not display the hint when the staging area is empty.
-  This includes staged files in a repository with no commits yet. Do not display
-  this hint while the index contains unresolved merge entries; check with `git
-  diff --name-only --diff-filter=U`. Also suppress it while a rebase is in
-  progress, using the `rebase-merge` and `rebase-apply` path checks defined by
-  `detached-head`.
+  Do not display this hint while the index contains unresolved merge entries;
+  check with `git diff --name-only --diff-filter=U`. Also suppress it while a
+  rebase is in progress, using the `rebase-merge` and `rebase-apply` path
+  checks defined by `detached-head`.
 
 * Test case:
 
-  1. The autouse `git_setup` fixture provides the isolated environment and
-     create one temporary directory.
+  1. The autouse `git_setup` fixture provides the isolated environment.
+     Create one temporary directory.
   2. Initialize a repository in that directory with `git init -b main`.
   3. Call `config_user("user1", "user1@example.com")`.
   4. Run `git-hints --all` and verify that the `staged-changes` hint is absent.
@@ -720,7 +724,7 @@ The Conditions of the hints below assume this check and do not repeat it.
     local override should be corrected locally. These settings identify commit
     authors; they do not sign the user into GitHub.
 
-#### Stage or ignore untracked files
+### Stage or ignore untracked files
 
 * Hint: Do you need to
   [stage](https://git-scm.com/docs/git-add "Add files to the staging area") or
@@ -819,7 +823,7 @@ The Conditions of the hints below assume this check and do not repeat it.
       Verify that `git-hints --all --ids-only` still includes `untracked-files`,
       since inspection explicitly uses `--untracked-files=all`.
 
-#### Review and commit widespread changes?
+### Review and commit widespread changes?
 
 * Hint: More than half of the tracked files in this repository have changes.
   Would you like to review the changes and
@@ -875,7 +879,7 @@ The Conditions of the hints below assume this check and do not repeat it.
   Unexpected Git command failures must be reported separately rather than
   interpreted as triggered hints.
 
-* Test case: Many changed files.
+* Test case: Widespread changes
 
   1. The autouse `git_setup()` fixture provides an isolated Git environment.
      Create `repo` using `make_temps(tmp_path_factory, 1)` and call
@@ -941,7 +945,7 @@ The Conditions of the hints below assume this check and do not repeat it.
       --all --ids-only`; verify that `many-changed-files` is absent. Run `git
       merge --abort` during cleanup, including after a failed assertion.
 
-#### Detached HEAD state
+### Detached HEAD state
 
 * Hint: You are in
   [detached HEAD](https://git-scm.com/docs/git-checkout#_detached_head "HEAD points at a commit instead of a branch; new commits belong to no branch").
@@ -1081,7 +1085,7 @@ The Conditions of the hints below assume this check and do not repeat it.
       switch --detach HEAD`, then `git-hints --all --ids-only` and verify that
       `detached-head` appears again. Finish with `git switch saved-work`.
 
-#### Current branch has no commits yet
+### Current branch has no commits yet
 
 * Hint: Your current branch has no commits yet. Prepare the files you want to
   save, then create your first
@@ -1189,7 +1193,7 @@ The Conditions of the hints below assume this check and do not repeat it.
       `no-upstream-branch` are absent. Ensure `git switch main` runs in cleanup
       even if an assertion fails.
 
-#### Make your changes on a new branch?
+### Make your changes on a new branch?
 
 * Hint: You have uncommitted changes on `<branch>`, the branch your remote
   treats as its default. Do you want to make them on a new
@@ -1280,7 +1284,276 @@ The Conditions of the hints below assume this check and do not repeat it.
      that `changes-on-default-branch` is absent. Ensure `git merge --abort` runs
      in cleanup even if an assertion fails.
 
-### `git-hints explain -- git <command> [<args>...]`
+     Ensure that `git merge --abort` is also performed during test cleanup if
+     any earlier assertion fails.
+
+### Finish or cancel the operation in progress?
+
+* Hint: A `<operation>` is in progress. Git paused it and is waiting for you to
+  finish or cancel it. The hint has two variants.
+
+  * Conflicts remain: "Some files have conflicts. Open each conflicted file,
+    choose the final content, then
+    [stage](https://git-scm.com/docs/git-add "Marks a resolved file so Git knows the conflict is fixed")
+    it. When no conflicts remain, run the continue command. To cancel instead,
+    run the abort command."
+  * No conflicts remain: "No conflicts remain. Run the continue command to
+    finish, or the abort command to cancel."
+
+  `<operation>` is replaced by `merge`, `rebase`, `cherry-pick`, or `revert`.
+  Show only the commands and the documentation link
+  (`https://git-scm.com/docs/git-<operation>`) for the detected operation.
+
+* Git stage: You are working in the local repository: Git has paused an
+  operation that combines commits, and any conflicted files stay in your working
+  directory and staging area until you resolve them.
+
+* Command: Run `git status` to see which files are unmerged. Resolve each one,
+  run `git add <file>`, then run the continue command for the operation:
+
+  | Operation   | Continue                     | Abort                     |
+  | ----------- | ---------------------------- | ------------------------- |
+  | merge       | `git merge --continue`       | `git merge --abort`       |
+  | rebase      | `git rebase --continue`      | `git rebase --abort`      |
+  | cherry-pick | `git cherry-pick --continue` | `git cherry-pick --abort` |
+  | revert      | `git revert --continue`      | `git revert --abort`      |
+
+  The CLI displays only the row for the detected operation. Expected result
+  after continuing: Git resumes the operation. A merge, cherry-pick, or revert
+  may record a new commit, and a completed rebase updates the branch. If another
+  conflict occurs, Git pauses again and this hint remains active. Once the
+  entire operation completes, this hint disappears and `git status` no longer
+  reports an operation in progress.
+
+  The continue command is safe. Prefix the abort command with `Warning:`,
+  because aborting discards the conflict resolutions you have made so far and
+  returns to the state before the operation began. Git may be unable to restore
+  uncommitted changes that existed before a merge started, so back up any
+  edited files first.
+
+* ID: `operation-in-progress`, priority class: error/blocked, safety: warning.
+
+* Conditions:
+
+  1. Confirm a Git working tree with `git rev-parse --is-inside-work-tree`;
+     require exit code 0 and output `true`. Do not run the remaining checks
+     outside a working tree.
+
+  2. Detect the operation. Check in the order below and report only the first
+     match, so a rebase that stops on a conflict is not reported as a
+     cherry-pick:
+
+     1. Rebase: for each of `rebase-merge` and `rebase-apply`, run `git
+        rev-parse --git-path <n>` and test whether that directory exists.
+        Resolve relative paths against the working directory used for these Git
+        commands. Ignore `rebase-apply` if it contains an `applying` file, since
+        that is `git am`, which is not supported. If a path lookup fails, report
+        the inspection error rather than assuming no operation is in progress.
+     2. Merge: `git rev-parse --verify --quiet MERGE_HEAD`.
+     3. Cherry-pick: `git rev-parse --verify --quiet CHERRY_PICK_HEAD`.
+     4. Revert: `git rev-parse --verify --quiet REVERT_HEAD`.
+
+     For the `rev-parse --verify` checks, exit code 0 means the operation is in
+     progress, exit code 1 means it is not, and any other exit code is an
+     inspection error. Use `--git-path` rather than hard-coding `.git/`, so the
+     checks work in worktrees and when the Git directory is elsewhere.
+
+  3. Detect unresolved files with `git diff --name-only --diff-filter=U`. If it
+     lists paths, use the "conflicts remain" variant. List paths in the order
+     Git returns them (sorted by path) and name up to five; if there are more,
+     append "and N more", where N is the exact number not listed. If it lists
+     none, use the "no conflicts remain" variant. A merge started with
+     `--no-commit` has `MERGE_HEAD` and no conflicts; the hint still applies.
+
+  4. Keep displaying the hint until the state file or directory is gone.
+
+  5. Limitation: a multi-commit cherry-pick or revert that stops partway is
+     detected only while `CHERRY_PICK_HEAD` or `REVERT_HEAD` exists.
+* Related output: This hint complements `merge-conflicts`; when both apply,
+  show both, as described in that hint's conditions. During a rebase, HEAD is
+  detached, so the context line shows `Branch: detached HEAD` and
+  `detached-head` is suppressed (see `detached-head`).
+
+* Test case: Operation in progress.
+
+  All commands run in the repository under test. The autouse `git_setup` fixture
+  provides the isolated environment, including `GIT_EDITOR=true`, so no command
+  waits for an editor. Collapse whitespace in hint output before searching it
+  for phrases.
+
+  1. Call `make_temps(tmp_path_factory, 1)`. In the directory: run `git init -b
+     main`; call `config_user("user1", "user1@foo.com")`; create `foo.txt`
+     containing `base`; stage it and commit with the message `"Add foo."`.
+  2. Run `git-hints --all --ids-only`. Verify that `operation-in-progress` is
+     absent in a clean repository.
+  3. Run `git switch -c topic`. Change `foo.txt` to `topic` and commit it with
+     `git commit -am "Topic change."`.
+  4. Run `git switch main`. Change `foo.txt` to `main` and commit it with `git
+     commit -am "Main change."`.
+  5. Merge conflict:
+     1. Run `git merge topic`. Verify that it exits nonzero, that `git rev-parse
+        --verify --quiet MERGE_HEAD` exits 0, and that `git diff --name-only
+        --diff-filter=U` lists `foo.txt`. Ensure `git merge --abort` runs in
+        cleanup if `MERGE_HEAD` still exists, even if an assertion fails.
+     2. Run `git-hints --all` and require exit code 0 and the first output line
+        exactly equal to `Branch: main`. Verify that the `operation-in-progress`
+        block names a merge, lists `foo.txt`, contains `git add`, `git merge
+        --continue`, `git merge --abort`, and `Warning:`, and links to
+        `https://git-scm.com/docs/git-merge`. Verify that it does not include
+        continuation or abort commands for other operations.
+     3. Run `git-hints --all --ids-only`. Verify that `operation-in-progress` is
+        present.
+  6. Resolved but not yet continued:
+     1. Change `foo.txt` to `resolved` and run `git add foo.txt`.
+     2. Run `git-hints --all`. Verify that `operation-in-progress` is still
+        present (`MERGE_HEAD` still exists), that its block contains the text
+        `No conflicts remain` and `git merge --continue`, and that it does not
+        list `foo.txt`.
+  7. Continue: run `git merge --continue` and require exit code 0. Verify that
+     `git rev-parse --verify --quiet MERGE_HEAD` exits 1. Run `git-hints --all
+     --ids-only` and verify that `operation-in-progress` is absent.
+  8. Abort path: run `git switch -c topic2`, change `foo.txt` to `topic2`, and
+     commit. Run `git switch main`, change `foo.txt` to `main2`, and commit. Run
+     `git merge topic2` (exits nonzero). Verify that `operation-in-progress` is
+     present, then run `git merge --abort` and verify that it is absent.
+  9. Rebase: run `git switch topic2`, then `git rebase main`.
+     1. Verify that `git rebase main` exits nonzero and that `git rev-parse
+        --git-path rebase-merge` names an existing directory. Ensure `git rebase
+        --abort` runs in cleanup if a rebase is still in progress.
+     2. Run `git-hints --all`. Verify that the `operation-in-progress` block
+        names a rebase (not a cherry-pick), contains `git rebase --continue` and
+        `git rebase --abort`, and links to
+        `https://git-scm.com/docs/git-rebase`. Verify that it does not include
+        continuation or abort commands for other operations.
+     3. Verify that the first output line is exactly `Branch: detached HEAD` and
+        that `detached-head` is absent from `git-hints --all --ids-only`.
+     4. Change `foo.txt` to `resolved2`, run `git add foo.txt`, then run `git
+        rebase --continue`. Require exit code 0. Run `git-hints --all
+        --ids-only` and verify that `operation-in-progress` is absent.
+  10. Cherry-pick:
+      1. Run `git switch main`, then `git switch -c pick-src`. Change `foo.txt`
+         to `pick` and commit with `git commit -am "Pick change."`.
+      2. Run `git switch main`. Change `foo.txt` to `main3` and commit with `git
+         commit -am "Main change 3."`.
+      3. Run `git cherry-pick pick-src`. Verify that it exits nonzero and that
+         `git rev-parse --verify --quiet CHERRY_PICK_HEAD` exits 0. Ensure `git
+         cherry-pick --abort` runs in cleanup if it is still in progress.
+      4. Run `git-hints --all`. Verify that the `operation-in-progress` block
+         names a cherry-pick, contains `git cherry-pick --continue` and `git
+         cherry-pick --abort`, and links to
+         `https://git-scm.com/docs/git-cherry-pick`. Verify that it does not
+         include continuation or abort commands for other operations.
+      5. Run `git cherry-pick --abort`, then `git-hints --all --ids-only`;
+         verify that `operation-in-progress` is absent.
+  11. Revert:
+      1. On `main`, change `foo.txt` to `main4` and commit with `git commit -am
+         "Main change 4."`.
+      2. Run `git revert HEAD~1`, which reverts "Main change 3." and conflicts
+         with the later change. Verify that it exits nonzero and that `git
+         rev-parse --verify --quiet REVERT_HEAD` exits 0. Ensure `git revert
+         --abort` runs in cleanup if it is still in progress.
+      3. Run `git-hints --all`. Verify that the `operation-in-progress` block
+         names a revert, contains `git revert --continue` and `git revert
+         --abort`, and links to `https://git-scm.com/docs/git-revert`. Verify
+         that it does not include continuation or abort commands for other
+         operations.
+      4. Run `git revert --abort`, then `git-hints --all --ids-only`; verify
+         that `operation-in-progress` is absent.
+
+### Stop tracking ignored files?
+
+* Hint: Do you want Git to stop tracking files that match active
+  [ignore rules](https://git-scm.com/docs/gitignore "Lists patterns for files Git should not track; it only affects files that are not already tracked")?
+  These rules may come from `.gitignore`, `.git/info/exclude`, or a global
+  excludes file. Ignoring a file does not affect files Git already tracks. To
+  stop tracking a file but keep it on your disk, use
+  [`git rm --cached`](https://git-scm.com/docs/git-rm "With --cached, removes a file from the index but leaves it in your working directory").
+  Anyone who pulls your commit will have the file deleted, and it remains in
+  earlier commits, so change any password or key it contained.
+
+* Git stage: These files are in Git's index and may also have been saved in
+  previous commits, so Git tracks them even though active ignore rules match
+  their paths.
+
+* Command: For each file, run `git rm --cached <file>` (`git rm -r --cached
+  <directory>` for directories). If a matching rule was newly added or modified
+  in a project `.gitignore`, stage that file with `git add .gitignore`. Review
+  the staged changes with `git diff --cached`, then run `git commit -m "Stop
+  tracking <file>"`. Expected result: after `git rm --cached`, previously
+  committed files show `deleted: <file>` under changes to be committed in `git
+  status`, and the files remain in your working directory. After the commit, the
+  selected files no longer appear in `git ls-files -ci --exclude-standard`.
+  Other tracked files that match active ignore rules may still be listed; this
+  hint disappears only when no matching tracked files remain.
+
+* ID: `tracked-but-ignored`, priority class: workflow, safety: safe.
+
+* Conditions: Do not run outside a working tree; confirm with `git rev-parse
+  --is-inside-work-tree` (exit code 0, output `true`). Run `git ls-files -ci
+  --exclude-standard -z`. Split the output on NUL characters, which keeps names
+  containing spaces or newlines intact. In this command, `-c` lists files in the
+  index and `-i` keeps only those matching an ignore pattern;
+  `--exclude-standard` applies `.gitignore`, `.git/info/exclude`, and the global
+  excludes file. Show the hint only when at least one path is returned. A
+  nonzero exit code is an inspection error, not evidence of tracked-but-ignored
+  files. List paths in the order `git ls-files` returns them (sorted by path)
+  and name up to five, quoted correctly in the suggested command; if there are
+  more, append "and N more", where N is the exact number not listed.
+
+  A file added deliberately with `git add -f` also matches, so keep the wording
+  conditional. A file re-included with a negation pattern such as `!debug.log`
+  is not ignored and must not appear.
+
+  Related output: `untracked-files` covers files Git is not tracking; this hint
+  covers files Git is tracking. The two must never report the same file. After
+  `git rm --cached`, a file is untracked and ignored, so neither hint reports
+  it.
+
+* Test case: Tracked but ignored
+
+  The autouse `git_setup` fixture provides the isolated environment. Collapse
+  whitespace in hint output before searching it for phrases.
+
+  1. Call `make_temps(tmp_path_factory, 1)`. In the directory: run `git init -b
+     main`; call `config_user("user1", "user1@foo.com")`; create `foo.txt`
+     containing `xxx`, `debug.log` containing `log`, and `my notes.log`
+     containing `notes`. Stage all three and commit with `git commit -m "Add
+     files."`.
+  2. Preconditions: no `.gitignore` exists, and `git ls-files -ci
+     --exclude-standard` prints nothing. Run `git-hints --all --ids-only` and
+     verify that `tracked-but-ignored` is absent.
+  3. Create `.gitignore` containing `*.log` and leave it unstaged. Precondition:
+     `git ls-files -ci --exclude-standard` lists `debug.log` and `my notes.log`
+     but not `foo.txt`.
+  4. Run `git-hints --all` and require exit code 0. In the `tracked-but-ignored`
+     block, verify that both `debug.log` and `my notes.log` appear (the second
+     one quoted correctly in the command), that `foo.txt` does not appear, and
+     that the block contains `git rm --cached`, `git add .gitignore`, `git diff
+     --cached`, `git commit`, `earlier commits`,
+     `https://git-scm.com/docs/git-rm`, and
+     `https://git-scm.com/docs/gitignore`. Run `git-hints --all --ids-only`;
+     verify that `tracked-but-ignored` is present.
+  5. Run `git rm --cached debug.log "my notes.log"` and require exit code 0.
+     Verify that both files still exist on disk. Run `git-hints --all
+     --ids-only`; verify that `tracked-but-ignored` is absent, because the files
+     are now untracked and ignored. Run `git add .gitignore` and `git diff
+     --cached`; verify that the ignore rule and both file removals are staged.
+     Run `git commit -m "Stop tracking log files."` and verify that the commit
+     includes `.gitignore` and both removals, that the files still exist
+     locally, and that `tracked-but-ignored` remains absent.
+  6. Negation: change `.gitignore` to contain `*.log` and `!debug.log`. Run `git
+     add debug.log`, then `git-hints --all --ids-only`; verify that
+     `tracked-but-ignored` is absent, because `debug.log` is no longer ignored.
+  7. Many files: change `.gitignore` to contain `build/`. Create `build/a.txt`
+     through `build/g.txt` (seven files) and stage them with `git add -f build`.
+     Run `git-hints --all`. Verify that the block lists `build/a.txt` through
+     `build/e.txt`, does not list `build/f.txt` or `build/g.txt`, and contains
+     `and 2 more`.
+  8. Clean up: run `git rm -r --cached build`, then `git-hints --all
+     --ids-only`; verify that `tracked-but-ignored` is absent.
+
+`git-hints explain -- git <command> [<args>...]`
+-------------------------------------------------
 
 Reactive hints explain failures of commands executed through `git-hints
 explain`. Use the shared CLI execution and output rules rather than redefining
@@ -1294,7 +1567,7 @@ output-block checks refer to captured stdout, and an absent hint means no line
 equals `ID: <id>`. Inspect the captured output rather than rerunning a command
 solely to check its hints.
 
-#### Resolve merge conflicts?
+### Resolve merge conflicts?
 
 * Hint: Unresolved
   [merge conflicts](https://git-scm.com/docs/git-merge#_how_conflicts_are_presented "Conflicts occur when Git cannot automatically combine changes")
@@ -1356,7 +1629,7 @@ solely to check its hints.
   9. Run `git-hints explain -- git merge nonexistent-test-branch`; require a
      nonzero exit code and no `merge-conflicts` hint.
 
-#### Preserve local changes before pulling?
+### Preserve local changes before pulling?
 
 * Hint: The attempted
   [git pull](https://git-scm.com/docs/git-pull#_description "Fetch and integrate changes into the current branch")
@@ -1438,7 +1711,7 @@ solely to check its hints.
      contains the saved local change. Run `git-hints --all --ids-only`; verify
      `merge-conflicts` is present and `pull-blocked-local-changes` is absent.
 
-#### Push rejected: non-fast-forward
+### Push rejected: non-fast-forward
 
 * Hint: Git rejected the
   [push](https://git-scm.com/docs/git-push#_note_about_fast_forwards "A non-fast-forward push would replace remote history")
@@ -1508,7 +1781,7 @@ solely to check its hints.
   8. Run `git-hints explain -- git push nonexistent-test-remote main`; require a
      nonzero exit code and no `push-rejected-non-fast-forward` hint.
 
-#### Stash local changes?
+### Stash local changes?
 
 * Hint: Git blocked the operation because it would overwrite tracked local
   changes. A
@@ -1583,7 +1856,7 @@ solely to check its hints.
      exit code. Verify that the `stash-local-changes` block recommends an
      external backup and contains no `git stash push`.
 
-#### Suggest `git pull --rebase`?
+### Suggest `git pull --rebase`?
 
 * Hint: After five qualifying failures to integrate with the upstream branch,
   replaying your local commits using
@@ -1759,273 +2032,8 @@ solely to check its hints.
      Ensure that `git merge --abort` is also performed during test cleanup if
      any earlier assertion fails.
 
-#### Finish or cancel the operation in progress?
-
-* Hint: A `<operation>` is in progress. Git paused it and is waiting for you to
-  finish or cancel it. The hint has two variants.
-
-  * Conflicts remain: "Some files have conflicts. Open each conflicted file,
-    choose the final content, then
-    [stage](https://git-scm.com/docs/git-add "Marks a resolved file so Git knows the conflict is fixed")
-    it. When no conflicts remain, run the continue command. To cancel instead,
-    run the abort command."
-  * No conflicts remain: "No conflicts remain. Run the continue command to
-    finish, or the abort command to cancel."
-
-  `<operation>` is replaced by `merge`, `rebase`, `cherry-pick`, or `revert`.
-  Show only the commands and the documentation link
-  (`https://git-scm.com/docs/git-<operation>`) for the detected operation.
-
-* Git stage: You are working in the local repository: Git has paused an
-  operation that combines commits, and any conflicted files stay in your working
-  directory and staging area until you resolve them.
-
-* Command: Run `git status` to see which files are unmerged. Resolve each one,
-  run `git add <file>`, then run the continue command for the operation:
-
-  | Operation   | Continue                     | Abort                     |
-  | ----------- | ---------------------------- | ------------------------- |
-  | merge       | `git merge --continue`       | `git merge --abort`       |
-  | rebase      | `git rebase --continue`      | `git rebase --abort`      |
-  | cherry-pick | `git cherry-pick --continue` | `git cherry-pick --abort` |
-  | revert      | `git revert --continue`      | `git revert --abort`      |
-
-  The CLI displays only the row for the detected operation. Expected result
-  after continuing: Git resumes the operation. A merge, cherry-pick, or revert
-  may record a new commit, and a completed rebase updates the branch. If another
-  conflict occurs, Git pauses again and this hint remains active. Once the
-  entire operation completes, this hint disappears and `git status` no longer
-  reports an operation in progress.
-
-  The continue command is safe. Prefix the abort command with `Warning:`
-  aborting discards the conflict resolutions you have made so far and returns to
-  the state before the operation began. Git may be unable to restore uncommitted
-  changes that existed before a merge started, so back up any edited files
-  first.
-
-* ID: `operation-in-progress`, priority class: error/blocked, safety: warning.
-
-* Conditions:
-
-  1. Confirm a Git working tree with `git rev-parse --is-inside-work-tree`;
-     require exit code 0 and output `true`. Do not run the remaining checks
-     outside a working tree.
-
-  2. Detect the operation. Check in the order below and report only the first
-     match, so a rebase that stops on a conflict is not reported as a
-     cherry-pick:
-
-     1. Rebase: for each of `rebase-merge` and `rebase-apply`, run `git
-        rev-parse --git-path <n>` and test whether that directory exists.
-        Resolve relative paths against the working directory used for these Git
-        commands. Ignore `rebase-apply` if it contains an `applying` file, since
-        that is `git am`, which is not supported. If a path lookup fails, report
-        the inspection error rather than assuming no operation is in progress.
-     2. Merge: `git rev-parse --verify --quiet MERGE_HEAD`.
-     3. Cherry-pick: `git rev-parse --verify --quiet CHERRY_PICK_HEAD`.
-     4. Revert: `git rev-parse --verify --quiet REVERT_HEAD`.
-
-     For the `rev-parse --verify` checks, exit code 0 means the operation is in
-     progress, exit code 1 means it is not, and any other exit code is an
-     inspection error. Use `--git-path` rather than hard-coding `.git/`, so the
-     checks work in worktrees and when the Git directory is elsewhere.
-
-  3. Detect unresolved files with `git diff --name-only --diff-filter=U`. If it
-     lists paths, use the "conflicts remain" variant. List paths in the order
-     Git returns them (sorted by path) and name up to five; if there are more,
-     append "and N more", where N is the exact number not listed. If it lists
-     none, use the "no conflicts remain" variant. A merge started with
-     `--no-commit` has `MERGE_HEAD` and no conflicts; the hint still applies.
-
-  4. Keep displaying the hint until the state file or directory is gone.
-
-  5. Limitation: a multi-commit cherry-pick or revert that stops partway is
-     detected only while `CHERRY_PICK_HEAD` or `REVERT_HEAD` exists.
-* Related output: This proactive hint complements the reactive `merge-conflicts`
-  hint, which appears only right after a failing command run through `git-hints
-  explain`; this hint persists after the terminal is closed and reopened. During
-  a rebase, HEAD is detached, so the context line shows `Branch: detached HEAD`
-  and `detached-head` is suppressed (see `detached-head`).
-
-* Test case: Operation in progress.
-
-  All commands run in the repository under test. The autouse `git_setup` fixture
-  provides the isolated environment, including `GIT_EDITOR=true`, so no command
-  waits for an editor. Collapse whitespace in hint output before searching it
-  for phrases.
-
-  1. Call `make_temps(tmp_path_factory, 1)`. In the directory: run `git init -b
-     main`; call `config_user("user1", "user1@foo.com")`; create `foo.txt`
-     containing `base`; stage it and commit with the message `"Add foo."`.
-  2. Run `git-hints --all --ids-only`. Verify that `operation-in-progress` is
-     absent in a clean repository.
-  3. Run `git switch -c topic`. Change `foo.txt` to `topic` and commit it with
-     `git commit -am "Topic change."`.
-  4. Run `git switch main`. Change `foo.txt` to `main` and commit it with `git
-     commit -am "Main change."`.
-  5. Merge conflict:
-     1. Run `git merge topic`. Verify that it exits nonzero, that `git rev-parse
-        --verify --quiet MERGE_HEAD` exits 0, and that `git diff --name-only
-        --diff-filter=U` lists `foo.txt`. Ensure `git merge --abort` runs in
-        cleanup if `MERGE_HEAD` still exists, even if an assertion fails.
-     2. Run `git-hints --all` and require exit code 0 and the first output line
-        exactly equal to `Branch: main`. Verify that the `operation-in-progress`
-        block names a merge, lists `foo.txt`, contains `git add`, `git merge
-        --continue`, `git merge --abort`, and `Warning:`, and links to
-        `https://git-scm.com/docs/git-merge`. Verify that it does not include
-        continuation or abort commands for other operations.
-     3. Run `git-hints --all --ids-only`. Verify that `operation-in-progress` is
-        present.
-  6. Resolved but not yet continued:
-     1. Change `foo.txt` to `resolved` and run `git add foo.txt`.
-     2. Run `git-hints --all`. Verify that `operation-in-progress` is still
-        present (`MERGE_HEAD` still exists), that its block contains the text
-        `No conflicts remain` and `git merge --continue`, and that it does not
-        list `foo.txt`.
-  7. Continue: run `git merge --continue` and require exit code 0. Verify that
-     `git rev-parse --verify --quiet MERGE_HEAD` exits 1. Run `git-hints --all
-     --ids-only` and verify that `operation-in-progress` is absent.
-  8. Abort path: run `git switch -c topic2`, change `foo.txt` to `topic2`, and
-     commit. Run `git switch main`, change `foo.txt` to `main2`, and commit. Run
-     `git merge topic2` (exits nonzero). Verify that `operation-in-progress` is
-     present, then run `git merge --abort` and verify that it is absent.
-  9. Rebase: run `git switch topic2`, then `git rebase main`.
-     1. Verify that `git rebase main` exits nonzero and that `git rev-parse
-        --git-path rebase-merge` names an existing directory. Ensure `git rebase
-        --abort` runs in cleanup if a rebase is still in progress.
-     2. Run `git-hints --all`. Verify that the `operation-in-progress` block
-        names a rebase (not a cherry-pick), contains `git rebase --continue` and
-        `git rebase --abort`, and links to
-        `https://git-scm.com/docs/git-rebase`. Verify that it does not include
-        continuation or abort commands for other operations.
-     3. Verify that the first output line is exactly `Branch: detached HEAD` and
-        that `detached-head` is absent from `git-hints --all --ids-only`.
-     4. Change `foo.txt` to `resolved2`, run `git add foo.txt`, then run `git
-        rebase --continue`. Require exit code 0. Run `git-hints --all
-        --ids-only` and verify that `operation-in-progress` is absent.
-  10. Cherry-pick:
-      1. Run `git switch main`, then `git switch -c pick-src`. Change `foo.txt`
-         to `pick` and commit with `git commit -am "Pick change."`.
-      2. Run `git switch main`. Change `foo.txt` to `main3` and commit with `git
-         commit -am "Main change 3."`.
-      3. Run `git cherry-pick pick-src`. Verify that it exits nonzero and that
-         `git rev-parse --verify --quiet CHERRY_PICK_HEAD` exits 0. Ensure `git
-         cherry-pick --abort` runs in cleanup if it is still in progress.
-      4. Run `git-hints --all`. Verify that the `operation-in-progress` block
-         names a cherry-pick, contains `git cherry-pick --continue` and `git
-         cherry-pick --abort`, and links to
-         `https://git-scm.com/docs/git-cherry-pick`. Verify that it does not
-         include continuation or abort commands for other operations.
-      5. Run `git cherry-pick --abort`, then `git-hints --all --ids-only`;
-         verify that `operation-in-progress` is absent.
-  11. Revert:
-      1. On `main`, change `foo.txt` to `main4` and commit with `git commit -am
-         "Main change 4."`.
-      2. Run `git revert HEAD~1`, which reverts "Main change 3." and conflicts
-         with the later change. Verify that it exits nonzero and that `git
-         rev-parse --verify --quiet REVERT_HEAD` exits 0. Ensure `git revert
-         --abort` runs in cleanup if it is still in progress.
-      3. Run `git-hints --all`. Verify that the `operation-in-progress` block
-         names a revert, contains `git revert --continue` and `git revert
-         --abort`, and links to `https://git-scm.com/docs/git-revert`. Verify
-         that it does not include continuation or abort commands for other
-         operations.
-      4. Run `git revert --abort`, then `git-hints --all --ids-only`; verify
-         that `operation-in-progress` is absent.
-
-#### Stop tracking ignored files?
-
-* Hint: Do you want Git to stop tracking files that match active
-  [ignore rules](https://git-scm.com/docs/gitignore "Lists patterns for files Git should not track; it only affects files that are not already tracked")?
-  These rules may come from `.gitignore`, `.git/info/exclude`, or a global
-  excludes file. Ignoring a file does not affect files Git already tracks. To
-  stop tracking a file but keep it on your disk, use
-  [`git rm --cached`](https://git-scm.com/docs/git-rm "With --cached, removes a file from the index but leaves it in your working directory").
-  Anyone who pulls your commit will have the file deleted, and it remains in
-  earlier commits, so change any password or key it contained.
-
-* Git stage: These files are in Git's index and may also have been saved in
-  previous commits, so Git tracks them even though active ignore rules match
-  their paths.
-
-* Command: For each file, run `git rm --cached <file>` (`git rm -r --cached
-  <directory>` for directories). If a matching rule was newly added or modified
-  in a project `.gitignore`, stage that file with `git add .gitignore`. Review
-  the staged changes with `git diff --cached`, then run `git commit -m "Stop
-  tracking <file>"`. Expected result: after `git rm --cached`, previously
-  committed files show `deleted: <file>` under changes to be committed in `git
-  status`, and the files remain in your working directory. After the commit, the
-  selected files no longer appear in `git ls-files -ci --exclude-standard`.
-  Other tracked files that match active ignore rules may still be listed; this
-  hint disappears only when no matching tracked files remain.
-
-* ID: `tracked-but-ignored`, priority class: workflow, safety: safe.
-
-* Conditions: Do not run outside a working tree; confirm with `git rev-parse
-  --is-inside-work-tree` (exit code 0, output `true`). Run `git ls-files -ci
-  --exclude-standard -z`. Split the output on NUL characters, which keeps names
-  containing spaces or newlines intact. In this command, `-c` lists files in the
-  index and `-i` keeps only those matching an ignore pattern;
-  `--exclude-standard` applies `.gitignore`, `.git/info/exclude`, and the global
-  excludes file. Show the hint only when at least one path is returned. A
-  nonzero exit code is an inspection error, not evidence of tracked-but-ignored
-  files. List paths in the order `git ls-files` returns them (sorted by path)
-  and name up to five, quoted correctly in the suggested command; if there are
-  more, append "and N more", where N is the exact number not listed.
-
-  A file added deliberately with `git add -f` also matches, so keep the wording
-  conditional. A file re-included with a negation pattern such as `!debug.log`
-  is not ignored and must not appear.
-
-  Related output: `untracked-files` covers files Git is not tracking; this hint
-  covers files Git is tracking. The two must never report the same file. After
-  `git rm --cached`, a file is untracked and ignored, so neither hint reports
-  it.
-
-* Test case: Tracked but ignored
-
-  The autouse `git_setup` fixture provides the isolated environment. Collapse
-  whitespace in hint output before searching it for phrases.
-
-  1. Call `make_temps(tmp_path_factory, 1)`. In the directory: run `git init -b
-     main`; call `config_user("user1", "user1@foo.com")`; create `foo.txt`
-     containing `xxx`, `debug.log` containing `log`, and `my notes.log`
-     containing `notes`. Stage all three and commit with `git commit -m "Add
-     files."`.
-  2. Preconditions: no `.gitignore` exists, and `git ls-files -ci
-     --exclude-standard` prints nothing. Run `git-hints --all --ids-only` and
-     verify that `tracked-but-ignored` is absent.
-  3. Create `.gitignore` containing `*.log` and leave it unstaged. Precondition:
-     `git ls-files -ci --exclude-standard` lists `debug.log` and `my notes.log`
-     but not `foo.txt`.
-  4. Run `git-hints --all` and require exit code 0. In the `tracked-but-ignored`
-     block, verify that both `debug.log` and `my notes.log` appear (the second
-     one quoted correctly in the command), that `foo.txt` does not appear, and
-     that the block contains `git rm --cached`, `git add .gitignore`, `git diff
-     --cached`, `git commit`, `earlier commits`,
-     `https://git-scm.com/docs/git-rm`, and
-     `https://git-scm.com/docs/gitignore`. Run `git-hints --all --ids-only`;
-     verify that `tracked-but-ignored` is present.
-  5. Run `git rm --cached debug.log "my notes.log"` and require exit code 0.
-     Verify that both files still exist on disk. Run `git-hints --all
-     --ids-only`; verify that `tracked-but-ignored` is absent, because the files
-     are now untracked and ignored. Run `git add .gitignore` and `git diff
-     --cached`; verify that the ignore rule and both file removals are staged.
-     Run `git commit -m "Stop tracking log files."` and verify that the commit
-     includes `.gitignore` and both removals, that the files still exist
-     locally, and that `tracked-but-ignored` remains absent.
-  6. Negation: change `.gitignore` to contain `*.log` and `!debug.log`. Run `git
-     add debug.log`, then `git-hints --all --ids-only`; verify that
-     `tracked-but-ignored` is absent, because `debug.log` is no longer ignored.
-  7. Many files: change `.gitignore` to contain `build/`. Create `build/a.txt`
-     through `build/g.txt` (seven files) and stage them with `git add -f build`.
-     Run `git-hints --all`. Verify that the block lists `build/a.txt` through
-     `build/e.txt`, does not list `build/f.txt` or `build/g.txt`, and contains
-     `and 2 more`.
-  8. Clean up: run `git rm -r --cached build`, then `git-hints --all
-     --ids-only`; verify that `tracked-but-ignored` is absent.
-
-### Language and libraries
+Language and libraries
+----------------------
 
 1. Language: Python (Minimum version of 3.10 to ensure compatibility with all
    used libraries)
@@ -2037,6 +2045,11 @@ solely to check its hints.
 4. Type checker: ty
 
 5. CLI: Typer
+
+6. Testing: Pytest
+
+7. Git: version 2.34 or later. This applies for both running the application
+   and testing.
 
 Git interface: Python's built-in `subprocess` module. Use it for both repository
 inspection and execution of user-supplied Git commands, with different behavior
@@ -2050,19 +2063,19 @@ codes, so no additional Git library is required.
   option's environment and timeout requirements.
 
 * `git-hints explain`: validate that the user-supplied argument list starts with
-  `git` (only the word `git` is accepted. No other format), then execute it
-  once. Leave standard input connected to the terminal. Leave Git's standard
-  output connected to the terminal in normal output; under `--ids-only`,
-  redirect Git's standard output to `subprocess.DEVNULL` so it is not displayed.
-  Capture standard error and display it after completion (not live). In normal
-  output, display the exit code; under `--ids-only`, omit the exit-code message.
-  Return Git's exit code unless Git cannot be launched or an unexpected
-  inspection error occurs. Use the command, exit code, standard error, and
-  inspected repository state to select reactive hints. Do not disable Git's
-  terminal prompting or editor for `git-hints explain`; the
-  `GIT_TERMINAL_PROMPT=0` requirement applies only to the tool's optional fetch
-  and isolated test environment. Do not claim to recover the result of an
-  earlier command run outside `git-hints explain`.
+  `git` (only the exact word `git` is accepted), then execute it once. Leave
+  standard input connected to the terminal. Leave Git's standard output
+  connected to the terminal in normal output; under `--ids-only`, redirect Git's
+  standard output to `subprocess.DEVNULL` so it is not displayed. Capture
+  standard error and display it after completion (not live). In normal output,
+  display the exit code; under `--ids-only`, omit the exit-code message. Return
+  Git's exit code unless Git cannot be launched or an unexpected inspection
+  error occurs. Use the command, exit code, standard error, and inspected
+  repository state to select reactive hints. Do not disable Git's terminal
+  prompting or editor for `git-hints explain`; the `GIT_TERMINAL_PROMPT=0`
+  requirement applies only to the tool's optional fetch and isolated test
+  environment. Do not claim to recover the result of an earlier command run
+  outside `git-hints explain`.
 
 When git-hints explain runs a command with repository-redirection options such
 as -C, --git-dir, or --work-tree, skip reactive hints that require
@@ -2072,27 +2085,22 @@ captured standard error may still be evaluated.
 For both modes, pass arguments separately with `shell=False` and `check=False`.
 Interpret `returncode` according to each command's documented meaning; expected
 nonzero codes are not automatically application errors. Report unexpected
-failures separately and suppress hints that depend the failed commands. If Git
-ran, return Git's exit code, unless an unexpected inspection failure occurs. If
-Git cannot be launched, report that failure instead of inventing a Git exit code
-or repository condition.
+failures separately and suppress hints that depend on the failed commands. If
+Git ran, return Git's exit code, unless an unexpected inspection failure occurs.
+If Git cannot be launched, report that failure instead of inventing a Git exit
+code or repository condition.
 
 Plain `git-hints` exits 0 whenever inspection completes, whether or not any hint
 is triggered. It exits nonzero only when it reports an unexpected inspection
 failure or that Git cannot be launched.
 
-`git-hints explain` should also return non zero if Git does not launch or for
-any unexpected inspection failures. Display Git's exit code in normal output,
-unless `--ids-only` is used.
+`git-hints explain` should also return nonzero if Git does not launch or for any
+unexpected inspection failures. Display Git's exit code in normal output, unless
+`--ids-only` is used.
 
 Decode Git output as UTF-8 (`encoding="utf-8", errors="replace"`), not with the
 locale default. When a path list is parsed, use `-z` or `-c
 core.quotePath=false`.
-
-1. Testing: Pytest
-
-2. Git: version 2.34 or later. This applies for both running the application and
-   testing.
 
 Testing
 -------
@@ -2102,7 +2110,7 @@ The test tool contains:
 * `make_temps(tmp_path_factory, num)`: creates and returns `num` temporary
   directories using Pytest's `tmp_path_factory`. Each test that calls this
   function must request `tmp_path_factory` from pytest and pass it to
-  `make_temps`.The helper does not assign names such as local or remote; each
+  `make_temps`. The helper does not assign names such as local or remote; each
   test should assign descriptive variable names to the returned paths.
 * `make_repo(temp_dir, commands)`: runs the list of `commands` in `temp_dir` to
   create and populate the repository. Each command is either an argument list,
