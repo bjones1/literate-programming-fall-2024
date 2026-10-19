@@ -19,7 +19,7 @@ Review assignments
 
 <mark>Each student reviews one of the seven sections below. A "Review section"
 note marks where each section begins; the section continues until the next such
-note. Sections are roughly equal in length f(about 200 lines) and difficulty,
+note. Sections are roughly equal in length (about 200 lines) and difficulty,
 and no student reviews material they wrote or revised.</mark>
 
 1. (ams2083): the overview at the top of this document, CLI commands, Future
@@ -179,7 +179,7 @@ Hint structure
    repository as applicable. The first implementation supports the CLI; a future
    GUI may show the corresponding GUI action alongside the command. (ewj55;
    clarified by drj228)
-   
+
    A hint may also have a **Related output** field, which states how other
    hints and the repository context line behave while the hint applies.
 
@@ -664,8 +664,7 @@ The Conditions of the hints below assume this check and do not repeat it.
 * ID: `no-upstream-branch`, priority class: workflow, safety: safe.
 
 * Conditions: The current branch has no upstream branch configured. Confirm that
-  the repository is on a local branch, rather than in a detached HEAD state,
-   using `git symbolic-ref --quiet --short HEAD`. Confirm that the branch has at
+  the repository is on a local branch, rather than in a detached HEAD state, using `git symbolic-ref --quiet --short HEAD`. Confirm that the branch has at
   least one commit: `git rev-parse --verify --quiet HEAD` must exit 0, because
   pushing a branch with no commits fails with `src refspec <branch> does not
   match any`. Check for an upstream using `git rev-parse --abbrev-ref
@@ -1063,6 +1062,7 @@ The Conditions of the hints below assume this check and do not repeat it.
      `git switch <branch>` command. Other exit codes are inspection errors.
   6. Display `detached-head` only when HEAD is detached at a valid commit
      outside a submodule and neither a rebase nor a bisect is in progress.
+
 * Related output: In normal output and `--all`, the repository context line must
   show `detached HEAD`, even when this hint is suppressed during an operation.
   The context line is not a hint. The existing `no-upstream-branch` hint must
@@ -1101,7 +1101,7 @@ The Conditions of the hints below assume this check and do not repeat it.
      `git switch main`, and the documentation URL
      `https://git-scm.com/docs/git-checkout#_detached_head`. Verify that the
      first output line is exactly `Branch: detached HEAD`. Run `git-hints
-     --all    --ids-only`; verify that `detached-head` is present and
+     --all --ids-only`; verify that `detached-head` is present and
      `no-upstream-branch` and `no-commits` are absent. Identify hints by exact
      ID, without requiring their descriptive wording to match.
   8. Commit while detached: change `foo.txt` to `xxxyzw` and run `git commit -am
@@ -1129,7 +1129,7 @@ The Conditions of the hints below assume this check and do not repeat it.
       0 and prints `saved-work`; the `BISECT_START` path no longer exists.
   12. Precondition: `refs/heads/git-hints-test-missing` does not exist. Run `git
       rebase --exec "git rev-parse --verify
-      refs/heads/git-hints-test-missing"       HEAD~1`. This command is expected
+      refs/heads/git-hints-test-missing" HEAD~1`. This command is expected
       to fail, so, as Testing requires, run it directly with `subprocess.run()`
       using an argument list, `shell=False`, and `check=False`, not through
       `make_repo()`, which fails the test when a command exits nonzero. Capture
@@ -1171,6 +1171,7 @@ The Conditions of the hints below assume this check and do not repeat it.
     the staged changes. Commit identity must be configured; the separate
     commit-identity configuration hint handles missing settings. Do not
     automatically stage or commit files.
+
 * ID: `no-commits`, priority class: informational, safety: safe.
 
 * Conditions:
@@ -1190,6 +1191,7 @@ The Conditions of the hints below assume this check and do not repeat it.
      include the initial-commit command. Exit code 0 means none exist, so
      include status and staging guidance without a commit command. Other exit
      codes are inspection errors, not evidence of staged changes.
+
 * Related output: An unborn branch is attached to its branch name, so
   `detached-head` must remain absent and normal repository context must show
   that name. The existing `many-changed-files` condition requires a commit at
@@ -1295,6 +1297,7 @@ The Conditions of the hints below assume this check and do not repeat it.
      such changes. Other exit codes are inspection errors. Untracked files alone
      do not trigger this hint; `untracked-files` covers them, and `git switch
      -c` carries them along anyway.
+
 * Test case: Changes on the default branch (written by ).
 
   Use the isolated environment from the autouse `git_setup()` fixture and the
@@ -2089,7 +2092,8 @@ The test tool contains:
   not join arguments into a shell string. (drj228) File-operation lambdas must
   use paths rooted at `temp_dir`—for example, `temp_dir / "foo.txt"`—and must
   not rely on or change the process’s current working directory. `make_repo()`
-  does not call `os.chdir`.
+  does not call `os.chdir`. It raises an exception, failing the test, as soon
+     as any command exits nonzero.
 * `git_setup()`: creates an isolated Git configuration for the test environment.
   The test environment shall:
   * Remove every inherited environment variable whose name starts with `GIT_`,
