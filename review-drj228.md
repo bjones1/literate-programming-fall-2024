@@ -339,3 +339,97 @@ and stderr separately.
   `git checkout` (finding 1).
 * Line 1102: "Resolve any conflicts before continuing" should say how, or
   refer to `merge-conflicts`.
+
+---
+
+## Final LLM review — drj228
+
+**Model:** Claude Sonnet 5.5  
+**Effort:** Medium  
+**Date:** October 18, 2026  
+**Scope:** Review section 6 of spec.md
+
+I revised section 6 through multiple review rounds. The following prompt
+produced the final review reproduced below. Optional suggestions and
+shared-rule conflicts are retained as part of the review record.
+
+### Exact prompt
+
+```text
+Review the attached updated spec.md, limited to drj228’s section 6.
+
+Verify the previous corrections:
+- Push destination resolution uses the explicit repository argument or Git’s
+  configured push destination and fetch refspec, with placeholders if unresolved.
+- Pull and stash tests cover excluded untracked-file obstructions.
+- The “show both hints” rule applies only to plain inspection, and is tested.
+
+Check for remaining relevant correctness, consistency, or test issues.
+Suggest only small corrections; do not rewrite sections or expand the scope.
+Keep optional improvements and conflicts owned by other reviewers separate.
+Do not repeat resolved findings. If no relevant issues remain, say so explicitly.
+```
+
+### Final Claude review
+
+**No necessary corrections remain in section 6.** The three corrections from my last review are applied, and I found no new problems in the revisions.
+
+#### Previous necessary corrections: status
+
+| Previous correction | Status |
+| --- | --- |
+| Push Command: remote name not derivable | Resolved. The Command now resolves the remote from the explicit repository argument or Git’s configured push destination, and the branch from the rejection. |
+| Untracked-file negatives for pull-blocked and stash | Resolved. They are folded into pull step 8 and stash step 7. |
+| “Show both hints” rule restricted to plain inspection and tested | Resolved. The rule now says “During plain `git-hints` inspection”, and merge-conflicts step 6 asserts both IDs. |
+
+#### Verification
+
+**Executed (Git 2.43.0, isolated environment).** I replayed your new and changed steps as written:
+
+- **Pull-blocked steps 1–9:**
+  - Step 4 exits 1 with the index clean and no stash or unmerged entries.
+  - A staged pull exits 1.
+  - `pull --rebase` prints `cannot pull with rebase: Your index contains uncommitted changes`.
+  - Step 7 exits 0 with `remote change` in `foo.txt`.
+  - A nonexistent branch exits 1.
+  - The untracked `new.txt` pull exits 1 and leaves the local file unchanged.
+  - Step 9’s `stash apply` exits 1, `refs/stash` is unchanged, `git stash show -p` contains `local change`, and `foo.txt` is unmerged.
+- **Stash steps 2–8:**
+  - A blocked merge and a blocked switch both exit 1 and create no stash.
+  - After the stash, the merge exits 0.
+  - A nonexistent branch exits 128.
+  - The untracked-file switch exits 1 and leaves the local file unchanged.
+  - `stash apply` exits 1, `refs/stash` is unchanged, and `foo.txt` is unmerged.
+
+From earlier runs this session, the merge-conflicts, push-rejected, and unborn-orphan sequences also behave as written.
+
+**Also checked:** `git rev-parse --abbrev-ref @{push}` returns `origin/main` normally. It fails with `fatal: cannot resolve 'simple' push to a single destination` when `branch.main.pushRemote` differs from the upstream remote. Keep your explicit resolution rule rather than switching to `@{push}`.
+
+**Inspected only:**
+
+- `git-hints` output and formatting, absence checks, and the `-C` skip rule, because the tool is not implemented.
+- The three doc anchors (`#_how_conflicts_are_presented`, `#_description`, `#_note_about_fast_forwards`). The manual isn’t installed here and there is no network. Open each anchor.
+
+#### Optional improvements
+
+1. **Push resolution paragraph.**
+   - The sentence “Resolve its remote-tracking ref using the configured fetch refspec” has an ambiguous “its”.
+   - The explicit-argument and `pushRemote`/`pushDefault` rules are not exercised by any test. Step 7 uses `origin` only on the path that omits merge commands.
+   - Either trim to the tested rule (“from the push command’s repository argument, else the current branch’s configured push remote”) or add a step that sets `remote.pushDefault`.
+   - The new lines are also unwrapped past 80 columns.
+2. **Explain intro (still open).** Delete the clause “display unrecognized diagnostics on stderr”. CLI command 2 already emits all stderr, and the clause implies recognized diagnostics are not shown.
+3. **Redirection scope.** pull-blocked, stash, and push-rejected mix a diagnostic with a state check. Say once: “A hint whose Conditions include a state check is skipped when the command redirects the repository.”
+4. **Push duplication and wording.**
+   - The last Conditions sentence repeats the Command’s “For another source branch…” in different words. Keep one.
+   - In step 7, “Retry the original push” should say `git-hints explain -- git push`.
+5. **Stash scope.** `git checkout <branch>` produces the same diagnostic and exit 1 (executed earlier). Add it to Conditions, or add one out-of-scope sentence.
+6. **Hook rejection.** The `[remote rejected]` negative for push is untested. This is optional because a hook file is OS-specific.
+7. **Bundled steps.** Pull step 8, stash step 7, and merge-conflicts step 6 each combine two scenarios. Splitting them makes failures easier to localize.
+8. **Pull-blocked Hint.** It hard-codes “Affected files: `<files>`” although Conditions allow omitting it. Append “(omit when unidentified)”.
+
+#### Shared-rule conflicts (not for you to rewrite)
+
+1. **raf322’s `operation-in-progress` Related output** still says `merge-conflicts` “appears only right after a failing command run through `git-hints explain`”. That contradicts Hint structure item 7 and your proactive `merge-conflicts`.
+2. **Language and libraries** says `explain` “should also return non zero if Git does not launch or for any unexpected inspection failures”. That contradicts “Always return Git’s exit code” in the same section and CLI command 2. Your tests assume Git’s own exit codes, so they are unaffected unless inspection fails.
+
+If you want to stop here, section 6 is ready as it stands
