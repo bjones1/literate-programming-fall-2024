@@ -304,8 +304,7 @@ Implementation
 `git-hints`
 -----------
 
-Proactive hints are triggered by observable repository state when `git-hints`
-runs. Every proactive hint except `not-a-repo` requires `git rev-parse--is-inside-work-tree` to exit 0 and print `true`. Repository context (Hint structure, item 1) covers output `false`, and `not-a-repo` covers exit code 128.
+Proactive hints are triggered by observable repository state when `git-hints` runs. Every proactive hint except `not-a-repo` requires `git rev-parse --is-inside-work-tree` to exit 0 and print `true`. Repository context (Hint structure, item 1) covers output `false`, and `not-a-repo` covers exit code 128.
 The Conditions of the hints below assume this check and do not repeat it.
 (jit45)
 
@@ -666,9 +665,7 @@ The Conditions of the hints below assume this check and do not repeat it.
 * Conditions: The current branch has no upstream branch configured. Confirm that
   the repository is on a local branch, rather than in a detached HEAD state, using `git symbolic-ref --quiet --short HEAD`. Confirm that the branch has at
   least one commit: `git rev-parse --verify --quiet HEAD` must exit 0, because
-  pushing a branch with no commits fails with `src refspec <branch> does not
-  match any`. Check for an upstream using `git rev-parse --abbrev-ref
-  --symbolic-full-name "@{upstream}"`. Confirm that the `origin` remote exists
+  pushing a branch with no commits fails with `src refspec <branch> does not match any`. Check for an upstream using `git rev-parse --abbrev-ref --symbolic-full-name "@{upstream}"`. Confirm that the `origin` remote exists
   using `git remote`. Suggest configuring an upstream only when the current
   branch has no resolvable upstream and `origin` exists. Do not display the hint
   in detached HEAD state, on a branch with no commits, or when a valid upstream
@@ -1290,8 +1287,13 @@ The Conditions of the hints below assume this check and do not repeat it.
   3. Require `git rev-parse --verify --quiet HEAD` to exit 0. On a branch with
      no commits, `no-commits` applies instead, and its advice to commit on the
      current branch is correct.
-  4. Suppress the hint while the index contains unresolved merge entries, that
-     is, when `git diff --name-only --diff-filter=U` prints any paths.
+    4. Suppress the hint while the index contains unresolved merge entries, that
+     is, when `git diff --name-only --diff-filter=U` prints any paths. Also
+     suppress it while an operation is in progress: `git switch` refuses to
+     run during a merge, cherry-pick or revert. Run `git rev-parse
+     --path-format=absolute --git-path MERGE_HEAD --git-path CHERRY_PICK_HEAD
+     --git-path REVERT_HEAD`; if any returned path exists, do not display the
+     hint. Rebases and bisects detach HEAD, so step 1 already excludes them.
   5. Require uncommitted changes to tracked files: `git diff --quiet` or `git
      diff --cached --quiet` exits 1. Exit code 0 from both means there are no
      such changes. Other exit codes are inspection errors. Untracked files alone
@@ -1337,6 +1339,14 @@ The Conditions of the hints below assume this check and do not repeat it.
      exits 1; `git diff --cached --quiet` exits 1. With `cwd` set to `unborn`,
      run `git-hints --all --ids-only` and verify that `no-commits` is present
      and `changes-on-default-branch` is absent.
+   8. In `work/local`, run `git commit -am "Change foo on feature."`, `git switch
+     main`, and `git merge --no-commit --no-ff feature`, and require exit code 0.
+     Preconditions: the path returned by `git rev-parse --path-format=absolute
+     --git-path MERGE_HEAD` exists; `git diff --name-only --diff-filter=U` prints
+     nothing; `git diff --cached --quiet` exits 1; `git symbolic-ref --quiet
+     --short HEAD` prints `main`. Run `git-hints --all --ids-only` and verify
+     that `changes-on-default-branch` is absent. Ensure `git merge --abort` runs
+     in cleanup even if an assertion fails.
 
 <mark>Review section 6 (drj228) begins here; see Review assignments.</mark>
 
