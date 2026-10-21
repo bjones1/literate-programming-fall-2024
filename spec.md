@@ -367,7 +367,9 @@ runs. (jit45)
   * Test case:
 
   1. **Setup** The autouse `git_setup` fixture provides the isolated
-     environment. Create two temporary directories: `remote` and `local`.
+     environment. Create three temporary directories: `remote`, `local`, and
+     `other`.
+
   2. Call `config_user("user1", "user1@foo.com")`.
 
   3. In `remote`, run `git init --bare -b main`.
@@ -425,17 +427,17 @@ runs. (jit45)
 
 * ID: `not-a-repo`, priority class: informational, safety: safe.
 
-* Conditions: Determine if current directory is inside a Git working tree by
-  running `git rev-parse --is-inside-work-tree` using `subprocess`. Exit code 0
-  with output `true` means it is inside a working tree. Exit code 128 means its
-  outside a Git repository, which triggers this hint." Avoid suggesting cloning
-  hint for other unexpected Git errors.
+* Conditions: Run `git rev-parse --is-inside-work-tree` using `subprocess`. Exit
+  code 0 with output `true` means the directory is inside a working tree; output
+  `false` uses the separate non-working-tree handling. Trigger this hint on exit
+  code 128 only when Git reports that the directory is not a repository. Treat
+  other failures as inspection errors.
 
 * Test case:
 
   1. The autouse `git_setup` fixture provides the isolated environment and
-     `make_temps(1)`. Set `GIT_CEILING_DIRECTORIES` to the temporary directory's
-     parent so Git cannot discover an enclosing repo.
+     `make_temps(tmp_path_factory, 1)`. Set `GIT_CEILING_DIRECTORIES` to the
+     temporary directory's parent so Git cannot discover an enclosing repo.
   2. In the temporary directory, run `git rev-parse --is-inside-work-tree` and
      verify exit code 128.
   3. Run `git-hints --all --ids-only`. Verify that `not-a-repo` appears. Run
@@ -475,7 +477,8 @@ runs. (jit45)
 
 * Test case: Staged and unstaged changes.
 
-  1. Call `git_setup()` and create one temporary directory.
+  1. The autouse `git_setup` fixture provides the isolated environment and
+     create one temporary directory.
   2. In the temporary directory, initialize a repository with `git init -b
      main`.
   3. Call `config_user("user1", "user1@foo.com")` after initializing the
@@ -515,7 +518,8 @@ runs. (jit45)
         `https://git-scm.com/docs/git-commit`.
 * Conflict suppression test:
 
-  1. Call `git_setup()` and create one temporary directory.
+  1. The autouse `git_setup` fixture provides the isolated environment and
+     create one temporary directory.
   2. Initialize a repository there with `git init -b main` and call
      `config_user("user1", "user1@example.com")`.
   3. Create `conflict.txt` and `other.txt`, each containing `base`. Stage both
@@ -563,8 +567,9 @@ runs. (jit45)
 
 * Test case:
 
-  1. Call `git_setup()` and create two temporary directories, `repo1` and
-     `repo2`. Run every `git-hints` command in `repo2`.
+  1. The autouse `git_setup` fixture provides the isolated environment and
+     create two temporary directories, `repo1` and `repo2`. Run every
+     `git-hints` command in `repo2`.
   2. In `repo1`, initialize a repository with `git init -b main` and call
      `config_user("user1", "user1@foo.com")`.
   3. Create `foo.txt` containing `xxx`, stage it with `git add foo.txt`, and
@@ -623,9 +628,6 @@ runs. (jit45)
 
 * Test case:
 
-   Do not display this hint while a merge is in progress (`git
-     rev-parse -q --verify MERGE_HEAD` exits 0) or while the index has
-     unresolved entries. 
   1. Do steps 1-5 of the `behind` hint's test case. This leaves `repo1` with a
      commit that `repo2` has not fetched.
   2. In `repo2`, create `bar.txt` containing `zzz`, stage it with `git add
@@ -712,9 +714,7 @@ runs. (jit45)
 
 * ID: `staged-changes`, priority class: workflow, safety: safe.
 
-* Conditions: Do not display
-     this hint while the index contains unresolved merge entries; check with
-     `git diff --name-only --diff-filter=U`. Supress command while a rebase is in progress, use the `rebase-merge`/`rebase-apply` path checks from `detached-head`
+* Conditions: Display this hint when the staging area contains at least one
   change to be committed. Run `git diff --cached --quiet`; exit code 1 means
   staged changes exist, exit code 0 means none exist, and any other exit code
   indicates an error. Do not display the hint when the staging area is empty.
@@ -726,7 +726,8 @@ runs. (jit45)
 
 * Test case:
 
-  1. Call `git_setup()` and create one temporary directory.
+  1. The autouse `git_setup` fixture provides the isolated environment and
+     create one temporary directory.
   2. Initialize a repository in that directory with `git init -b main`.
   3. Call `config_user("user1", "user1@example.com")`.
   4. Run `git-hints --all` and verify that the `staged-changes` hint is absent.
@@ -785,7 +786,8 @@ runs. (jit45)
 
   * Test case:
 
-    1. Call `git_setup()`. Create one temporary directory.
+    1. The autouse `git_setup` fixture provides the isolated environment. Create
+       one temporary directory.
     2. In the temporary directory, initialize a repository with `git init -b
        main`.
     3. Call `config_user("user1", "user1@foo.com")`.
@@ -876,7 +878,7 @@ interpreted as a triggered hint.
 * Test case: Commit repo? (written by jit45; formerly Test Case 12).
 
   1. The autouse `git_setup` fixture provides the isolated environment and
-     create one temporary directory using `make_temps(1)`.
+     create one temporary directory using `make_temps(tmp_path_factory, 1)`.
   2. Initialize a repository there with `git init -b main`.
   3. Call `config_user("user1", "user1@example.com")`.
   4. Create four files, `one.txt`, `two.txt`, `three.txt`, and `four.txt`, each
@@ -1194,27 +1196,35 @@ solely to check its hints. (jit45; revised by drj228)
 
 * Test case: Resolving conflicts (sbe80; revised by drj228).
 
-  1. The autouse `git_setup` fixture provides the isolated environment and
-     create two temporary directories, `repo1` and `repo2`.
-  2. In `repo1`, initialize a repository with `git init -b main` and call
-     `config_user("user1", "user1@foo.com")`.
-  3. Create `foo.txt` containing `xxx`, stage it with `git add foo.txt`, and
-     commit it with `git commit -m "Add foo."`.
-  4. Clone `repo1` into `repo2` with `git clone <repo1> <repo2>`.
-  5. In `repo1`, append `y` to `foo.txt`, stage it with `git add foo.txt`, and
-     commit it with `git commit -m "Append y."`.
-  6. In `repo2`, call `config_user("user2", "user2@foo.com")`. Append `z` to
-     `foo.txt`, stage it with `git add foo.txt`, and commit it with `git commit
-     -m "Append z."`.
-  7. In `repo2`, run `git-hints explain -- git pull --no-rebase` and capture its
-     exit code and output.
-  8. Verify that the Git command exits non-zero and leaves an unresolved merge
-     conflict. Verify with `git diff --name-only --diff-filter=U` that `foo.txt`
-     is conflicted.
-  9. Verify that the hint with ID `merge-conflicts` appears, names `foo.txt`,
-     has error/blocked priority, explains how to resolve the conflict, and links
-     to official merge documentation such as
-     `https://git-scm.com/docs/git-merge`.
+  Use the autouse `git_setup` fixture. Run commands in the named repository;
+  capture expected failures separately from successful setup commands.
+
+  1. Create `repo1` and `repo2` with `make_temps(tmp_path_factory, 2)`.
+     Call `config_user("user1", "user1@example.com")`.
+  2. In `repo1`, run `git init -b main`, create `foo.txt` containing `base`,
+     and stage and commit it. Clone `repo1` into `repo2`.
+  3. In `repo1`, replace `foo.txt` with `remote change` and commit it.
+     In `repo2`, replace it with `local change` and commit it.
+     Run `git-hints --all --ids-only`; verify `merge-conflicts` is absent.
+  4. In `repo2`, run `git-hints explain -- git pull --no-rebase`.
+     Require exit code 1 and verify that `foo.txt` has unmerged index entries.
+  5. Verify that the `merge-conflicts` output block has `error/blocked`
+     priority, names `foo.txt`, contains `git status` and `git add`,
+     and includes the official merge documentation URL.
+  6. Run plain `git-hints --all --ids-only`; verify that `merge-conflicts`
+     and `operation-in-progress` are both present as whole-line IDs.
+     Still running from `repo2`, run
+     `git-hints explain -- git -C <absolute-path-to-repo1> merge nonexistent-test-branch`.
+     Require a nonzero exit code and no `merge-conflicts` hint:
+     the command targets `repo1`, not the conflicted `repo2`.
+  7. Replace `foo.txt` with the desired combined contents and run
+     `git add foo.txt`. Run `git-hints --all --ids-only`; verify
+     `merge-conflicts` is absent.
+     Run `git merge --continue` and require exit code 0 before proceeding.
+  8. Run `git-hints explain -- git status`; require exit code 0 and
+     no `merge-conflicts` hint.
+  9. Run `git-hints explain -- git merge nonexistent-test-branch`;
+     require a nonzero exit code and no `merge-conflicts` hint.
 
 #### Preserve local changes before pulling? (jit45)
 
@@ -1260,51 +1270,122 @@ solely to check its hints. (jit45; revised by drj228)
 
 * Test case: Pull blocked by tracked changes (jit45; revised by drj228).
 
-  1. The autouse `git_setup` fixture provides the isolated environment and
-     create three temporary directories named `remote`, `local`, and `other`
-     using `make_temps(3)`.
-  2. In `remote`, run `git init --bare -b main`.
-  3. Clone `remote` into `other` using `git clone <remote> <other>`.
-  4. In `other`, call `config_user("user1", "user1@example.com")`.
-  5. Create `foo.txt` containing `xxx`, then run `git add foo.txt`, `git commit
-     -m "Add foo."`, and `git push -u origin main`.
-  6. Clone `remote` into `local` using `git clone <remote> <local>`.
-  7. In `local`, append `local change` to `foo.txt` without staging or
-     committing it. Save the file's current contents for comparison after the
-     pull attempt.
-  8. In `other`, append `remote change` to `foo.txt`, run `git commit -am
-     "Update foo remotely."`, then run `git push`.
-  9. In `local`, run `git status --porcelain` and verify that `foo.txt` has an
-     unstaged local modification.
-  10. In `local`, run `git-hints explain -- git pull` and capture the exit code
-      and output.
-  11. Verify that the pull fails with a nonzero exit code because the incoming
-      change would overwrite the uncommitted local modification. Verify that
-      `git-hints explain` returns the Git command's nonzero exit code.
-  12. Verify that the hint with ID `pull-blocked-local-changes` appears, names
-      `foo.txt`, and has error/blocked priority.
-  13. Verify that the hint explains the working-directory or staging-area state,
-      provides commands and expected results for preserving the local change,
-      and includes the official `git pull` documentation link.
-  14. Verify that `foo.txt` still contains the user's original uncommitted local
-      change after the failed pull and that the tool did not automatically
-      stage, commit, stash, or discard it.
-  15. Verify with `git diff --name-only --diff-filter=U` that no unresolved
-      merge entries remain from this blocked pull.
-  16. As a negative check, save the local modification outside the repository,
-      then restore `foo.txt` to its committed version using `git restore
-      foo.txt`. Run `git-hints explain -- git pull` again. Verify that the pull
-      succeeds with exit code 0, that `pull-blocked-local-changes` is absent
-      from the output, and that the remote change is present in `foo.txt`.
-      Verify that the previously saved local modification remains available
-      outside the repository.
-  17. Verify that all commands and CLI calls use the isolated test environment
-      and are executed from the correct temporary repository.
+  Use the autouse `git_setup` fixture. Run commands in the named repository;
+  capture expected failures separately from successful setup commands.
 
-3. Push failed? Conditions: `git-hints explain -- git push` fails because the
-   remote branch contains commits that are not present in the local branch.
-   Explain that the user should integrate the remote changes before attempting
-   to push again. (jhg246)
+  1. Create `remote`, `local`, and `other` with
+     `make_temps(tmp_path_factory, 3)`.
+     Call `config_user("user1", "user1@example.com")`.
+  2. In `remote`, run `git init --bare -b main`. Clone it into `other`.
+     In `other`, create `foo.txt` containing `base`, stage and commit it,
+     then run `git push -u origin main`. Clone `remote` into `local`.
+  3. In `local`, replace `foo.txt` with `local change` without staging it.
+     In `other`, replace the file with `remote change`, commit, and push.
+  4. In `local`, run `git-hints explain -- git pull`; require a nonzero
+     exit code. Verify the `pull-blocked-local-changes` block names `foo.txt`,
+     has `error/blocked` priority, includes the git-pull documentation URL,
+     and offers commit and stash preservation commands.
+     Verify that no stdout line equals `ID: stash-local-changes`.
+  5. Verify that `foo.txt` still contains `local change`, the index is
+     unchanged, and no stash or unmerged entries were created.
+  6. Run `git add foo.txt`, then repeat the failed pull through `explain`.
+     Verify that the same hint appears and the staged change is preserved.
+     Run `git-hints explain -- git pull --rebase`; require a nonzero exit
+     code and verify that no stdout line equals
+     `ID: pull-blocked-local-changes`.
+  7. Run `git stash push -m "Save work before pull"`. Record the new stash
+     object ID with `git rev-parse refs/stash`. Retry the pull through
+     `explain`; require exit code 0, no `pull-blocked-local-changes` hint,
+     and `remote change` in `foo.txt`.
+  8. Run `git-hints explain -- git pull origin nonexistent-test-branch`;
+     require a nonzero exit code and no `pull-blocked-local-changes` hint.
+     In `other`, create `new.txt` containing `remote file`, stage and commit
+     it, then push. In `local`, create an untracked `new.txt` containing
+     `local file`. Run `git-hints explain -- git pull`; require a nonzero
+     exit code and no stdout line equal to `ID: pull-blocked-local-changes`.
+     Verify that the local file is unchanged, then remove that untracked
+     `new.txt` before continuing.
+  9. Run `git stash apply`. These overlapping edits should conflict.
+     Verify that `refs/stash` still names the recorded stash and that
+     `git stash show -p` contains the saved local change.
+     Run `git-hints --all --ids-only`; verify `merge-conflicts` is present
+     and `pull-blocked-local-changes` is absent.
+
+#### Push rejected: non-fast-forward (jhg246; revised by drj228)
+
+* Hint: Git rejected the
+  [push](https://git-scm.com/docs/git-push#_note_about_fast_forwards "A non-fast-forward push would replace remote history")
+  because the remote branch contains history missing from the branch being
+  pushed. Integrate that history before retrying.
+
+* Git stage: The local and remote repositories have different branch histories
+  that must be integrated before a normal push can succeed.
+
+* Command: Run `git status` to identify the current branch and uncommitted
+  changes. Expected result: the working-tree and staging-area state is shown.
+  For a rejection of the current branch, run `git fetch <remote>`, then
+  `git merge <remote-tracking-branch>`. Resolve any conflicts before retrying
+  the original push. Expected result: the local branch incorporates the
+  rejected destination's history and the push can succeed if no other
+  errors remain.
+
+  Identify the destination branch from the rejection. Resolve the remote
+  from the push command's explicit repository argument or Git's configured
+  push destination, including `branch.<name>.pushRemote` and
+  `remote.pushDefault` overrides. Resolve its remote-tracking ref using
+  the configured fetch refspec. If that destination cannot be identified
+  reliably, show placeholders for the user to confirm.
+  For another source branch, provide only the status command and explain
+  which ref was rejected. Do not recommend force pushing.
+
+* ID: `push-rejected-non-fast-forward`, priority class: error/blocked,
+  safety: safe.
+
+* Conditions: A `git push` executed through `git-hints explain` exits nonzero
+  and its captured diagnostic identifies a non-fast-forward rejection,
+  including a rejection marked `fetch first`. Do not infer this solely from
+  cached ahead/behind counts. Do not trigger for authentication failures,
+  network failures, hook rejections, or other push errors.
+  For rejected refs other than the current branch, identify the rejection
+  but omit the current-branch integration commands.
+
+* Test case: Non-fast-forward push rejection (drj228).
+
+  Use the autouse `git_setup` fixture. Run commands in the named repository;
+  capture expected failures separately from successful setup commands.
+
+  1. Create `remote`, `local`, and `other` with
+     `make_temps(tmp_path_factory, 3)`.
+     Call `config_user("user1", "user1@example.com")`.
+  2. In `remote`, run `git init --bare -b main`. Clone it into `local`.
+     In `local`, create and commit `base.txt`, then run
+     `git push -u origin main`. Clone `remote` into `other`.
+  3. In `local`, run `git-hints explain -- git push`; require exit code 0
+     and no `push-rejected-non-fast-forward` hint.
+  4. In `other`, create and commit `remote.txt`, then push.
+     In `local`, create and commit `local.txt`. Do not fetch.
+  5. In `local`, run `git-hints explain -- git push`; require exit code 1.
+     Verify that the `push-rejected-non-fast-forward` block has
+     `error/blocked` priority, includes the git-push documentation URL,
+     and recommends `git fetch origin` and `git merge origin/main`.
+     Verify that it does not recommend `git push --force`.
+  6. Run `git fetch origin`, then
+     `git-hints --all --ids-only explain -- git push`.
+     Require exit code 1 and the exact ID
+     `push-rejected-non-fast-forward` on stdout.
+     This checks detection after fetching, when Git reports
+     `non-fast-forward` rather than `fetch first`.
+  7. Run `git switch -c side`, then
+     `git-hints explain -- git push origin main`.
+     Require exit code 1. Verify that the `push-rejected-non-fast-forward`
+     block contains `git status` but no `git merge` command, because
+     the rejected source is `main` while the current branch is `side`.
+     Switch back with `git switch main`, then run
+     `git merge origin/main`. Retry the original push through `explain`;
+     require exit code 0 and no `push-rejected-non-fast-forward` hint.
+  8. Run `git-hints explain -- git push nonexistent-test-remote main`;
+     require a nonzero exit code and no `push-rejected-non-fast-forward`
+     hint.
 
 #### Stash local changes? (sbe80)
 
@@ -1341,29 +1422,45 @@ solely to check its hints. (jit45; revised by drj228)
 
 * Test case: Stashing blocked changes (sbe80; revised by drj228).
 
-  1. The autouse `git_setup` fixture provides the isolated environment and
-     create a temporary directory named `repo`.
-  2. In `repo`, run `git init -b main` and call `config_user("user1",
-     "user1@foo.com")`.
-  3. Create `foo.txt` containing `base`, stage it, and commit it with `git
-     commit -m "Add foo."`.
-  4. Create a branch named `topic` with `git switch -c topic`, replace the
-     contents of `foo.txt` with `topic change`, and commit the change.
-  5. Switch back to `main` and replace the contents of `foo.txt` with `local
-     change`, leaving the file uncommitted.
-  6. Run `git-hints explain -- git merge topic` and capture its exit code and
-     output.
-  7. Verify that the merge fails with a nonzero exit code because it would
-     overwrite the tracked local change, and that `git-hints explain` returns
-     the Git command's nonzero exit code.
-  8. Verify that `foo.txt` still contains `local change`, no unmerged paths
-     exist, and the hint with ID `stash-local-changes` appears with
-     error/blocked priority. Verify that the hint explains how to stash, retry
-     the merge, and restore the saved changes, and notes that default stashes do
-     not include untracked files.
-  9. Run `git restore foo.txt` and then `git-hints explain -- git merge topic`
-     again. Verify that the merge succeeds and the `stash-local-changes` hint is
-     absent.
+  Use the autouse `git_setup` fixture. Run commands in the named repository;
+  capture expected failures separately from successful setup commands.
+
+  1. Create `repo` and `unborn` with `make_temps(tmp_path_factory, 2)`.
+     Call `config_user("user1", "user1@example.com")`.
+  2. In `repo`, run `git init -b main`, create `foo.txt` containing `base`,
+     and stage and commit it.
+  3. Run `git switch -c topic`, replace `foo.txt` with `topic change`,
+     and commit. Switch to `main` and replace it with `local change`
+     without staging.
+  4. Run `git-hints explain -- git merge topic`; require a nonzero exit
+     code. Verify that the `stash-local-changes` block has `error/blocked`
+     priority and contains `git stash push`, `git stash apply`, and the
+     git-stash documentation URL.
+     Verify that no stdout line equals `ID: pull-blocked-local-changes`.
+  5. Run `git-hints explain -- git switch topic`; require a nonzero exit
+     code and the same hint. Verify that `foo.txt` still contains
+     `local change`, no stash was created, and no unmerged entries exist.
+  6. Run `git stash push -m "Save work before retrying"`, record the stash
+     object ID with `git rev-parse refs/stash`, then retry the merge through
+     `explain`. Require exit code 0 and no `stash-local-changes` hint.
+  7. Run `git-hints explain -- git switch nonexistent-test-branch`;
+     require a nonzero exit code and no `stash-local-changes` hint.
+     Run `git switch -c extra`, create `new.txt` containing `branch file`,
+     stage and commit it, then run `git switch main`.
+     Create an untracked `new.txt` containing `local file`.
+     Run `git-hints explain -- git switch extra`; require a nonzero exit
+     code and no stdout line equal to `ID: stash-local-changes`.
+     Verify that the local file is unchanged, then remove that untracked
+     `new.txt` before continuing.
+  8. Run `git stash apply`; require a nonzero exit code because these edits
+     conflict. Verify that `refs/stash` still names the recorded stash.
+     Run `git-hints --all --ids-only`; verify `merge-conflicts` is present
+     and `stash-local-changes` is absent.
+  9. In `unborn`, run `git init -b main`, create and commit `foo.txt`,
+     then run `git switch --orphan empty`. Create `foo.txt` with different
+     contents and stage it. Run `git-hints explain -- git switch main`;
+     require a nonzero exit code. Verify that the `stash-local-changes`
+     block recommends an external backup and contains no `git stash push`.
 
 <mark>Review section 4 (raf322) continues here; see Review assignments.</mark>
 
@@ -1401,7 +1498,7 @@ solely to check its hints. (jit45; revised by drj228)
 
   1. The autouse `git_setup` fixture provides the isolated environment and
      create three temporary directories named `remote`, `local`, and `other`
-     using `make_temps(3)`.
+     using `make_temps(tmp_path_factory, 3)`.
   2. In `remote`, run `git init --bare -b main`. Clone it into `local` and call
      `config_user("user1", "user1@foo.com")` there.
   3. In `local`, create and commit `foo.txt`, then run `git push -u origin
@@ -1428,17 +1525,51 @@ solely to check its hints. (jit45; revised by drj228)
   10. Run `git-hints explain -- git push`. Verify that it succeeds and the
       rebase hint is absent.
 
-<mark>Review section 7 (sbe80) begins here; see Review assignments.</mark>
+#### Finish or cancel the operation in progress? (raf322)
 
-### Pull remote changes? (raf322)
+* Hint: A `<operation>` is in progress. Git paused it and is waiting for you to
+  finish or cancel it. The hint has two variants.
 
-* Hint:
+  * Conflicts remain: "Some files have conflicts. Open each conflicted file,
+    choose the final content, then
+    [stage](https://git-scm.com/docs/git-add "Marks a resolved file so Git knows the conflict is fixed")
+    it. When no conflicts remain, run the continue command. To cancel instead,
+    run the abort command."
+  * No conflicts remain: "No conflicts remain. Run the continue command to
+    finish, or the abort command to cancel."
 
-* Git stage:
+  `<operation>` is replaced by `merge`, `rebase`, `cherry-pick`, or `revert`.
+  Show only the commands and the documentation link
+  (`https://git-scm.com/docs/git-<operation>`) for the detected operation.
 
-* Command:
+* Git stage: You are working in the local repository: Git has paused an
+  operation that combines commits, and any conflicted files stay in your working
+  directory and staging area until you resolve them.
 
-* ID:
+* Command: Run `git status` to see which files are unmerged. Resolve each one,
+  run `git add <file>`, then run the continue command for the operation:
+
+  | Operation   | Continue                     | Abort                     |
+  | ----------- | ---------------------------- | ------------------------- |
+  | merge       | `git merge --continue`       | `git merge --abort`       |
+  | rebase      | `git rebase --continue`      | `git rebase --abort`      |
+  | cherry-pick | `git cherry-pick --continue` | `git cherry-pick --abort` |
+  | revert      | `git revert --continue`      | `git revert --abort`      |
+
+  The CLI displays only the row for the detected operation. Expected result
+  after continuing: Git resumes the operation. A merge, cherry-pick, or revert
+  may record a new commit, and a completed rebase updates the branch. If another
+  conflict occurs, Git pauses again and this hint remains active. Once the
+  entire operation completes, this hint disappears and `git status` no longer
+  reports an operation in progress.
+
+  The continue command is safe. Prefix the abort command with `Warning:`
+  aborting discards the conflict resolutions you have made so far and returns to
+  the state before the operation began. Git may be unable to restore uncommitted
+  changes that existed before a merge started, so back up any edited files
+  first.
+
+* ID: `operation-in-progress`, priority class: error/blocked, safety: warning.
 
 * Conditions:
 
@@ -1489,9 +1620,9 @@ solely to check its hints. (jit45; revised by drj228)
   waits for an editor. Collapse whitespace in hint output before searching it
   for phrases.
 
-  1. Call `make_temps(1)`. In the directory: run `git init -b main`; call
-     `config_user("user1", "user1@foo.com")`; create `foo.txt` containing
-     `base`; stage it and commit with the message `"Add foo."`.
+  1. Call `make_temps(tmp_path_factory, 1)`. In the directory: run `git init -b
+     main`; call `config_user("user1", "user1@foo.com")`; create `foo.txt`
+     containing `base`; stage it and commit with the message `"Add foo."`.
   2. Run `git-hints --all --ids-only`. Verify that `operation-in-progress` is
      absent in a clean repository.
   3. Run `git switch -c topic`. Change `foo.txt` to `topic` and commit it with
@@ -1622,10 +1753,11 @@ solely to check its hints. (jit45; revised by drj228)
   The autouse `git_setup` fixture provides the isolated environment. Collapse
   whitespace in hint output before searching it for phrases.
 
-  1. Call `make_temps(1)`. In the directory: run `git init -b main`; call
-     `config_user("user1", "user1@foo.com")`; create `foo.txt` containing `xxx`,
-     `debug.log` containing `log`, and `my notes.log` containing `notes`. Stage
-     all three and commit with `git commit -m "Add files."`.
+  1. Call `make_temps(tmp_path_factory, 1)`. In the directory: run `git init -b
+     main`; call `config_user("user1", "user1@foo.com")`; create `foo.txt`
+     containing `xxx`, `debug.log` containing `log`, and `my notes.log`
+     containing `notes`. Stage all three and commit with `git commit -m "Add
+     files."`.
   2. Preconditions: no `.gitignore` exists, and `git ls-files -ci
      --exclude-standard` prints nothing. Run `git-hints --all --ids-only` and
      verify that `tracked-but-ignored` is absent.
@@ -1663,7 +1795,8 @@ solely to check its hints. (jit45; revised by drj228)
 
 ### Language and libraries
 
-1. Language: Python (Minimum version of 3.10 for all libraries listed below)
+1. Language: Python (Minimum version of 3.10 to ensure compatibility with all
+   used libraries)
 
 2. Package manager: uv
 
@@ -1684,16 +1817,19 @@ codes, so no additional Git library is required.
   suggested by hints. Do not fetch unless `--fetch` is supplied; follow that
   option's environment and timeout requirements.
 
-   * `git-hints explain`: validate that the user-supplied argument list starts
-     with `git` exactly, then execute it once. Leave standard input and standard output
-     connected to the terminal. Capture standard error and display it after
-     completion (not live); display the exit code and return that same code. Use the
-     command, exit code, standard error, and inspected repository state to
-     select reactive hints. Do not disable Git's terminal prompting or
-     editor for `git-hints explain`; the `GIT_TERMINAL_PROMPT=0` requirement
-     applies only to the tool's optional fetch and isolated test environment. Do
-     not claim to recover the result of an earlier command run outside
-     `git-hints explain`.
+* `git-hints explain`: validate that the user-supplied argument list starts with
+  `git` (only the word `git` is accepted. No other format), then execute it
+  once. Leave standard input connected to the terminal. Leave Git's standard
+  output connected to the terminal in normal output; under `--ids-only`, redirect
+  Git's standard output to `subprocess.DEVNULL` so it is not displayed. Capture
+  standard error and display it after completion (not live). In normal output,
+  display the exit code; under `--ids-only`, omit the exit-code message. Always
+  return Git's exit code. Use the command, exit code, standard error, and
+  inspected repository state to select reactive hints.
+  Do not disable Git's terminal prompting or editor for `git-hints explain`; the
+  `GIT_TERMINAL_PROMPT=0` requirement applies only to the tool's optional fetch
+  and isolated test environment. Do not claim to recover the result of an
+  earlier command run outside `git-hints explain`.
 
 <p><br></p>
 
@@ -1713,36 +1849,43 @@ Plain `git-hints` exits 0 whenever inspection completes, whether or not any hint
 is triggered. It exits nonzero only when it reports an unexpected inspection
 failure or that Git cannot be launched. (drj228)
 
-   Decode Git output as UTF-8 (`encoding="utf-8", errors="replace"`), not with the locale default. When a path list is parsed, use `-z` or `-c core.quotePath=false`.
+`git-hints explain` should also return non zero if Git does not launch or for any
+unexpected inspection failures.
 
-7. Testing: Pytest
+Decode Git output as UTF-8 (`encoding="utf-8", errors="replace"`), not with the
+locale default. When a path list is parsed, use `-z` or `-c
+core.quotePath=false`.
 
-8. Git: version 2.34 or later
+1. Testing: Pytest
+
+2. Git: version 2.34 or later. This applies for both running the application and
+   testing.
 
 Testing
 -------
 
 The test tool contains:
 
-* `make_temps(num)`: creates and returns `num` temporary directories using
-  Pytest's `tmp_path_factory`. The helper does not assign names such as local or remote; 
-  each test should assign descriptive variable names to the returned paths.
+* `make_temps(tmp_path_factory, num)`: creates and returns `num` temporary
+  directories using Pytest's `tmp_path_factory`. Each test that calls this
+  function must request `tmp_path_factory` from pytest and pass it to
+  `make_temps`.The helper does not assign names such as local or remote; each
+  test should assign descriptive variable names to the returned paths.
 * `make_repo(temp_dir, commands)`: runs the list of `commands` in `temp_dir` to
   create and populate the repository. Each command is either an argument list,
   such as `["git", "commit", "-m", "Add foo."]`, executed using
-  `subprocess.run()` with `cwd=temp_dir` and `shell=False`, or a lambda function
-  with no parameters used to create, modify, or delete files. Pass each argument
+  `subprocess.run(cwd=temp_dir, shell=False)`, or a zero argument lambda
+  function used to create, modify, or delete files. Pass each argument
   separately and keep messages containing spaces in a single list element. Do
-  not join arguments into a shell string. (drj228) Lambdas run with `temp_dir`
-  as the current working directory, so they can use relative paths;
-  `make_repo()` restores the previous working directory before returning.
-* `config_user(username, email)`: Set the isolated testing Git enviornments 
-   global `user.name` and `user.email` by writing to the global `GIT_CONFIG_GLOBAL` file.
+  not join arguments into a shell string. (drj228) File-operation lambdas must
+  use paths rooted at `temp_dir`—for example, `temp_dir / "foo.txt"`—and must
+  not rely on or change the process’s current working directory. `make_repo()`
+  does not call `os.chdir`.
 * `git_setup()`: creates an isolated Git configuration for the test environment.
   The test environment shall:
   * Remove every inherited environment variable whose name starts with `GIT_`,
     plus `EMAIL` and `XDG_CONFIG_HOME`. Git sets `GIT_DIR`, `GIT_WORK_TREE`, and
-    `GIT_INDEX_FILE` when pytest runs from a Git hook, which would make tests
+    `GIT_INDEX_FILE` when Pytest runs from a Git hook, which would make tests
     act on the outer repository. `GIT_AUTHOR_*`, `GIT_COMMITTER_*`, and `EMAIL`
     override `user.name` and `user.email`. `GIT_CONFIG_PARAMETERS` and
     `GIT_CONFIG_COUNT` add configuration that bypasses the files below.
@@ -1760,7 +1903,7 @@ The test tool contains:
     `core.autocrlf=true`, does not affect test results.
   * Set
     [`GIT_CEILING_DIRECTORIES`](https://git-scm.com/docs/git#Documentation/git.txt-GITCEILINGDIRECTORIES)
-    to pytest's base temporary directory (`tmp_path_factory.getbasetemp()`), so
+    to Pytest's base temporary directory (`tmp_path_factory.getbasetemp()`), so
     Git never finds a repository above a test's temporary directory.
   * Set
     [`GIT_TERMINAL_PROMPT=0`](https://git-scm.com/docs/git#Documentation/git.txt-GITTERMINALPROMPT)
@@ -1772,124 +1915,21 @@ The test tool contains:
   global `user.name` and `user.email` by writing to the global
   `GIT_CONFIG_GLOBAL` file.
 
-A typical test calls `git_setup()` (provided as an autouse fixture), creates
-temporary directories with `make_temps()`, and uses `make_repo()` to set up
-repositories. Run `git-hints --all` when checking hint content, commands, and
-documentation links. Use `git-hints --all --ids-only` when checking whether a
-hint ID is present or absent. Compare IDs as whole lines, not substrings. Both
-modes must run with the repository under test as the current working directory.
+The function-scoped autouse `git_setup()` fixture applies the isolated variables
+to os.environ for each test and restores the prior environment afterward. Tests
+do not call the fixture directly. Create temporary directories
+with `make_temps()`, and use `make_repo()` to set up repositories. Run
+`git-hints --all` when checking hint content, commands, and documentation links.
+Use `git-hints --all --ids-only` when checking whether a hint ID is present or
+absent. Compare IDs as whole lines, not substrings. Both modes must run with the
+repository under test as the current working directory: set `cwd` to the same
+`temp_dir` passed to `make_repo()` for that repository.
 
 All Git commands executed as part of a test, including those that `git-hints`
 runs, shall use the isolated test environment established by `git_setup()`. This
 prevents test results from varying based on the Git configuration of the machine
 running the tests.
 
-### GOING TO DELETE (temporary removal area)
-
-Everything below this heading is scheduled for deletion on Sunday (sbe80). This
-temporary area keeps the material available for review before it is removed.
-
-#### Pull remote changes? (raf322)
-
-* Hint:
-
-* Git stage:
-
-* Command:
-
-* ID:
-
-* Conditions:
-
-* Test case:
-
-#### Pull before committing (raf322)
-
-* Hint: Pull needed, your branch is behind!
-
-* Git stage: You are trying to commit and merge but your branch has not been
-  updated with the latest commit.
-
-* Command: `git pull <name of branch>`
-
-* ID: `pull-before` priority class: error/blocked, safety: safe
-
-* Conditions: Determine if there are no commits that have not been pulled yet.
-  Run `git fetch` and then run `git rev-list --count HEAD..@{u}`. If 0 is
-  returned, the branch is up to date. Otherwise, there are still new commits
-  that have not been pulled.
-
-* Test case:
-
-  1. Call `git_setup` and then call `make_temps(3)` to create three temp
-     directories: `temp1`, `temp2` and `remote`. `remote` will act as a shared
-     server between the other two.
-  2. In `remote`, run `git init --bare -b main`.
-  3. In `temp1`, execute:
-     1. Create a repo with `git init -b main`.
-     2. Call `config_user("user1", "user1@foo.com")`.
-     3. Create a file called `foo.txt` with the content `xxx`.
-     4. Add and commit it with the message `"Add foo."`.
-     5. Add the `remote` directory as a remote called `origin`.
-     6. Push `main` to `origin` with `git push -u origin main`.
-  4. In `temp2`, execute:
-  5. Clone `remote` into the directory with `git clone <remote> .`.
-  6. Call `config_user("user2", "user2@foo.com")`.
-  7. Change `foo.txt` so that it contains `xxxy`.
-  8. Commit with `git commit -am "Modify foo."` and push with `git push`.
-  9. Change back to `temp1` and run `git fetch`, so that it learns about the new
-     commit on the remote. `temp1` is now 1 commit behind `origin/main`, with no
-     commits of its own that the remote lacks and no uncommitted changes.
-  10. Run `git-hints` in `temp1`. Expected hint: Is my branch up to date before
-      I start editing?
-
-#### <mark>TODO: move test cases to follow the implementation of each hint.</mark>
-
-#### Test Case 14: Pull Test (raf322) -- Requirement Proactive 7
-
-1. Call `make_temps(3)` to create three temp directories: `temp1`, `temp2` and
-   `remote`. `remote` will act as a shared server between the other two.
-2. In `remote`, run `git init --bare -b main`.
-3. In `temp1`, execute:
-   1. Create a repo with `git init -b main`.
-   2. Call `config_user("user1", "user1@foo.com")`.
-   3. Create a file called `foo.txt` with the content `xxx`.
-   4. Add and commit it with the message `"Add foo."`.
-   5. Add the `remote` directory as a remote called `origin`.
-   6. Push `main` to `origin` with `git push -u origin main`.
-4. In `temp2`, execute:
-   1. Clone `remote` into the directory with `git clone <remote> .`.
-   2. Call `config_user("user2", "user2@foo.com")`.
-   3. Change `foo.txt` so that it contains `xxxy`.
-   4. Commit with `git commit -am "Modify foo."` and push with `git push`.
-5. Change back to `temp1` and run `git fetch`, so that it learns about the new
-   commit on the remote. `temp1` is now 1 commit behind `origin/main`, with no
-   commits of its own that the remote lacks and no uncommitted changes.
-6. Run `git-hints` in `temp1`. Expected hint: Is my branch up to date before I
-   start editing?
-
-#### Test Case 15: Branch Behind Test (raf322) -- Requirement Proactive 4
-
-1. Call `make_temps(3)` to create three temp directories: `local1`, `local2` and
-   `remote`. `remote` will act as a shared server between the other two.
-2. In `remote`, run `git init --bare -b main`.
-3. In `local1`, execute:
-   1. Create a repo with `git init -b main`.
-   2. Call `config_user("user1", "user1@foo.com")`.
-   3. Create a file called `foo.txt` with the content `xxx`.
-   4. Add and commit it with the message `"Add foo."`.
-   5. Add the `remote` directory as a remote called `origin`.
-   6. Push `main` to `origin` with `git push -u origin main`.
-4. In `local2`, execute:
-   1. Clone `remote` into the directory with `git clone <remote> .`.
-   2. Call `config_user("user2", "user2@foo.com")`.
-   3. Change `foo.txt` so that it contains `xxxy`.
-   4. Commit with `git commit -am "Modify foo."`.
-   5. Change `foo.txt` so that it contains `xxxyz`.
-   6. Commit with `git commit -am "Modify foo again."` and push both commits
-      with `git push`.
-5. `cd` to `local1` and run `git fetch`, so that it learns about the new commits
-   on the remote. `local1` is now 2 commits behind `origin/main`, with no
-   commits of its own that the remote lacks and no uncommitted changes.
-6. Run `git-hints` in `local1`. Expected hint: Pull needed, your branch is
-   behind!
+Repository setup commands must exit successfully; fail the test immediately if
+one does not. Run any command that is expected to fail as part of the behavior
+under test separately, and explicitly verify its expected exit code and output.
