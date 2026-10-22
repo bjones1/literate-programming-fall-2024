@@ -1,0 +1,29 @@
+[project]
+name = "git-hints"
+version = "0.1.0"
+description = "Show Git learners where they are and what to do next."
+requires-python = ">=3.10"
+dependencies = ["typer>=0.15"]
+
+[project.scripts]
+git-hints = "git_hints.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.8,<0.13"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = ["pytest>=8", "pytest-xdist>=3", "ruff>=0.12", "ty>=0.0.1a20"]
+
+[tool.ruff]
+line-length = 80
+
+[tool.ruff.lint]
+extend-select = ["I", "UP", "B", "E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["tests"]
+# Tests spend most of their time waiting for Git processes, so run them in
+# parallel; pass `-n 0` to run serially (for example, to use a debugger).
+addopts = "-n auto"
