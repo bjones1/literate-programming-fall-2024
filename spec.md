@@ -17,42 +17,42 @@ model as they work.
 CLI commands
 ============
 
-1. **`git-hints`**: inspect observable repository state and display up to three
-   currently triggered proactive hints in priority order. If more than three
-   hints are triggered, state how many additional hints are available. Do not
-   perform a network operation unless `--fetch` is supplied.
+1. <strong>`git-hints`</strong>: inspect observable repository state and display
+   up to three currently triggered proactive hints in priority order. If more
+   than three hints are triggered, state how many additional hints are
+   available. Do not perform a network operation unless `--fetch` is supplied.
 
-   1. **`--all`**: display every currently triggered proactive hint instead of
-      applying the three-hint limit.
+   1. <strong>`--all`</strong>: display every currently triggered proactive hint
+      instead of applying the three-hint limit.
 
-   2. **`--ids-only`**: print only the IDs of the hints that would otherwise be
-      displayed, one per line in display order. Print no branch context,
-      explanatory text, additional-hints notice, fetch messages, or other
-      labels. Print nothing if no hints trigger. The three-hint limit still
-      applies unless `--all` is also present. Use `git-hints --all --ids-only`
-      in tests that assert a hint is present or absent. Exit codes are
-      unchanged.
+   2. <strong>`--ids-only`</strong>: print only the IDs of the hints that would
+      otherwise be displayed, one per line in display order. Print no branch
+      context, explanatory text, additional-hints notice, fetch messages, or
+      other labels. Print nothing if no hints trigger. The three-hint limit
+      still applies unless `--all` is also present. Use `git-hints --all
+      --ids-only` in tests that assert a hint is present or absent. Exit codes
+      are unchanged.
 
-   3. **`--fetch`**: before inspecting a working tree, run `git fetch --quiet
-      --no-auto-maintenance` with `GIT_TERMINAL_PROMPT=0`, standard input
-      redirected from `subprocess.DEVNULL`, output captured, and a 10-second
-      timeout. Fetch from the remote associated with the current branch's
-      upstream, or from `origin` if there is no upstream but `origin` exists. If
-      neither exists, skip fetching and treat remote information as cached. Skip
-      fetching outside a working tree. A successful fetch permits `push-ahead`,
-      `behind`, and `diverged` hints to omit their "as of last fetch" qualifier.
-      If fetching fails, times out, or is skipped for lack of an applicable
-      remote, continue inspecting using cached information; this is not an
-      unexpected inspection failure. After the branch context line, print `Fetch
-      failed; showing results as of last fetch.` for a failed or timed-out fetch
-      (except under `--ids-only`). Retain "as of last fetch" on affected hints.
-      Without `--fetch`, never fetch and label `push-ahead`, `behind`, and
-      `diverged` hints "as of last fetch."
-2. **`git-hints explain -- <git command>`**: execute the supplied Git command,
-   capture its exit code and standard error, and select reactive hints from the
-   resulting error. Return the same exit code as Git. The arguments must begin
-   with `git`; otherwise print an error to standard error, run nothing, and
-   exit 2.
+   3. <strong>`--fetch`</strong>: before inspecting a working tree, run `git
+      fetch --quiet --no-auto-maintenance` with `GIT_TERMINAL_PROMPT=0`,
+      standard input redirected from `subprocess.DEVNULL`, output captured, and
+      a 10-second timeout. Fetch from the remote associated with the current
+      branch's upstream, or from `origin` if there is no upstream but `origin`
+      exists. If neither exists, skip fetching and treat remote information as
+      cached. Skip fetching outside a working tree. A successful fetch permits
+      `push-ahead`, `behind`, and `diverged` hints to omit their "as of last
+      fetch" qualifier. If fetching fails, times out, or is skipped for lack of
+      an applicable remote, continue inspecting using cached information; this
+      is not an unexpected inspection failure. After the branch context line,
+      print `Fetch failed; showing results as of last fetch.` for a failed or
+      timed-out fetch (except under `--ids-only`). Retain "as of last fetch" on
+      affected hints. Without `--fetch`, never fetch and label `push-ahead`,
+      `behind`, and `diverged` hints "as of last fetch."
+2. <strong>`git-hints explain -- <git command>`</strong>: execute the supplied
+   Git command, capture its exit code and standard error, and select reactive
+   hints from the resulting error. Return the same exit code as Git. The
+   arguments must begin with `git`; otherwise print an error to standard error,
+   run nothing, and exit 2.
 
    * A `--` separator before the Git command is recommended to make argument
      boundaries unambiguous.
@@ -86,9 +86,9 @@ CLI commands
    * Any state needed across invocations, including counts of repeated
      integration failures, belongs under the path returned by `git rev-parse
      --git-path git-hints` so linked worktrees are handled correctly.
-3. **`--help`**: Typer automatically generates help for commands and
-   subcommands. Each implemented command/subcommand docstring must include at
-   least one complete usage example, such as `git-hints --all` or `git-hints
+3. <strong>`--help`</strong>: Typer automatically generates help for commands
+   and subcommands. Each implemented command/subcommand docstring must include
+   at least one complete usage example, such as `git-hints --all` or `git-hints
    explain -- git pull`. Do not advertise unimplemented future-work commands as
    available.
 
@@ -98,34 +98,35 @@ Future work
 The following features are **future work; do not implement them in the initial
 version**.
 
-1. **`git-hints def <term>`**: display a short definition for a supported Git
-   command or term and link to official documentation; report unsupported terms
-   rather than inventing definitions. An editor such as CodeChat Editor could
-   invoke `git-hints def <term>` to display an inline summary and documentation
-   link when a user types a term such as `repo` or `pull`.
+1. <strong>`git-hints def <term>`</strong>: display a short definition for a
+   supported Git command or term and link to official documentation; report
+   unsupported terms rather than inventing definitions. An editor such as
+   CodeChat Editor could invoke `git-hints def <term>` to display an inline
+   summary and documentation link when a user types a term such as `repo` or
+   `pull`.
 
-2. **`git-hints howto <task>`**: provide verified step-by-step instructions for
-   supported tasks such as committing, pulling, and pushing. Report unsupported
-   tasks rather than generating unverified instructions.
+2. <strong>`git-hints howto <task>`</strong>: provide verified step-by-step
+   instructions for supported tasks such as committing, pulling, and pushing.
+   Report unsupported tasks rather than generating unverified instructions.
 
-3. **`git-hints --exclude <hint-id1[,hint-id2[,...]]>`**: exclude the specified
-   permanent hint IDs from generated output.
+3. <strong>`git-hints --exclude <hint-id1[,hint-id2[,...]]>`</strong>: exclude
+   the specified permanent hint IDs from generated output.
 
-4. **`git-hints --dismiss <hint-id1[,hint-id2[,...]]>`**: dismiss currently
-   triggered hints. Save each hint ID and the condition values used to trigger
-   it at the location returned by `git rev-parse --git-path
+4. <strong>`git-hints --dismiss <hint-id1[,hint-id2[,...]]>`</strong>: dismiss
+   currently triggered hints. Save each hint ID and the condition values used to
+   trigger it at the location returned by `git rev-parse --git-path
    git-hints/dismissals.json`. Suppress a dismissed hint in normal and `--all`
    output while those values remain unchanged. Clear the dismissal if the
    relevant values change or the condition ceases to apply; unrelated repository
    changes must not clear it. For example, fixing only a missing user name
    allows `commit-identity` to reappear if a missing email still triggers it.
 
-5. **`git-hints --bug <comments> [explain -- ...]`**: collect the current
-   repository state and, for `explain`, Git command output, then propose an
-   issue for the project's GitHub repository. Before sending anything, preview
-   the collected information, redact secrets (including tokens in remote URLs),
-   and require explicit user consent; repository state can contain sensitive
-   paths and identifiers.
+5. <strong>`git-hints --bug <comments> [explain -- ...]`</strong>: collect the
+   current repository state and, for `explain`, Git command output, then propose
+   an issue for the project's GitHub repository. Before sending anything,
+   preview the collected information, redact secrets (including tokens in remote
+   URLs), and require explicit user consent; repository state can contain
+   sensitive paths and identifiers.
 
 Hint structure
 ==============
@@ -341,9 +342,9 @@ The Conditions of the hints below assume this check and do not repeat it.
 
 * Test case:
 
-  1. **Setup:** The autouse `git_setup` fixture provides the isolated
-     environment. Create three temporary directories: `remote`, `local`, and
-     `other`.
+  1. <strong>Setup:</strong> The autouse `git_setup` fixture provides the
+     isolated environment. Create three temporary directories: `remote`,
+     `local`, and `other`.
 
   2. Call `config_user("user1", "user1@example.com")`.
 
@@ -1977,28 +1978,29 @@ solely to check its hints.
   absent as complete `ID: <id>` lines. The tests may also use the global
   `--ids-only` option before `explain` to check reactive IDs.
 
-  1. **Mixed eligible failures:** Produce three qualifying rejected pushes in
-     `local`. Run `git-hints explain -- git pull --ff-only` on the diverged
-     branch and require the "Not possible to fast-forward" error. Run one more
-     rejected push. Verify that the rebase hint is absent for the first four
-     eligible failures and appears on the fifth.
+  1. <strong>Mixed eligible failures:</strong> Produce three qualifying rejected
+     pushes in `local`. Run `git-hints explain -- git pull --ff-only` on the
+     diverged branch and require the "Not possible to fast-forward" error. Run
+     one more rejected push. Verify that the rebase hint is absent for the first
+     four eligible failures and appears on the fifth.
 
-  2. **Successful-operation reset:** Produce four qualifying rejected pushes.
-     Without changing `HEAD` or the upstream branch, successfully run `git-hints
-     explain -- git push origin HEAD:refs/heads/test-reset-ref` to create a
-     separate remote branch. Then reject another push to the original upstream.
-     Verify that the rebase hint is absent: the successful push reset the count.
-     Verify that `HEAD` remained unchanged across the successful command.
+  2. <strong>Successful-operation reset:</strong> Produce four qualifying
+     rejected pushes. Without changing `HEAD` or the upstream branch,
+     successfully run `git-hints explain -- git push origin
+     HEAD:refs/heads/test-reset-ref` to create a separate remote branch. Then
+     reject another push to the original upstream. Verify that the rebase hint
+     is absent: the successful push reset the count. Verify that `HEAD` remained
+     unchanged across the successful command.
 
-  3. **Ineligible errors:** In a fresh branch with no configured upstream,
-     attempt `git-hints explain -- git push` five times. Require each failure to
-     report the missing upstream, and verify that the rebase hint never appears.
-     Also verify that network/authentication errors and a failed `git pull
-     --rebase` do not increment the count.
+  3. <strong>Ineligible errors:</strong> In a fresh branch with no configured
+     upstream, attempt `git-hints explain -- git push` five times. Require each
+     failure to report the missing upstream, and verify that the rebase hint
+     never appears. Also verify that network/authentication errors and a failed
+     `git pull --rebase` do not increment the count.
 
-  4. **Branch isolation:** Produce four qualifying rejected pushes on `main`.
-     Create and switch to another local branch `feature` from `main`. Configure
-     `feature` to track `origin/main` using `git branch
+  4. <strong>Branch isolation:</strong> Produce four qualifying rejected pushes
+     on `main`. Create and switch to another local branch `feature` from `main`.
+     Configure `feature` to track `origin/main` using `git branch
      --set-upstream-to=origin/main feature`. Attempt a push using `git-hints
      explain -- git push origin HEAD:main`; require a qualifying
      non-fast-forward rejection and verify that the rebase hint remains absent
@@ -2006,18 +2008,19 @@ solely to check its hints.
      its next qualifying failure reaches the fifth-failure threshold and
      triggers the hint.
 
-  5. **Unrelated commands:** Produce four qualifying failures. Run `git-hints
-     explain -- git status`, require success, and verify that a fifth qualifying
-     rejected push triggers the hint. An unrelated successful Git command does
-     not clear the counter.
+  5. <strong>Unrelated commands:</strong> Produce four qualifying failures. Run
+     `git-hints explain -- git status`, require success, and verify that a fifth
+     qualifying rejected push triggers the hint. An unrelated successful Git
+     command does not clear the counter.
 
-  6. **Changed HEAD:** Produce four qualifying failures, create and commit a
-     different local file, and confirm that `HEAD` now has a new commit ID.
-     Reject another push and verify that the rebase hint is absent because the
-     stored counter resets after the `HEAD` change.
+  6. <strong>Changed HEAD:</strong> Produce four qualifying failures, create and
+     commit a different local file, and confirm that `HEAD` now has a new commit
+     ID. Reject another push and verify that the rebase hint is absent because
+     the stored counter resets after the `HEAD` change.
 
-  7. **Operation in progress:** Set up a fresh diverged repository using the
-     earlier test setup. Fetch the remote changes with `git fetch origin`.
+  7. <strong>Operation in progress:</strong> Set up a fresh diverged repository
+     using the earlier test setup. Fetch the remote changes with `git fetch
+     origin`.
 
      Before counting failures, modify `foo.txt` in `local` so its contents
      conflict with the changes made to `foo.txt` in `other`. Commit this local
@@ -2187,3 +2190,81 @@ running the tests.
 Repository setup commands must exit successfully; fail the test immediately if
 one does not. Run any command that is expected to fail as part of the behavior
 under test separately, and explicitly verify its expected exit code and output.
+
+Implementation Strategy
+-----------------------
+
+### Architecture
+
+The application will use a modular architecture consisting of a Typer CLI, Git
+command executor, repository inspector, hint detection engine, and output
+renderer. These components will be separated to allow independent testing.
+
+### Git Command Execution
+
+Git commands will be executed using Python's `subprocess` with `shell=False` and
+`check=False`. Arguments will be passed as lists to avoid shell interpretation.
+
+The executor will distinguish expected Git exit codes from unexpected failures.
+Git output will be captured as bytes. NUL-delimited paths will be parsed before
+decoding, with `os.fsdecode()` used for lossless filename handling through
+surrogate escapes. Human-readable output will use UTF-8 with replacement for
+invalid byte sequences. Tests will include filenames containing invalid UTF-8
+bytes on supported platforms.
+
+### Repository Inspection
+
+The repository inspector will collect branch information, staged and unstaged
+changes, untracked files, upstream status, and active Git operations.
+
+Git commands such as `git status --porcelain=v2 --branch`, `git diff`, and `git
+rev-parse` will provide structured repository information.
+
+Repository inspection will use `GIT_OPTIONAL_LOCKS=0` to prevent optional index
+refresh writes, including those normally performed by `git status`. Inspection
+will not intentionally modify repository state. The only permitted network
+operation is an explicitly requested `--fetch`, which will follow the
+specification's timeout, environment, and fallback requirements.
+
+### Hint Detection and Prioritization
+
+Each hint will be implemented as an independent condition evaluator using the
+repository state.
+
+Triggered hints will be assigned the priority classes defined in the
+specification and sorted according to the required precedence rules. Hint IDs
+will remain stable.
+
+Before displaying hints, the engine will apply operation-in-progress suppression
+rules. The default output will contain at most three proactive hints, while
+`--all` will display every applicable hint.
+
+### Reactive Error Handling
+
+The `explain` command will execute the supplied Git command once, inherit standard input, and forward standard output directly to the user's standard output. Standard error will be streamed to the user's standard error as it is produced, while simultaneously retaining a copy for reactive hint matching.
+
+The implementation will preserve Git's original exit code and display all triggered reactive hints. Repository-dependent hints will be skipped when Git repository-redirection options prevent reliable inspection.
+
+Tests will verify that interactive commands can display prompts on standard error before reading standard input, without waiting for the Git process to exit.
+
+### Output Rendering
+
+A dedicated renderer will generate the required hint blocks containing permanent
+IDs, priority classes, Git-stage explanations, suggested commands, expected
+results, and official Git documentation links.
+
+The renderer will support normal output and `--ids-only` mode. Safety labels
+will be applied to individual suggested commands independently of hint priority.
+
+### Testing and Validation
+
+Pytest will be used with isolated temporary Git repositories and the required
+`git_setup`, `make_temps`, `make_repo`, and `config_user` helpers.
+
+Tests will verify triggering conditions, suppression rules, hint ordering,
+command safety, CLI output, remote behavior, and exit-code preservation.
+
+The implementation will be validated with Ruff, ty, and the complete automated
+test suite. Development will proceed incrementally, starting with repository
+inspection and basic proactive hints, followed by advanced hints and reactive
+error handling.
