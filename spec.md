@@ -2249,40 +2249,52 @@ Implementation Strategy
 
 ### Architecture
 
-The application will use a modular architecture consisting of a Typer CLI, Git
+The application uses a modular architecture consisting of a Typer CLI, Git
 command executor, repository inspector, hint detection engine, and output
-renderer. These components will be separated to allow independent testing.
+renderer. These components are separated to allow independent testing, and
+they map to the modules of the `git_hints` package as follows:
+
+* `cli.py`: the Typer CLI, which calls `proactive.show_hints` or
+  `reactive.explain`.
+* `git.py`: the Git command executor (`run_git`, `GitResult`) and the
+  repository inspector (`Repo`).
+* `hint.py`: the hint model (`Hint`, `Priority`, `Safety`, `Command`),
+  ordering (`PRECEDENCE`, `sort_hints`), and the renderer (`render_block`).
+* `proactive.py`: the hint detection engine for repository state (`CHECKS`,
+  `collect_hints`), the `--fetch` step, and proactive output (`show_hints`).
+* `reactive.py`: `explain`, its checks (`REACTIVE_CHECKS`), and the
+  integration-failure counter.
 
 ### Git Command Execution
 
-Git commands will be executed using Python's `subprocess` with `shell=False` and
-`check=False`. Arguments will be passed as lists to avoid shell interpretation.
+Git commands are executed using Python's `subprocess` with `shell=False` and
+`check=False`. Arguments are passed as lists to avoid shell interpretation.
 
-The executor will distinguish expected Git exit codes from unexpected failures.
-Git output will be decoded as UTF-8 (`encoding="utf-8", errors="replace"`), as
-required in Language and libraries. Commands whose path lists are parsed will
-use `-z` (for example, `git diff --name-only -z`), and their output will be
-split on NUL characters, so names containing spaces, newlines, or non-ASCII
-characters stay intact.
+The executor distinguishes expected Git exit codes from unexpected failures.
+Git output is decoded as UTF-8 (`encoding="utf-8", errors="replace"`), as
+required in Language and libraries. Commands whose path lists are parsed use
+`-z` (for example, `git diff --name-only -z`), and their output is split on NUL
+characters, so names containing spaces, newlines, or non-ASCII characters stay
+intact.
 
 ### Repository Inspection
 
-The repository inspector will collect branch information, staged and unstaged
+The repository inspector collects branch information, staged and unstaged
 changes, untracked files, upstream status, and active Git operations.
 
-Each piece of state will come from the command named in the hint conditions: for
+Each piece of state comes from the command named in the hint conditions: for
 example, `git status --porcelain=v2 --branch` for upstream status, `git status
 --porcelain=v1 -z --untracked-files=all` for untracked files, `git diff --quiet`
 and `git diff --cached --quiet` for changes, and `git rev-parse` for
 operation-state paths.
 
-Inspection subprocesses, but not the command run by `explain`, will use
+Inspection subprocesses, but not the command run by `explain`, use
 `GIT_OPTIONAL_LOCKS=0` to prevent optional index refresh writes, including those
-normally performed by `git status`. Plain `git-hints` will not intentionally
+normally performed by `git status`. Plain `git-hints` does not intentionally
 modify repository state, except that an explicit `--fetch` updates
 remote-tracking refs and `FETCH_HEAD`. The only permitted network operation is
-an explicitly requested `--fetch`, which will follow the specification's
-timeout, environment, and fallback requirements.
+an explicitly requested `--fetch`, which follows the specification's timeout,
+environment, and fallback requirements.
 
 Test case: create a repository with one committed file. Change that file's
 modification time with `os.utime()` without changing its contents, so the stat
@@ -2294,57 +2306,86 @@ that the setup would have caused a rewrite without `GIT_OPTIONAL_LOCKS=0`.
 
 ### Hint Detection and Prioritization
 
-Each hint will be implemented as an independent condition evaluator using the
-repository state.
+Each hint is implemented as an independent condition evaluator using the
+repository state: a check function that returns a `Hint` or `None`, registered
+in `CHECKS` in `proactive.py` or in `REACTIVE_CHECKS` in `reactive.py`.
+`collect_hints` runs the checks in `CHECKS` concurrently, one
+`ThreadPoolExecutor` worker per check, since they mostly wait for Git. All
+checks share one `Repo`, which memoizes each command's result by its arguments,
+so a command needed by several checks runs once. A command that fails
+unexpectedly raises `InspectionError`, which suppresses every check using it
+and is reported once.
 
-Triggered hints will be assigned the priority classes defined in the
-specification and sorted according to the required precedence rules. Hint IDs
-will remain stable.
+Triggered hints are assigned the priority classes defined in the specification
+and sorted by `sort_hints` according to the required precedence rules, whose
+ID list is `PRECEDENCE` in `hint.py`; the order of `CHECKS` does not affect
+output. Hint IDs remain stable.
 
-Before displaying hints, the engine will apply operation-in-progress suppression
-rules. The default output will contain at most three proactive hints, while
-`--all` will display every applicable hint.
+Operation-in-progress suppression is applied inside the checks, which consult
+`Repo.operations` and `Repo.unmerged_paths`. `show_hints` applies the
+three-hint limit (`HINT_LIMIT`) to the sorted list; `explain` never applies it.
 
 ### Reactive Error Handling
 
-The `explain` command will execute the supplied Git command once and inherit
-standard input. Git's standard output will go directly to the terminal in normal
-output and to `subprocess.DEVNULL` under `--ids-only`. Standard error will be
+The `explain` command executes the supplied Git command once and inherits
+standard input. Git's standard output goes directly to the terminal in normal
+output and to `subprocess.DEVNULL` under `--ids-only`. Standard error is
 captured, used for reactive hint matching, and printed to standard error after
 Git exits, as required in Language and libraries.
 
-The implementation will return Git's original exit code, unless Git cannot be
-launched or an unexpected inspection error occurs. In normal output, it will
-print `Git exited with code <n>.`, then all triggered reactive hints on a
-nonzero exit or `No error detected.` on success; under `--ids-only`, it will
-print only the triggered hint IDs. Only `explain` updates the
-integration-failure counter stored under `git rev-parse --git-path git-hints`.
-Repository-dependent hints will be skipped when the global options before the
-Git subcommand include a repository-redirection option such as `-C`,
-`--git-dir`, or `--work-tree`.
+The implementation returns Git's original exit code, unless Git cannot be
+launched or an unexpected inspection error occurs. In normal output, it prints
+`Git exited with code <n>.`, then all triggered reactive hints on a nonzero exit
+or `No error detected.` on success; under `--ids-only`, it prints only the
+triggered hint IDs. Only `explain` updates the integration-failure counter
+stored under `git rev-parse --git-path git-hints`, in the file
+`git-hints/integration-failures.json` (`FAILURE_COUNTS_PATH`).
+Repository-dependent hints are skipped when the global options before the Git
+subcommand include a repository-redirection option such as `-C`, `--git-dir`,
+or `--work-tree`.
 
-Tests will verify that Git's captured standard error appears on standard error,
+Tests verify that Git's captured standard error appears on standard error,
 that Git's standard output is hidden under `--ids-only`, and that `git-hints`
 returns Git's exit code.
 
 ### Output Rendering
 
-A dedicated renderer will generate the required hint blocks containing permanent
-IDs, priority classes, Git-stage explanations, suggested commands, expected
-results, and official Git documentation links.
+`render_block` in `hint.py` renders one hint as the block defined in Hint
+structure; `to_terminal` turns its Markdown into text with numbered
+documentation references. `show_hints` and `explain` print, in order:
 
-The renderer will support normal output and `--ids-only` mode. Safety labels
-will be applied to individual suggested commands independently of hint priority.
+1. Plain `git-hints` inside a working tree: `Branch: <name>` or `Branch:
+   detached HEAD`; `Fetch failed; showing results as of last fetch.` after a
+   failed or timed-out `--fetch`; then either `No hints.`, or the notice `<n>
+   more hint(s) available; run "git-hints --all" to see them.` when hints were
+   left out, followed by one `render_block` block per shown hint.
+2. `--ids-only`: only the IDs of the shown hints, one per line, and nothing
+   else on standard output.
+3. `explain`: Git's own standard output and standard error first, then `Git
+   exited with code <n>.`, then `No error detected.` on exit code 0, or one
+   block per triggered reactive hint, or `No hints.` when none triggers. Under
+   `--ids-only`, only the triggered IDs.
+
+Unexpected inspection failures follow on standard error as `git-hints:
+<message>`, and the exit code becomes 1. Invalid `explain` usage exits with
+`USAGE_ERROR` (2) without running Git.
+
+Safety labels are applied to individual suggested commands independently of
+hint priority.
 
 ### Testing and Validation
 
-Pytest will be used with isolated temporary Git repositories and the required
-`git_setup`, `make_temps`, `make_repo`, and `config_user` helpers.
+Pytest is used with isolated temporary Git repositories and the required
+`git_setup`, `make_temps`, `make_repo`, and `config_user` helpers, defined in
+`tests/git_test_tools.py`, where `run_hints` and `blocks` also run `git-hints`
+in its own process and split its output by `ID:` lines.
 
-Tests will verify triggering conditions, suppression rules, hint ordering,
-command safety, CLI output, remote behavior, and exit-code preservation.
+The suite has 58 tests in `test_cli.py`, `test_state.py`, `test_changes.py`,
+`test_remote.py`, and `test_explain.py`. They verify triggering conditions,
+suppression rules, hint ordering, command safety, CLI output, remote behavior,
+and exit-code preservation.
 
-The implementation will be validated with Ruff, ty, and the complete automated
-test suite. Development will proceed incrementally, starting with repository
-inspection and basic proactive hints, followed by advanced hints and reactive
-error handling.
+The implementation is validated with Ruff, ty, and the complete automated test
+suite. Further work follows the other subsections of Development strategy, and
+each change there comes with its own tests.
+
