@@ -2518,3 +2518,265 @@ unique across the project.
    hint sections of this specification.
 5. Run the full test suite, Ruff, and ty.
 
+New proactive hints
+-------------------
+
+The personal experience notes describe three situations that the sixteen
+proactive hints cover only in part. First, stashes are hard to keep track of:
+`pull-blocked-local-changes` and `stash-local-changes` tell the user to create
+a stash and keep it until the changes are restored, but no hint mentions the
+stash afterwards. Second, users are unsure whether their commits are local only
+or already pushed, and where a branch lives. The Branch context line,
+`no-upstream-branch`, and `push-ahead` describe only the current branch;
+nothing reports a branch the user committed on and then switched away from.
+Third, users want the newest remote commits before they start editing. `behind`
+and `diverged` answer this only as of the last fetch, and without `--fetch`
+nothing says how old that fetch is; if it is old, `behind` stays silent even
+though the remote has moved on.
+
+The three new hints cover what remains: `stash-entries` lists the stash
+entries, `unpushed-branches` lists local branches other than the current one
+whose commits exist only in this repository, and `stale-fetch` reports that the
+remote-tracking branches have not been updated for more than a day. All three
+read local state only and run no network operation. In the precedence list of
+Hint structure, item 5, `stash-entries` is appended after `untracked-files`, so
+the list ends `unstaged-changes`, `untracked-files`, `stash-entries`; within the
+informational class, a stash that may hold needed work then comes before
+`stale-fetch`. `unpushed-branches` and `stale-fetch` are routine reminders that
+need no special precedence, so they are not added and sort by code point after
+the listed IDs of their class. The list is amended accordingly when the hints
+are implemented.
+
+### Keep track of stash entries?
+
+* Hint: This repository has `<n>`
+  [stash entries](https://git-scm.com/docs/git-stash#_description "Saved changes that you can list, inspect, and apply again later").
+  Stash entries belong to the whole repository, not to the branch you were on,
+  so they stay listed after you switch branches. The newest ones are: `<list>`.
+  Do you want to
+  [apply or drop](https://git-scm.com/docs/git-stash#_commands "Commands that restore a stash entry or remove it from the list")
+  them?
+
+  `<n>` reads `1 stash entry`, `2 stash entries`, and so on; `<list>` is up to
+  five lines of `git stash list`, such as `stash@{0}: On main: First change`.
+
+* Git stage: Stash entries are commits kept in your local repository outside
+  any branch; their changes are not in your working directory until applied.
+
+* Command: `git stash show -p <n>` shows the changes of `stash@{<n>}` as a
+  patch. `git stash apply <n>` applies them; afterward, `git status` lists the
+  restored changes and the entry stays in `git stash list`. Git refuses to apply
+  an entry that would overwrite local changes. Warning: `git stash drop <n>`
+  deletes the entry, and its changes may be impossible to recover; first check
+  with `git stash show -p <n>` that they are applied or committed. `git stash
+  pop <n>` applies and, on success, drops the entry, so the same warning
+  applies. The plain index `<n>`, which Git accepts for `stash@{<n>}`, needs no
+  quoting in any shell.
+
+* ID: `stash-entries`, priority class: informational, safety: warning.
+
+* Conditions:
+
+  1. Do not display this hint while a merge, rebase, cherry-pick, or revert is
+     in progress, detected as in `operation-in-progress`, during a `git am`
+     session (`rebase-apply` containing `applying`), or while `git diff
+     --name-only --diff-filter=U` returns paths: applying a stash then would
+     interfere with the operation.
+  2. Run `git stash list`. Exit code 0 is expected, with no output when no stash
+     exists; other exit codes are inspection errors. Each line is one entry,
+     newest first. Display the hint when there is at least one line.
+  3. List up to five lines in Git's order; if there are more, append "and N
+     more", where N is the exact number not listed.
+
+* Related output: `pull-blocked-local-changes` and `stash-local-changes` suggest
+  creating a stash; this hint reminds the user that it still exists.
+
+* Test case: Stash entries.
+
+  1. The autouse `git_setup` fixture provides the isolated environment. Call
+     `make_temps(tmp_path_factory, 1)` and `config_user("user1",
+     "user1@example.com")`. Use `make_repo` to run `git init -b main`, create
+     `foo.txt` containing `xxx`, stage it, and run `git commit -m "Add foo."`.
+  2. Verify that `git stash list` prints nothing and that `git-hints --all
+     --ids-only` does not list `stash-entries`.
+  3. Append `y` to `foo.txt` and run `git stash push -m "First change"`. Verify
+     that `git stash list` prints exactly `stash@{0}: On main: First change` and
+     that `stash-entries` is present. Run `git-hints --all` and verify that the
+     block contains `1 stash entry`, that line, `git stash show -p 0`, `git
+     stash apply 0`, `Warning:` before `git stash drop 0`, and
+     `https://git-scm.com/docs/git-stash#_description`.
+  4. Run `git switch -c other` and verify that `stash-entries` is still present.
+  5. Run `git switch main`. Five times, append a line to `foo.txt` and run `git
+     stash push`. Run `git-hints --all` and verify that the block contains `6
+     stash entries`, lists `stash@{0}` through `stash@{4}` but not `stash@{5}`,
+     and contains `and 1 more`.
+  6. Commit conflicting changes to `foo.txt` on `main` and on a new branch
+     `topic`, then run `git merge topic` on `main` and require a nonzero exit
+     code. Verify that `stash-entries` is absent. Run `git merge --abort` as
+     cleanup, including if an assertion fails.
+
+### Push your other local branches?
+
+* Hint: Do you want to
+  [push](https://git-scm.com/docs/git-push#UPSTREAM-BRANCHES "Push a branch and set its upstream branch on the remote")
+  your other local branches? Besides the current branch, `<n>` local branches
+  have commits that exist only in this local repository: `<list>`.
+
+  `<list>` names up to five branches, each followed by `(no upstream branch)` or
+  `(ahead of <upstream> by <k> commits)`. The hint is always labeled "as of last
+  fetch": it compares branches with remote-tracking branches, and `--fetch`
+  updates only one remote.
+
+* Git stage: These commits are in your local repository only; the remote
+  repository has no copy of them until you push the branches.
+
+* Command: For a branch with no upstream, `git push -u origin <branch>`. For a
+  branch ahead of its upstream, `git push <remote> <branch>`, or `git push
+  <remote> <branch>:<remote-branch>` when the remote branch name differs. You
+  do not need to switch to a branch to push it. Afterward, `git branch -vv`
+  shows `[origin/<branch>]` for the branch, without `ahead`.
+
+* ID: `unpushed-branches`, priority class: workflow, safety: safe.
+
+* Conditions:
+
+  1. Suppress the hint during the operations of `stash-entries`, condition 1.
+     During a rebase HEAD is detached, and the branch being rebased would be
+     listed.
+  2. Skip the hint if `git remote` lists no remote. Find the current branch
+     with `git symbolic-ref --quiet --short HEAD`; exit code 1 means detached
+     HEAD, and then no branch is excluded.
+  3. Run `git for-each-ref --format='%(refname:lstrip=2) %(upstream:remotename)
+     %(upstream:remoteref) %(upstream:track)' refs/heads/`, which prints one
+     line per branch, sorted by name. Split each line on spaces into at most
+     four fields; only the last can contain spaces. Without an upstream, the
+     last three fields are empty; a local upstream has the remote name `.`.
+     The last field is `[ahead <k>]`, `[behind <m>]`, `[ahead <k>, behind
+     <m>]`, `[gone]` when the upstream's remote-tracking branch does not exist,
+     or empty when the branch is in sync.
+  4. For each branch other than the current one:
+     1. Without an upstream, report the branch if `origin` exists and `git
+        rev-list --count refs/heads/<branch> --not --remotes` prints a number
+        above 0: no remote-tracking branch contains its newest commits.
+     2. With a remote upstream and `[ahead <k>]`, report the branch, using the
+        remote name and the remote ref without `refs/heads/` in the command.
+     3. Skip all others: a local upstream, as `push-ahead` does; a branch that
+        is behind or has diverged, whose push would be rejected; and `[gone]`,
+        usually a remote branch deleted after a merge, which a push recreates.
+  5. Display the hint when at least one branch is reported. List up to five in
+     the order of step 3, then "and N more" for the exact number not listed.
+
+* Related output: The current branch is never listed; `push-ahead`,
+  `no-upstream-branch`, and `diverged` cover it.
+
+* Test case: Unpushed branches.
+
+  1. The autouse `git_setup` fixture provides the isolated environment. Call
+     `make_temps(tmp_path_factory, 2)`, naming the directories `remote` and
+     `local`, and `config_user("user1", "user1@example.com")`. Run `git init
+     --bare -b main` in `remote` and clone it into `local`. In `local`, commit
+     `foo.txt` and run `git push -u origin main`.
+  2. Verify that `unpushed-branches` is absent. Run `git branch topic` and
+     verify that it is still absent, because `topic` has no commits of its own.
+  3. Run `git switch -c feature`, commit `bar.txt`, and run `git switch main`.
+     Verify that `unpushed-branches` is present. Run `git-hints --all` and
+     verify that the block is labeled "as of last fetch", names `feature` with
+     `no upstream branch` but not `main` or `topic`, suggests `git push -u
+     origin feature`, and contains
+     `https://git-scm.com/docs/git-push#UPSTREAM-BRANCHES`.
+  4. Run `git switch feature`; verify that `unpushed-branches` is absent and
+     `no-upstream-branch` is present. Run `git switch main`.
+  5. Run `git push -u origin feature`; verify that the hint is absent. Commit
+     another file on `feature` and switch back to `main`. Verify that `git
+     branch -vv` shows `[origin/feature: ahead 1]`, that the hint is present,
+     and that it suggests `git push origin feature`.
+  6. Run `git branch --track loc main`, commit a file on `loc`, and switch back
+     to `main`. Verify that `git-hints --all` does not name `loc`.
+  7. Create branches `b1` through `b6`, each with one commit of its own. Run
+     `git-hints --all` and verify that the block names `b1` through `b5` but
+     not `b6` or `feature`, and contains `and 2 more`.
+  8. Run `git remote remove origin` and verify that the hint is absent.
+
+### Fetch to see the newest remote commits?
+
+* Hint: Your local view of the remote may be out of date: `<age>`. Hints about
+  remote commits, such as `behind`, use what Git learned at the last
+  [fetch](https://git-scm.com/docs/git-fetch#_description "Downloads remote commits and updates remote-tracking branches and FETCH_HEAD").
+  Do you want to fetch before you start editing?
+
+  `<age>` reads `the last fetch was <d> days ago`, with `<d>` the whole number
+  of days, or `Git has no record of a successful fetch`.
+
+* Git stage: Your local repository keeps remote-tracking branches, which copy
+  the remote repository's branches only when you fetch.
+
+* Command: `git fetch` updates the remote-tracking branches and does not change
+  your branches, staging area, or working directory; afterward, `git status`
+  compares your branch with the updated upstream. Alternatively, `git-hints
+  --fetch` fetches before inspecting.
+
+* ID: `stale-fetch`, priority class: informational, safety: safe.
+
+* Conditions:
+
+  1. Skip the hint when `--fetch` succeeded in this run, or when `git remote`
+     lists no remote.
+  2. Run `git rev-parse --path-format=absolute --git-path FETCH_HEAD
+     --git-common-dir`. `FETCH_HEAD` belongs to each worktree while
+     remote-tracking branches are shared, so consider the first path and
+     `FETCH_HEAD` in the common directory; in the main worktree they coincide.
+  3. Ignore a file that does not exist or is empty: `git clone` writes no
+     `FETCH_HEAD`, and a failed fetch leaves it empty with a new modification
+     time. If no file remains, the hint applies with "no record".
+  4. Otherwise the hint applies when the newest modification time is more than
+     24 hours before the current time. A time in the future counts as recent.
+
+* Related output: `behind`, `diverged`, and `push-ahead` keep their "as of last
+  fetch" label; this hint says how old that fetch is. `git fetch
+  --no-write-fetch-head` and `--dry-run` write no `FETCH_HEAD`, so the hint may
+  still appear after them.
+
+* Test case: Stale fetch.
+
+  Set the age of a file with `os.utime(path, (t, t))`, where `t` is
+  `time.time()` minus the age in seconds.
+
+  1. Set up `remote` and `local` as in step 1 of the `unpushed-branches` test
+     case. Let `path` be the output of `git rev-parse --path-format=absolute
+     --git-path FETCH_HEAD` in `local`.
+  2. Verify that `path` does not exist and that `stale-fetch` is present. Run
+     `git-hints --all` and verify that the block contains `no record`, `git
+     fetch`, `git-hints --fetch`, and
+     `https://git-scm.com/docs/git-fetch#_description`.
+  3. Run `git fetch`; verify that `path` is not empty and the hint is absent.
+  4. Set the age of `path` to two days; verify that the hint is present and
+     that `git-hints --all` contains `2 days ago`. Set the age to 23 hours and
+     verify that the hint is absent.
+  5. Set the age to two days. Run `git-hints --all --ids-only --fetch` and
+     verify that `stale-fetch` is absent.
+  6. Set the age to two days and point `origin` at a missing directory with
+     `git remote set-url origin <missing>`. Run `git-hints --all --fetch`;
+     verify that the output contains `Fetch failed; showing results as of last
+     fetch.` and a `stale-fetch` block with `no record`, and that `path` is
+     empty. Restore the URL with `git remote set-url origin <remote>`.
+  7. Set the age to two days, append a line to `foo.txt`, and run `git stash
+     push`. Verify that `git-hints --all --ids-only` lists `stash-entries`
+     before `stale-fetch`.
+  8. Run `git remote remove origin` and verify that the hint is absent.
+
+### Implementation in the next phase
+
+Each hint becomes one evaluator in `src/git_hints/proactive.py`, added to
+`CHECKS`. They reuse the `remotes`, `current_branch`, `unmerged_paths`,
+`operations` (its `combining` property), and `git_paths` helpers of `Repo` in
+`src/git_hints/git.py`, plus `Context.fetched`; new cached helpers read `git
+stash list`, the `git for-each-ref` records with their `git rev-list` counts,
+and the `FETCH_HEAD` times. `stash-entries` is appended to `PRECEDENCE` in
+`src/git_hints/hint.py` together with the precedence list of Hint structure.
+Tests go in `tests/test_state.py` (`stash-entries`) and `tests/test_remote.py`
+(the other two), named after their test cases. The anchors
+`git-stash#_description`, `git-stash#_commands`, `git-push#UPSTREAM-BRANCHES`
+(from the included `urls-remotes.adoc`), and `git-fetch#_description` were
+checked against `Documentation/*.adoc` at `v2.56.0`, as the Documentation
+anchors and CodeChat markup subsection requires, and join its list of verified
+anchors.
