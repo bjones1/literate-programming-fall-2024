@@ -61,31 +61,30 @@ Using the GPT-5.6 Luna in VSCode Codex, medium effort with the following prompt:
 
     Return findings grouped by severity. If no relevant issues remain, explicitly state that.
 
-Last-draft output produced is:
+#### Including strikethrough indicates LLM output that I deemed incorrect or irrelevant, last-draft output produced is:
     
-    Low severity
-    Encoding corruption remains in the repository-redirection paragraph
+Low severity
+Encoding corruption remains in the repository-redirection paragraph
 
-    The argument-boundary conflict is resolved: spec.md:53 now validates the Git command after processing applicable options and the optional separator.
+The argument-boundary conflict is resolved: spec.md:53 now validates the Git command after processing applicable options and the optional separator.
 
-    ~~However, spec.md:1573 still contains:
+~~However, spec.md:1573 still contains:~~
 
-    GitвЂ™s option order
+ ~~GitвЂ™s option order~~
 
-    This should be:
+~~This should be:~~
 
-    Git’s option order
+~~Git’s option order~~
 
-    The same paragraph also omits code formatting around command and option names compared with the surrounding specification, but the encoding error is the only remaining issue that could affect readability.
+~~The same paragraph also omits code formatting around command and option names compared with the surrounding specification, but the encoding error is the only remaining issue that could affect readability.~~
 
-    Minimal clarification: Replace GitвЂ™s with Git’s. No behavioral change is required.
+~~Minimal clarification: Replace GitвЂ™s with Git’s. No behavioral change is required.~~
 
-    Resolved previous findings
-    The exact-git validation conflict is resolved by spec.md:53.
-    The --fetch boundary behavior is now explicit at spec.md:57.
-    The duplicated redirection rule has been replaced with a cross-reference at spec.md:2090.
-    No high- or medium-severity issues remain within the git-hints explain scope.~~
+Resolved previous findings
+The exact-git validation conflict is resolved by spec.md:53.
+The --fetch boundary behavior is now explicit at spec.md:57.
+The duplicated redirection rule has been replaced with a cross-reference at spec.md:2090.
+No high- or medium-severity issues remain within the git-hints explain scope.
 
-Strikethrough indicates LLM output that I deemed incorrect or irrelevant.
 
 
