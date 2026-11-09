@@ -2191,6 +2191,59 @@ Repository setup commands must exit successfully; fail the test immediately if
 one does not. Run any command that is expected to fail as part of the behavior
 under test separately, and explicitly verify its expected exit code and output.
 
+Development strategy
+====================
+
+This section is the team's plan for completing and extending `git-hints`. A
+specification and a working implementation already exist, so the plan does not
+start from scratch: it names the areas where the specification, the code, or
+both still need work, and the rules every change must follow. Each subsection
+ends with how its work will be implemented and tested in the next phase.
+
+The work is divided into four areas. Each area becomes a level-2 subsection of
+this section, in this order:
+
+1. **Architecture and command execution.** The structure of the CLI, the Git
+   command executor, repository inspection, hint detection, reactive error
+   handling, and output rendering. This is the Implementation Strategy
+   subsection that follows.
+
+2. **Documentation anchors and CodeChat markup.** Replace whole-page
+   documentation links with links to the passage that supports each hint, as
+   Hint structure requires, and connect each hint's specification passage with
+   its implementation and test using CodeChat Editor markup.
+
+3. **Specification gaps.** Places where the specification is incomplete or
+   disagrees with Git's actual behavior: `commit-identity` has no priority class
+   and no test case; the `merge-conflicts` documentation anchor will break with
+   the next Git release, because Git has moved that section to the new
+   `gitmergeconflicts` page; Git prints "Automatic merge failed" and `CONFLICT
+   (content)` on standard output, while `explain` inspects only standard error;
+   and the specification detects a bisect through `BISECT_START`, while Git's
+   own status code checks `BISECT_LOG`. This subsection decides what the
+   specification should say in each case.
+
+4. **New proactive hints.** Hints for situations recorded in the personal
+   experience notes that the existing hints do not cover: keeping track of
+   stashes, knowing whether changes are local only or already pushed, and
+   knowing where a branch lives and whether it has an upstream. This subsection
+   defines each new hint in the same format as the existing hint sections.
+
+All four areas follow these rules:
+
+* Nothing listed under Future work is planned or implemented. This includes
+  `def`, `howto`, `--exclude`, `--dismiss`, and `--bug`.
+* Git's own source code is never modified. `git-hints` only runs Git and reads
+  its documentation.
+* Hint IDs and the output format defined in Hint structure stay unchanged. New
+  hints receive new IDs; existing IDs are never reused or renamed.
+* Every change comes with a test. Tests use the existing `git_setup`,
+  `make_temps`, `make_repo`, and `config_user` helpers and must not depend on
+  the developer's local Git configuration.
+* The text of this specification is the single source of truth. When the
+  specification and the code disagree, the specification is corrected first
+  and the code then follows it, never the other way round.
+
 Implementation Strategy
 -----------------------
 
