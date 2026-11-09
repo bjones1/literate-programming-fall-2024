@@ -2389,3 +2389,132 @@ The implementation is validated with Ruff, ty, and the complete automated test
 suite. Further work follows the other subsections of Development strategy, and
 each change there comes with its own tests.
 
+Documentation anchors and CodeChat markup
+-----------------------------------------
+
+### Problem
+
+Hint structure asks each hint to link to the specific passage of the official
+Git manual that supports it, preferring the page's existing anchor and otherwise
+a text fragment that quotes the page. The implementation mostly links to whole
+pages, such as `https://git-scm.com/docs/git-pull` for `behind`. As the
+implementation notes explain, the anchors were left out because each one has to
+be checked against the page's wording. The notes also say that no CodeChat
+Editor fragment or gather markup was added, so nothing connects a hint's
+specification passage with the code and test that implement it.
+
+### Choosing and deriving anchors
+
+For each hint, we choose the passage that explains the state or failure the
+hint reports, not the page of the suggested command in general. Usually this is
+a named section of the man page, such as DESCRIPTION or DETACHED HEAD.
+
+The pages on `https://git-scm.com/docs/<page>` are rendered from
+`Documentation/<page>.adoc` in the Git source. A section's ID is derived from
+its title:
+
+1. If the title is preceded by an explicit anchor line `[[ID]]`, the ID is
+   exactly `ID`; for example, UPSTREAM BRANCHES, included into `git-pull` and
+   `git-push` from `urls-remotes.adoc`, has the ID `UPSTREAM-BRANCHES`.
+2. Otherwise the ID is `_` followed by the title in lowercase, with each run of
+   characters that are not letters or digits replaced by `_` and no trailing
+   `_`; for example, NOTE ABOUT FAST-FORWARDS becomes
+   `_note_about_fast_forwards`.
+
+IDs of single options, such as `Documentation/git-config.txt-username`, are
+produced by the website's own build, not by the `.adoc` source, so they cannot
+be derived offline. They are allowed where a hint relies on one option, because
+they point to the exact passage. Each is verified against the live page
+instead, and the verified list records it as checked on the site, with the
+date, so the maintenance script reports it for a manual re-check rather than
+failing.
+
+Each anchor is verified offline against the `Documentation/*.adoc` files of the
+Git release that `git-scm.com` currently serves (2.56.0 at the time of
+writing). When a page has no section that fits the hint, we use a text fragment
+as Hint structure allows, quoting a short, unique phrase from that page and
+percent-encoding reserved characters. A whole-page link remains only when
+neither works, and the reason is recorded in the verified list described below.
+
+Some anchors are known to move. Git's development branch already adds the
+explicit anchor `[[DETACHED_HEAD]]` to `git-checkout`, which changes
+`#_detached_head` to `#DETACHED_HEAD`, and moves the merge-conflict
+explanation from `git-merge` to the new `gitmergeconflicts` page. Neither
+change is released yet. We keep the anchor that works on the served release,
+record the expected replacement next to it in the verified list, and update the
+specification, the code, and the list together once the new release is served.
+
+Examples, verified against `v2.56.0` and the live pages:
+
+* `push-ahead` — `https://git-scm.com/docs/git-push` →
+  `https://git-scm.com/docs/git-push#_description`
+* `diverged` — `https://git-scm.com/docs/git-pull` →
+  `https://git-scm.com/docs/git-pull#_description`, which says that `git pull
+  --ff-only`, the default, fails when the branches have diverged
+* `behind` — `https://git-scm.com/docs/git-pull` →
+  `https://git-scm.com/docs/git-pull#UPSTREAM-BRANCHES`, which says that the
+  upstream is the default for `git pull` with no arguments
+* `merge-conflicts` —
+  `https://git-scm.com/docs/git-merge#_how_conflicts_are_presented` stays until
+  the next release is served; the expected replacement,
+  `https://git-scm.com/docs/gitmergeconflicts#markers`, is recorded in the
+  verified list and confirmed once that page is published
+
+### Where the links live
+
+Each link appears twice: in the hint text of the hint's section in this
+specification, which the terminal renders as `[n] label: title URL`, and in the
+hint text written in `src/git_hints/proactive.py` or
+`src/git_hints/reactive.py`. The specification is authoritative. A link is
+changed in the specification first, and the code copies it exactly.
+
+### Testing
+
+A new offline test reads every documentation URL in the hint modules, expanding
+templated URLs such as `git-{operation}` for each supported operation, and
+checks that:
+
+1. each URL is well-formed and starts with `https://git-scm.com/docs/`;
+2. each URL also appears in a hint section of this specification;
+3. if a URL has a fragment, the page and fragment appear in a checked-in list of
+   verified anchors, together with the Git version they were verified against,
+   or the date of the site check for option IDs.
+
+The test uses no network. Hint tests keep checking links through `git-hints
+--all`, as the Testing section requires. A small maintenance script, which is
+not part of the test suite, re-checks the list against a Git documentation
+checkout at a given tag and reports anchors that are missing or that change on
+Git's development branch.
+
+### CodeChat markup
+
+The CodeChat Editor gathers code scattered across files into one place (see
+"Gathering fragments" in the CodeChat Editor `README.md`). A fragment marker
+`<fragment id="..."></fragment>` is placed in a doc block, that is, a comment,
+and covers that doc block and the next code or doc block; the `following`
+attribute includes more blocks. A gather element is any HTML element with an
+`id` and a `data-gather` attribute listing fragment IDs, such as an `h4`
+heading; it displays the listed fragments in order. Fragments are not allowed
+in Markdown files, so:
+
+* in the code, the comment before each hint's function in the hint modules, and
+  before each of its tests, ends with a fragment marker;
+* in this specification, each hint section ends with a gather heading,
+  "Implementation of" followed by the section title, that lists those
+  fragments.
+
+IDs have the form `cc-` followed by 10 random letters or digits and must be
+unique across the project.
+
+### Implementation steps
+
+1. Write the list of verified anchors and the offline test; the test first fails
+   for links not yet in the list.
+2. For each hint, choose and verify the anchor, then update its link in this
+   specification and in the code.
+3. Write the maintenance script and run it against `v2.56.0` and Git's
+   development branch.
+4. Add fragment markers to the hint code and tests, and gather headings to the
+   hint sections of this specification.
+5. Run the full test suite, Ruff, and ty.
+
