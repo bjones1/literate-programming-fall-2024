@@ -2206,25 +2206,30 @@ Git commands will be executed using Python's `subprocess` with `shell=False` and
 `check=False`. Arguments will be passed as lists to avoid shell interpretation.
 
 The executor will distinguish expected Git exit codes from unexpected failures.
-Git output will be captured as bytes. NUL-delimited paths will be parsed before
-decoding, with `os.fsdecode()` used for lossless filename handling through
-surrogate escapes. Human-readable output will use UTF-8 with replacement for
-invalid byte sequences. Tests will include filenames containing invalid UTF-8
-bytes on supported platforms.
+Git output will be decoded as UTF-8 (`encoding="utf-8", errors="replace"`), as
+required in Language and libraries. Commands whose path lists are parsed will
+use `-z` (for example, `git diff --name-only -z`), and their output will be
+split on NUL characters, so names containing spaces, newlines, or non-ASCII
+characters stay intact.
 
 ### Repository Inspection
 
 The repository inspector will collect branch information, staged and unstaged
 changes, untracked files, upstream status, and active Git operations.
 
-Git commands such as `git status --porcelain=v2 --branch`, `git diff`, and `git
-rev-parse` will provide structured repository information.
+Each piece of state will come from the command named in the hint conditions: for
+example, `git status --porcelain=v2 --branch` for upstream status, `git status
+--porcelain=v1 -z --untracked-files=all` for untracked files, `git diff --quiet`
+and `git diff --cached --quiet` for changes, and `git rev-parse` for
+operation-state paths.
 
-Repository inspection will use `GIT_OPTIONAL_LOCKS=0` to prevent optional index
-refresh writes, including those normally performed by `git status`. Inspection
-will not intentionally modify repository state. The only permitted network
-operation is an explicitly requested `--fetch`, which will follow the
-specification's timeout, environment, and fallback requirements.
+Inspection subprocesses, but not the command run by `explain`, will use
+`GIT_OPTIONAL_LOCKS=0` to prevent optional index refresh writes, including those
+normally performed by `git status`. Plain `git-hints` will not intentionally
+modify repository state, except that an explicit `--fetch` updates
+remote-tracking refs and `FETCH_HEAD`. The only permitted network operation is
+an explicitly requested `--fetch`, which will follow the specification's
+timeout, environment, and fallback requirements.
 
 ### Hint Detection and Prioritization
 
@@ -2241,11 +2246,25 @@ rules. The default output will contain at most three proactive hints, while
 
 ### Reactive Error Handling
 
-The `explain` command will execute the supplied Git command once, inherit standard input, and forward standard output directly to the user's standard output. Standard error will be streamed to the user's standard error as it is produced, while simultaneously retaining a copy for reactive hint matching.
+The `explain` command will execute the supplied Git command once and inherit
+standard input. Git's standard output will go directly to the terminal in normal
+output and to `subprocess.DEVNULL` under `--ids-only`. Standard error will be
+captured, used for reactive hint matching, and printed to standard error after
+Git exits, as required in Language and libraries.
 
-The implementation will preserve Git's original exit code and display all triggered reactive hints. Repository-dependent hints will be skipped when Git repository-redirection options prevent reliable inspection.
+The implementation will return Git's original exit code, unless Git cannot be
+launched or an unexpected inspection error occurs. In normal output, it will
+print `Git exited with code <n>.`, then all triggered reactive hints on a
+nonzero exit or `No error detected.` on success; under `--ids-only`, it will
+print only the triggered hint IDs. Only `explain` updates the
+integration-failure counter stored under `git rev-parse --git-path git-hints`.
+Repository-dependent hints will be skipped when the global options before the
+Git subcommand include a repository-redirection option such as `-C`,
+`--git-dir`, or `--work-tree`.
 
-Tests will verify that interactive commands can display prompts on standard error before reading standard input, without waiting for the Git process to exit.
+Tests will verify that Git's captured standard error appears on standard error,
+that Git's standard output is hidden under `--ids-only`, and that `git-hints`
+returns Git's exit code.
 
 ### Output Rendering
 
