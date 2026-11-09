@@ -50,16 +50,19 @@ CLI commands
       `diverged` hints "as of last fetch."
 2. **`git-hints explain -- <git command>`**: execute the supplied Git command,
    capture its exit code and standard error, and select reactive hints from the
-   resulting error. Return the same exit code as Git. The arguments must begin
-   with `git`; otherwise print an error to standard error, run nothing, and
-   exit 2.
+   resulting error. Return the same exit code as Git. After processing applicable git-hints options and an optional -- separator, the remaining Git command argument list must begin with the exact word git; otherwise print an error to standard error, run nothing, and exit 2.
 
-   * A `--` separator before the Git command is recommended to make argument
-     boundaries unambiguous.
 
-   * Global options, where applicable, precede `explain`: for example,
-     `git-hints --ids-only explain -- git push`. The `--fetch` option is invalid
-     with `explain` and must be rejected without running Git.
+
+   * A -- separator before the Git command is recommended but optional. If the separator is present, --fetch before the separator is a git-hints option and --fetch after the separator is part of the Git command. If the separator is absent, --fetch before the first argument equal to git is a git-hints option; --fetch at or after that argument is part of the Git command.
+
+   * Global options, where applicable, precede explain: for example,
+     git-hints --ids-only explain -- git push. The --fetch option is invalid
+     with explain and must be rejected before Git is launched. When --fetch is
+     supplied as a git-hints option for explain, exit with code 2, write the
+     usage error to standard error, and write nothing to standard output. A
+     --fetch appearing after the -- separator is part of the Git command and
+     is not handled as a git-hints option.
 
    * Emit captured Git standard error to standard error. In normal output, print
      `Git exited with code <n>.` before any reactive hint blocks on standard
@@ -1567,11 +1570,9 @@ The Conditions of the hints below assume this check and do not repeat it.
 `git-hints explain -- git <command> [<args>...]`
 ------------------------------------------------
 
-Reactive hints explain failures of commands executed through `git-hints
-explain`. Use the shared CLI execution and output rules rather than redefining
-them here. Evaluate repository-state conditions only when inspection applies to
-the repository targeted by the command, following the redirection rules under
-Language and libraries.
+Reactive hints explain failures of commands executed through git-hints explain. Use the shared CLI execution and output rules rather than redefining them here. Evaluate repository-state conditions against the repository targeted by the command. Git global repository-redirection options must be processed before identifying the Git subcommand. Resolve repository-redirection options using Git’s option order and relative-path semantics, including repeated -C options and combinations of --git-dir with --work-tree. If the resulting repository or applicable work tree cannot be identified unambiguously, skip repository-state-dependent conditions. Hints based only on the command, exit code, and captured standard error may still be evaluated.
+
+
 
 Diagnostic-based recognition supports English Git messages; display unrecognized
 diagnostics on stderr without guessing a matching hint. In the tests below,
@@ -1897,9 +1898,7 @@ solely to check its hints.
   error/blocked, safety: caution.
 
 * Conditions: Track qualifying integration failures separately for each local
-  branch. Store the failure state in `git-hints/integration-failures.json` at
-  the path returned by `git rev-parse --git-path
-  git-hints/integration-failures.json`.
+  branch. Store the failure state in git-hints/integration-failures.json at the path returned by git rev-parse --git-path git-hints/integration-failures.json, evaluated in the repository targeted by the explained Git command.
 
   Key each record by the full branch reference returned by `git symbolic-ref
   --quiet HEAD`. Store the failure count and the current `HEAD` commit ID. If
@@ -1922,9 +1921,7 @@ solely to check its hints.
   progress. An upstream branch is required before counting an integration
   failure toward a rebase recommendation.
 
-  Skip failure counting outside a working tree, in detached HEAD, or when the
-  executed Git command uses repository-redirection options such as `-C`,
-  `--git-dir`, or `--work-tree`.
+   Skip failure counting outside a working tree, in detached HEAD, or when the target repository or work tree cannot be resolved reliably. Do not skip failure counting merely because a repository-redirection option was used.
 
   Display the hint on the fifth qualifying failure for the same branch. Reset
   its count to zero when:
@@ -2090,10 +2087,7 @@ codes, so no additional Git library is required.
   environment. Do not claim to recover the result of an earlier command run
   outside `git-hints explain`.
 
-When `git-hints explain` runs a command with repository-redirection options such
-as `-C`, `--git-dir`, or `--work-tree`, skip reactive hints that require
-repository-state inspection. Hints based only on the command's exit code or
-captured standard error may still be evaluated.
+   Apply the repository-redirection and target-resolution rules defined in the git-hints explain section above.
 
 For both modes, pass arguments separately with `shell=False` and `check=False`.
 Interpret `returncode` according to each command's documented meaning; expected
