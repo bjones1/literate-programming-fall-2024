@@ -2518,6 +2518,69 @@ unique across the project.
    hint sections of this specification.
 5. Run the full test suite, Ruff, and ty.
 
+Specification gaps
+------------------
+
+These are places where the specification is incomplete or disagrees with Git's
+actual behavior. Each was checked by running Git and against Git's source on its
+development branch.
+
+### `commit-identity` has no priority class or test case
+
+Hint structure, item 5, requires every hint to have exactly one priority class,
+and every other hint has a test case. `commit-identity` has neither. Without
+these settings, `git commit` fails unless Git finds an identity elsewhere, such
+as in environment variables. This does not stop an operation in progress, so
+its class should be `workflow`, the class the implementation already uses. Its
+test case follows `test_commit_identity` in `tests/test_state.py`: both settings
+are suggested when both are missing, only the email once the name is set, none
+once both are set, and an empty local email is corrected with `--local`.
+
+### Merge-conflict and detached HEAD anchors will move
+
+Git's development branch moves the merge-conflict explanation from `git-merge`
+to the new `gitmergeconflicts` page and adds the explicit anchor
+`[[DETACHED_HEAD]]` to `git-checkout`. Once that release is served,
+`git-merge#_how_conflicts_are_presented` and `git-checkout#_detached_head` no
+longer point to the right passage. We keep both anchors while they work on the
+served release and update them as Documentation anchors and CodeChat markup
+describes; this subsection adds no separate rule.
+
+### Conflict messages are on standard output
+
+When a merge stops on a conflict, Git prints `CONFLICT (content): Merge conflict
+in <file>` and `Automatic merge failed; fix conflicts and then commit the
+result.` on standard output and nothing about the conflict on standard error.
+`explain` captures only standard error, so these messages never reach hint
+matching. We keep it that way: conflicts are detected from repository state, as
+the `merge-conflicts` conditions already do with `git diff --name-only
+--diff-filter=U -z`. The introduction to the reactive hints will say so, so that
+no hint tries to match conflict messages in standard error.
+
+### Bisect is detected through a different file than Git uses
+
+The specification detects a bisect through `BISECT_START`, while `git status`
+checks `BISECT_LOG` (`wt_status_check_bisect()` in `wt-status.c`), so the two
+can disagree about whether a bisect is in progress. We switch to `BISECT_LOG`:
+a bisect is in progress exactly when that file exists, whether or not
+`BISECT_START` does. `git bisect start` creates both files, so the existing test
+setup still works.
+
+### Implementation in the next phase
+
+1. Add `priority class: workflow` and the test case described above to the
+   `commit-identity` section.
+2. Replace `BISECT_START` with `BISECT_LOG` in Hint structure, item 7, and in
+   the `detached-head` conditions and test, then in `Repo.operations` in
+   `src/git_hints/git.py`. Add a test step that creates only `BISECT_START`
+   while HEAD is detached and verifies that `detached-head` still appears.
+3. Add the standard-output sentence to the introduction of the reactive hints,
+   and extend the `merge-conflicts` test to verify that the hint appears while
+   Git's captured standard error has no `CONFLICT` line.
+4. Update the two anchors together with the others, as Documentation anchors and
+   CodeChat markup describes.
+5. Run the full test suite, Ruff, and ty.
+
 New proactive hints
 -------------------
 
