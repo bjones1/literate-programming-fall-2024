@@ -1,9 +1,9 @@
 Project 2 submission
 ====================
 
-Team members are Aknur Seidazym, Madina Amangeldi, Zhassulan, and (fourth team
-member). The specification consists of the file [spec.md](spec.md); our team's
-section is "Implementation Strategy".
+Team members are Aknur Seidazym, Madina Amangeldi, Zhassulan Kainazarov, and
+Aiym Takimbayeva. The specification consists of the file [spec.md](spec.md); our
+team's section is "Development strategy".
 
 Draft submission
 ----------------
@@ -18,8 +18,8 @@ Draft submission
   contradicted the rest of the specification (live stderr streaming and
   `os.fsdecode()` decoding) through review rounds 4–7, and assembled this
   `submission.md`.
-* Zhassulan: (Zhassulan's contributions)
-* (Fourth team member): (contributions)
+* Zhassulan Kainazarov: (contributions)
+* Aiym Takimbayeva: (contributions)
 
 ### Compiler test
 
@@ -53,11 +53,11 @@ Claude Opus 5.5 (`claude-opus-5-5`, in Claude Code), macOS 15.3.1, Git 2.39.5:
   separate environment on Python 3.10.12, where all 58 tests passed.
 * The working tree was unchanged afterward.
 
-#### Zhassulan
+#### Zhassulan Kainazarov
 
 (Summarized LLM output)
 
-#### (Fourth team member)
+#### Aiym Takimbayeva
 
 (Summarized LLM output)
 
