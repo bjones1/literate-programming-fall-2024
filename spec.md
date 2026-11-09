@@ -2071,7 +2071,10 @@ codes, so no additional Git library is required.
 
 * Plain `git-hints`: run the inspection commands defined by the hint conditions
   and repository-context requirements. Capture standard output, standard error,
-  and exit codes to determine which hints apply. Do not execute commands
+  and exit codes to determine which hints apply. Run every inspection command
+  with `GIT_OPTIONAL_LOCKS=0` in its environment, so that commands such as `git
+  status` neither take the index lock nor rewrite the index; the command run by
+  `git-hints explain` is not given this variable. Do not execute commands
   suggested by hints. Do not fetch unless `--fetch` is supplied; follow that
   option's environment and timeout requirements.
 
@@ -2227,6 +2230,14 @@ modify repository state, except that an explicit `--fetch` updates
 remote-tracking refs and `FETCH_HEAD`. The only permitted network operation is
 an explicitly requested `--fetch`, which will follow the specification's
 timeout, environment, and fallback requirements.
+
+Test case: create a repository with one committed file. Change that file's
+modification time with `os.utime()` without changing its contents, so the stat
+data cached in the index is stale, and read the bytes of the file named by `git
+rev-parse --git-path index`. Run `git-hints --all --ids-only` and verify that
+the index file's bytes are unchanged. Then run `git status` directly in the same
+repository and verify that the index file's bytes have changed, which confirms
+that the setup would have caused a rewrite without `GIT_OPTIONAL_LOCKS=0`.
 
 ### Hint Detection and Prioritization
 
