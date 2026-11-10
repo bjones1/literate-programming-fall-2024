@@ -18,4 +18,5 @@ Git hints tool
    4. [Upstream and fetching](tests/test_remote.py)
    5. [Repository state](tests/test_state.py)
    6. [Explain](tests/test_explain.py)
-4. [Table of contents](toc.md)
+4. [Project 2 submission](submission.md)
+5. [Table of contents](toc.md)
