@@ -18,7 +18,12 @@ Draft submission
   contradicted the rest of the specification (live stderr streaming and
   `os.fsdecode()` decoding) through review rounds 4–7, and assembled this
   `submission.md`.
-* Zhassulan Kainazarov: (contributions)
+* Zhassulan Kainazarov: wrote the introduction and ground rules of the
+  "Development strategy" section and its "Documentation anchors and CodeChat
+  markup" and "New proactive hints" subsections, extended "Implementation
+  Strategy" with the module map, the output details, and the
+  `GIT_OPTIONAL_LOCKS=0` requirement with its test case, restored the
+  specification's original markup, and assembled this `submission.md`.
 * Aiym Takimbayeva: wrote the "Specification gaps" subsection of `spec.md` with
   help from Claude Opus 5.5, reviewed it with GitHub Copilot over two rounds,
   and verified the build on Windows.
